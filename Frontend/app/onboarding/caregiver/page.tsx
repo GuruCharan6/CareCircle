@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { onboardingApi } from "@/lib/api/onboarding";
@@ -9,7 +9,7 @@ import { caregiversApi } from "@/lib/api/caregivers";
 import { UserPlus, CheckCircle, Phone, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export default function OnboardingCaregiverPage() {
+function OnboardingCaregiverContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const mode = searchParams.get("mode");
@@ -29,7 +29,7 @@ export default function OnboardingCaregiverPage() {
 
   async function handleSkip() {
     setSkipping(true);
-    await onboardingApi.completeStep(4).catch(() => {});
+    await onboardingApi.completeStep(4).catch(() => { });
     const nextUrl = isEdit ? "/onboarding/whatsapp?mode=edit" : "/onboarding/whatsapp";
     router.push(nextUrl);
   }
@@ -54,7 +54,7 @@ export default function OnboardingCaregiverPage() {
         phone_number: normalizedPhone,
         notes: `Role: ${form.role}`,
       });
-      await onboardingApi.completeStep(4).catch(() => {});
+      await onboardingApi.completeStep(4).catch(() => { });
       router.push(isEdit ? "/onboarding/whatsapp?mode=edit" : "/onboarding/whatsapp");
     } catch (e: any) {
       setError(e.message || "Failed to add caregiver");
@@ -77,7 +77,7 @@ export default function OnboardingCaregiverPage() {
       {!showForm ? (
         <div className="space-y-6 py-4">
           <div className="flex flex-col gap-3">
-            <button 
+            <button
               onClick={() => setShowForm(true)}
               className="group w-full p-4 bg-white border-2 border-dashed border-slate-200 rounded-2xl flex items-center justify-center gap-3 transition-all hover:border-[#0D3B6E] hover:bg-slate-50 active:scale-[0.98]"
             >
@@ -86,8 +86,8 @@ export default function OnboardingCaregiverPage() {
               </div>
               <span className="font-bold text-[#0D3B6E]">Add a Caregiver Now</span>
             </button>
-            
-            <button 
+
+            <button
               onClick={handleSkip}
               disabled={skipping}
               className="w-full py-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl font-black shadow-lg shadow-emerald-500/20 transition-all active:scale-[0.98]"
@@ -120,7 +120,7 @@ export default function OnboardingCaregiverPage() {
               <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
                 <User size={14} />
               </div>
-              <input 
+              <input
                 type="text"
                 placeholder="Caregiver Name"
                 value={form.name}
@@ -132,7 +132,7 @@ export default function OnboardingCaregiverPage() {
               <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
                 <Phone size={14} />
               </div>
-              <input 
+              <input
                 type="tel"
                 placeholder="WhatsApp Number (e.g. +91...)"
                 value={form.phone}
@@ -159,15 +159,15 @@ export default function OnboardingCaregiverPage() {
           {error && <p className="text-[10px] text-red-500 font-bold text-center">{error}</p>}
 
           <div className="flex flex-col gap-2 pt-2">
-            <Button 
-              variant="primary" 
-              className="w-full h-12 text-sm font-black shadow-lg bg-[#0D3B6E]" 
-              loading={adding} 
+            <Button
+              variant="primary"
+              className="w-full h-12 text-sm font-black shadow-lg bg-[#0D3B6E]"
+              loading={adding}
               onClick={handleAddCaregiver}
             >
               Add Caregiver & Continue →
             </Button>
-            <button 
+            <button
               onClick={() => setShowForm(false)}
               className="w-full py-2 text-[10px] font-bold text-slate-400 hover:text-[#0D3B6E] transition-colors"
             >
@@ -177,5 +177,13 @@ export default function OnboardingCaregiverPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function OnboardingCaregiverPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <OnboardingCaregiverContent />
+    </Suspense>
   );
 }
