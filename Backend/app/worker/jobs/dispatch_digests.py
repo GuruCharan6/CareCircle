@@ -13,6 +13,8 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from app.core.celery import celery_app
 from app.core.logging import get_logger
 from app.worker._db import worker_conn
+from app.config import settings
+import httpx
 
 logger = get_logger(__name__)
 
@@ -73,29 +75,43 @@ async def _dispatch(period: str) -> None:
         scheduled = 0
         skipped = 0
 
-        for row in rows:
-            if not row["digest_enabled"]:
-                skipped += 1
-                continue
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            for row in rows:
+                if not row["digest_enabled"]:
+                    skipped += 1
+                    continue
 
-            tz = _parse_tz(row["timezone"])
-            eta = _build_eta(row["send_time"], tz)
+                tz = _parse_tz(row["timezone"])
+                eta = _build_eta(row["send_time"], tz)
 
-            if eta is None:
-                logger.warning(
-                    f"dispatch_{period}_digests.time_passed",
-                    patient_id=str(row["patient_id"]),
-                    send_time=row["send_time"],
-                )
-                skipped += 1
-                continue
+                if eta is None:
+                    logger.warning(
+                        f"dispatch_{period}_digests.time_passed",
+                        patient_id=str(row["patient_id"]),
+                        send_time=row["send_time"],
+                    )
+                    skipped += 1
+                    continue
 
-            celery_app.send_task(
-                task_name,
-                args=[str(row["patient_id"])],
-                eta=eta,
-            )
-            scheduled += 1
+                # Note: ETA is ignored in this new uvicorn-background-task model.
+                # The digest will fire immediately when the dispatcher runs.
+                url = f"{settings.internal_base_url}/internal/jobs/{period}-digest"
+                headers = {"x-internal-secret": settings.internal_secret}
+                try:
+                    resp = await client.post(
+                        url, 
+                        params={"patient_id": str(row["patient_id"])},
+                        headers=headers
+                    )
+                    resp.raise_for_status()
+                    scheduled += 1
+                except Exception as exc:
+                    logger.error(
+                        f"dispatch_{period}_digests.post_failed",
+                        patient_id=str(row["patient_id"]),
+                        error=str(exc)
+                    )
+                    skipped += 1
 
         logger.info(
             f"dispatch_{period}_digests.done",

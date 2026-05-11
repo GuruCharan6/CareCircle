@@ -40,7 +40,7 @@ def _upload_to_supabase(audio_bytes: bytes, storage_path: str, content_type: str
     )
 
 
-async def async_process_whatsapp_media(message_id_str: str) -> None:
+async def _async_run(message_id_str: str) -> None:
     message_id = UUID(message_id_str)
     async with worker_conn(max_size=3, command_timeout=60) as conn:
         msg_repo = WhatsAppMessageRepository(conn)
@@ -174,7 +174,7 @@ async def async_process_whatsapp_media(message_id_str: str) -> None:
 )
 def process_whatsapp_media_task(self, message_id_str: str) -> None:
     try:
-        asyncio.run(async_process_whatsapp_media(message_id_str))
+        asyncio.run(_async_run(message_id_str))
     except Exception as exc:
         logger.error("process_whatsapp_media_task.failed", message_id=message_id_str, error=str(exc))
         raise self.retry(exc=exc)

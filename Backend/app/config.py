@@ -40,6 +40,8 @@ class Settings(BaseSettings):
     # URLs
     frontend_base_url: str = "https://carecircle.app"   # override in dev: http://localhost:3000
     backend_base_url: str = "https://api.carecircle.app"  # override in dev: http://localhost:8000
+    internal_base_url: str = "https://carecircle-7nx4.onrender.com"     # used for internal health/task triggers
+    internal_secret: str = ""
 
 
 settings = Settings()

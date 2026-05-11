@@ -14,7 +14,8 @@ from app.core.logging import get_logger
 from app.repositories.notification_repository import NotificationRepository
 from app.worker._db import worker_conn
 from app.worker.jobs._helpers import get_all_patient_ids, get_user_id_for_patient, try_push
-from app.worker.tasks.rebuild_patient_state import rebuild_patient_state
+from app.config import settings
+import httpx
 
 logger = get_logger(__name__)
 
@@ -31,9 +32,17 @@ async def _async_run() -> None:
         patient_ids = await get_all_patient_ids(conn)
         logger.info("deviation_check.start", patient_count=len(patient_ids))
 
-        # Dispatch state rebuilds first (they run as separate tasks)
+        # Dispatch state rebuilds first (they run as separate tasks in uvicorn)
         for patient_id in patient_ids:
-            rebuild_patient_state.delay(str(patient_id))
+            try:
+                httpx.post(
+                    f"{settings.internal_base_url}/internal/events/pipeline-complete",
+                    params={"patient_id": str(patient_id)},
+                    headers={"x-internal-secret": settings.internal_secret},
+                    timeout=10,
+                )
+            except Exception as exc:
+                logger.error("deviation_check.dispatch_failed", patient_id=str(patient_id), error=str(exc))
 
         # Then check for high alert accumulation in this connection
         flagged = 0

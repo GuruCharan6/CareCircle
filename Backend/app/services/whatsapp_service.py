@@ -8,6 +8,8 @@ from app.core.logging import get_logger
 from app.providers.whatsapp.factory import get_whatsapp_provider
 from app.repositories.caregiver_repository import CaregiverRepository
 from app.repositories.whatsapp_message_repository import WhatsAppMessageRepository
+from app.config import settings
+import httpx
 
 logger = get_logger(__name__)
 
@@ -34,7 +36,7 @@ class WhatsAppService:
         caregiver = await self._caregiver_repo.get_by_phone(msg.sender_phone)
         if not caregiver:
             logger.warning("whatsapp_service.caregiver_not_found", phone=msg.sender_phone)
-        
+
         patient_id = caregiver.patient_id if caregiver else None
         sender_type = "caregiver" if caregiver else "unknown"
 
@@ -66,27 +68,24 @@ class WhatsAppService:
             message_type=msg.message_type,
             text=msg.content_text
         )
-        
-        if msg.message_type == "audio":
-            from app.worker.tasks.process_whatsapp_media import (
-                async_process_whatsapp_media,
-                process_whatsapp_media_task,
-            )
 
+        if msg.message_type == "audio":
             db_msg = await self._msg_repo.get_by_twilio_sid(msg.provider_message_id)
             if db_msg:
                 try:
-                    process_whatsapp_media_task.delay(str(db_msg.id))
-                    logger.info("whatsapp_service.media_task_queued", message_id=str(db_msg.id))
-                except Exception as broker_exc:
-                    # Redis unavailable — run in asyncio background task instead
-                    logger.warning(
-                        "whatsapp_service.broker_unavailable_fallback",
-                        error=str(broker_exc),
+                    httpx.post(
+                        f"{settings.internal_base_url}/internal/events/whatsapp-media",
+                        params={"message_id": str(db_msg.id)},
+                        headers={"x-internal-secret": settings.internal_secret},
+                        timeout=10,
+                    )
+                    logger.info("whatsapp_service.media_task_triggered", message_id=str(db_msg.id))
+                except Exception as exc:
+                    logger.error(
+                        "whatsapp_service.media_trigger_failed",
+                        error=str(exc),
                         message_id=str(db_msg.id),
                     )
-                    import asyncio
-                    asyncio.ensure_future(async_process_whatsapp_media(str(db_msg.id)))
 
         if msg.message_type != "text" or not msg.content_text:
             # Non-text (audio/image) — acknowledge
