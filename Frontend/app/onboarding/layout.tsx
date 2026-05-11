@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useSearchParams } from "next/navigation";
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { Check } from "lucide-react";
 
@@ -14,6 +14,14 @@ const STEPS = [
 ];
 
 export default function OnboardingLayout({ children }: { children: ReactNode }) {
+  return (
+    <Suspense fallback={<div className="h-screen bg-slate-50 flex items-center justify-center text-[#0D3B6E] font-bold">Loading...</div>}>
+      <OnboardingLayoutContent>{children}</OnboardingLayoutContent>
+    </Suspense>
+  );
+}
+
+function OnboardingLayoutContent({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const isEdit = searchParams.get("mode") === "edit";
