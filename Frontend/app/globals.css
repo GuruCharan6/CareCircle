@@ -1,0 +1,78 @@
+@import "tailwindcss";
+
+/* ── Design Tokens ─────────────────────────────────────── */
+:root {
+  /* Brand */
+  --color-primary:    #0D3B6E;  /* Navy — headers, nav, primary text */
+  --color-action:     #1D9E75;  /* Teal — buttons, links, interactive */
+  --color-surface:    #E8F4F0;  /* Light teal — cards, panels */
+  --color-bg:         #F5F3EE;  /* Warm white — page background */
+
+  /* Status */
+  --color-alert:      #E24B4A;  /* Red — ALERT state */
+  --color-watch:      #EF9F27;  /* Amber — WATCH state */
+  --color-ok:         #639922;  /* Green — OK state */
+
+  /* Neutral */
+  --color-white:      #FFFFFF;
+  --color-border:     #D9D5CD;
+  --color-muted:      #6B7280;
+  --color-text:       #1A1A2E;
+
+  /* Fonts */
+  --font-sans: var(--font-dm-sans), 'DM Sans', system-ui, sans-serif;
+  --font-mono: var(--font-dm-mono), 'DM Mono', ui-monospace, monospace;
+}
+
+/* ── Tailwind theme extension ──────────────────────────── */
+@theme inline {
+  --color-background:  var(--color-bg);
+  --color-foreground:  var(--color-text);
+  --font-sans:         var(--font-sans);
+  --font-mono:         var(--font-mono);
+
+  /* Expose brand colors to Tailwind utilities */
+  --color-primary:     #0D3B6E;
+  --color-action:      #1D9E75;
+  --color-surface:     #E8F4F0;
+  --color-bg:          #F5F3EE;
+  --color-alert:       #E24B4A;
+  --color-watch:       #EF9F27;
+  --color-ok:          #639922;
+  --color-muted:       #6B7280;
+  --color-border:      #D9D5CD;
+}
+
+/* ── Base styles ───────────────────────────────────────── */
+html {
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--color-bg);
+  color: var(--color-text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code, kbd, pre, samp {
+  font-family: var(--font-mono);
+}
+
+/* ── Scrollbar ─────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #0D3B6E;
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #092C52;
+}

@@ -1,0 +1,11 @@
+venv/
+.env
+.pytest_cache/
+__pycache__/
+*.pyc
+celerybeat-schedule.bak
+celerybeat-schedule.dat
+celerybeat-schedule.dir
+error_log.txt
+tests/
+carecircle-bdb2b-firebase-ad*.json
