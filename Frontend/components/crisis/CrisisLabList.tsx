@@ -17,11 +17,10 @@ export function CrisisLabList({ results }: Props) {
         {results.map((res, i) => (
           <div
             key={i}
-            className={`flex items-center justify-between gap-2 rounded-lg px-3 py-2 border ${
-              res.is_abnormal 
-                ? "bg-red-50 border-red-100 text-red-900" 
+            className={`flex items-center justify-between gap-2 rounded-lg px-3 py-2 border ${res.is_abnormal
+                ? "bg-red-50 border-red-100 text-red-900"
                 : "bg-white border-[var(--color-border)] text-[var(--color-text)]"
-            }`}
+              }`}
           >
             <div className="min-w-0">
               <p className="text-sm font-medium truncate">

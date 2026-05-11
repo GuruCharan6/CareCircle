@@ -101,7 +101,7 @@ export interface PatientCreate {
   nearest_hospital?: NearestHospital;
 }
 
-export interface PatientUpdate extends Partial<PatientCreate> {}
+export interface PatientUpdate extends Partial<PatientCreate> { }
 
 export interface PatientResponse {
   id: string;
@@ -150,7 +150,7 @@ export interface MedicationCreate {
   notes?: string;
 }
 
-export interface MedicationUpdate extends Partial<MedicationCreate> {}
+export interface MedicationUpdate extends Partial<MedicationCreate> { }
 
 export interface MedicationResponse {
   id: string;
@@ -370,7 +370,7 @@ export interface CalendarEventCreate {
   notes?: string;
 }
 
-export interface CalendarEventUpdate extends Partial<CalendarEventCreate> {}
+export interface CalendarEventUpdate extends Partial<CalendarEventCreate> { }
 
 export interface CalendarEventResponse {
   id: string;
@@ -634,6 +634,7 @@ export type CrisisTrigger = "button_tap" | "keyword_detection";
 export interface CrisisMedicationItem {
   brand: string | null;
   generic: string;
+  dose: string;
   frequency: string;
   timing: string | null;
   is_active: boolean;
@@ -769,7 +770,7 @@ export interface PrescriberCreate {
   email?: string;
 }
 
-export interface PrescriberUpdate extends Partial<PrescriberCreate> {}
+export interface PrescriberUpdate extends Partial<PrescriberCreate> { }
 
 export interface PrescriberResponse {
   id: string;
