@@ -29,13 +29,13 @@ export function ObservationCard({ observation: obs, isFirst = false }: Observati
 
   const title = getTitle(obs);
 
-  const meals = obs.meals_eaten as Record<string, boolean | null> | null;
+  const meals = obs.meals_eaten as unknown as Record<string, boolean | null> | null;
   const mealText = obs.meal_notes ||
     (meals
       ? Object.entries(meals)
-          .filter(([, v]) => v != null)
-          .map(([k, v]) => `${k.charAt(0).toUpperCase() + k.slice(1)}: ${v ? "✓" : "✗"}`)
-          .join(" · ")
+        .filter(([, v]) => v != null)
+        .map(([k, v]) => `${k.charAt(0).toUpperCase() + k.slice(1)}: ${v ? "✓" : "✗"}`)
+        .join(" · ")
       : null);
 
   const medText = obs.medications_taken != null
