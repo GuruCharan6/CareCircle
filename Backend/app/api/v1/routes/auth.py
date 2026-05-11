@@ -35,6 +35,7 @@ def _build_user_response(supabase_user) -> UserResponse:
         auth_provider=supabase_user.app_metadata.get("provider", "phone"),
         name=supabase_user.user_metadata.get("name", ""),
         role=supabase_user.user_metadata.get("role", "family_caregiver"),
+        preferences={},
     )
 
 
@@ -103,6 +104,7 @@ async def get_me(current_user: User = Depends(get_current_user)) -> UserResponse
         auth_provider=current_user.auth_provider,
         name=current_user.name,
         role=current_user.role,
+        preferences=current_user.preferences or {},
     )
 
 

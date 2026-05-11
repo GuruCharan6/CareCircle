@@ -33,6 +33,7 @@ class UserResponse(BaseModel):
     auth_provider: str
     name: str
     role: str
+    preferences: dict[str, Any] = {}
 
 
 class AuthResponse(BaseModel):
