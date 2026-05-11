@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     # External providers
     gemini_api_key: str = ""
     gemini_model: str = "gemini-2.0-flash"
-    firebase_credentials_path: str = "firebase-credentials.json"
+    firebase_credentials_path: str = ""
     twilio_account_sid: str = ""
     twilio_auth_token: str = ""
     twilio_whatsapp_from: str = "whatsapp:+14155238886"
