@@ -28,31 +28,37 @@ def _parse_tz(tz_name: str | None) -> ZoneInfo:
         return ZoneInfo(_DEFAULT_TZ)
 
 
-def _build_eta(hhmm: str, tz: ZoneInfo) -> datetime | None:
-    """Return UTC datetime for hhmm today in tz. None if time already passed."""
+def _should_send_now(hhmm: str, tz: ZoneInfo) -> bool:
+    """Return True if the current local hour matches the scheduled hour."""
     try:
         h, m = map(int, hhmm.split(":"))
     except (ValueError, AttributeError):
-        return None
+        return False
     now_utc = datetime.now(timezone.utc)
     local_now = now_utc.astimezone(tz)
-    send_local = local_now.replace(hour=h, minute=m, second=0, microsecond=0)
-    send_utc = send_local.astimezone(timezone.utc)
-    return send_utc if send_utc > now_utc else None
+    # We send if the current hour matches the scheduled hour.
+    # This assumes the cron job runs hourly.
+    return local_now.hour == h
 
 
 # ── Morning dispatcher ────────────────────────────────────────────────────────
 
 @celery_app.task(name="dispatch_morning_digests")
 def dispatch_morning_digests() -> None:
-    asyncio.run(_dispatch("morning"))
+    pass
+
+async def async_dispatch_morning_digests() -> None:
+    await _dispatch("morning")
 
 
 # ── Evening dispatcher ────────────────────────────────────────────────────────
 
 @celery_app.task(name="dispatch_evening_digests")
 def dispatch_evening_digests() -> None:
-    asyncio.run(_dispatch("evening"))
+    pass
+
+async def async_dispatch_evening_digests() -> None:
+    await _dispatch("evening")
 
 
 # ── Shared dispatcher logic ───────────────────────────────────────────────────
@@ -82,19 +88,12 @@ async def _dispatch(period: str) -> None:
                     continue
 
                 tz = _parse_tz(row["timezone"])
-                eta = _build_eta(row["send_time"], tz)
+                should_send = _should_send_now(row["send_time"], tz)
 
-                if eta is None:
-                    logger.warning(
-                        f"dispatch_{period}_digests.time_passed",
-                        patient_id=str(row["patient_id"]),
-                        send_time=row["send_time"],
-                    )
+                if not should_send:
                     skipped += 1
                     continue
 
-                # Note: ETA is ignored in this new uvicorn-background-task model.
-                # The digest will fire immediately when the dispatcher runs.
                 url = f"{settings.internal_base_url}/internal/jobs/{period}-digest"
                 headers = {"x-internal-secret": settings.internal_secret}
                 try:
