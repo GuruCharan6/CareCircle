@@ -77,39 +77,41 @@ async def on_whatsapp_media(message_id: str, background_tasks: BackgroundTasks):
 
 # ── Cron Jobs (Triggered by Render) ───────────────────────────────────────────
 
-@router.post("/cron/hourly-master", dependencies=[Depends(verify_internal_secret)])
-async def cron_hourly_master(background_tasks: BackgroundTasks):
+@router.post("/cron/every-minute", dependencies=[Depends(verify_internal_secret)])
+async def cron_every_minute(background_tasks: BackgroundTasks):
     """
-    A single master endpoint meant to be called exactly once per hour.
-    It automatically routes to the correct background tasks based on the current IST time.
+    A single master endpoint meant to be called every 1 minute.
+    It checks digests every minute, but restricts hourly tasks to the top of the hour.
     """
     local_now = datetime.now(ZoneInfo("Asia/Kolkata"))
     hour = local_now.hour
+    minute = local_now.minute
 
-    # Always check digests every hour (the dispatcher handles timezone matching internally)
+    # 1. Digests: Check every single minute (dispatcher checks exact hour/minute match)
     background_tasks.add_task(async_dispatch_morning_digests)
     background_tasks.add_task(async_dispatch_evening_digests)
 
-    # Specific scheduled tasks based on the original Celery Beat schedule
-    if hour == 2:
-        background_tasks.add_task(_async_nightly_crisis_rebuild)
-    elif hour == 6:
-        background_tasks.add_task(_async_daily_gap_detection)
-    elif hour == 8:
-        background_tasks.add_task(_async_calendar_reminders)
-        background_tasks.add_task(_async_caregiver_visit_messages)
-    elif hour == 10:
-        background_tasks.add_task(_async_refill_escalation)
-        if local_now.day == 1:
-            background_tasks.add_task(_async_caregiver_monthly_check)
-    elif hour == 12:
-        background_tasks.add_task(_async_deviation_check)
-    elif hour == 19:
-        background_tasks.add_task(_async_caregiver_silence_detector)
-    elif hour == 20:
-        background_tasks.add_task(_async_staleness_check)
+    # 2. Hourly Tasks: ONLY run when minute == 0 (top of the hour)
+    if minute == 0:
+        if hour == 2:
+            background_tasks.add_task(_async_nightly_crisis_rebuild)
+        elif hour == 6:
+            background_tasks.add_task(_async_daily_gap_detection)
+        elif hour == 8:
+            background_tasks.add_task(_async_calendar_reminders)
+            background_tasks.add_task(_async_caregiver_visit_messages)
+        elif hour == 10:
+            background_tasks.add_task(_async_refill_escalation)
+            if local_now.day == 1:
+                background_tasks.add_task(_async_caregiver_monthly_check)
+        elif hour == 12:
+            background_tasks.add_task(_async_deviation_check)
+        elif hour == 19:
+            background_tasks.add_task(_async_caregiver_silence_detector)
+        elif hour == 20:
+            background_tasks.add_task(_async_staleness_check)
 
-    return {"status": "queued", "executed_for_hour": hour}
+    return {"status": "queued", "executed_for_hour": hour, "minute": minute}
 
 @router.post("/cron/dispatch-morning-digests", dependencies=[Depends(verify_internal_secret)])
 async def cron_dispatch_morning_digests(background_tasks: BackgroundTasks):
