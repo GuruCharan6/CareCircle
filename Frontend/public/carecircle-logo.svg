@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <title>CareCircle Logo</title>
+
+  <!-- Outer dashed ring -->
+  <circle cx="100" cy="100" r="90" fill="none" stroke="#4CAF9A" stroke-width="3" stroke-dasharray="14 8" stroke-linecap="round" opacity="0.4"/>
+
+  <!-- Main solid ring -->
+  <circle cx="100" cy="100" r="72" fill="none" stroke="#4CAF9A" stroke-width="9"/>
+
+  <!-- Heart centered exactly at circle center (100,100) -->
+  <!-- Heart top bumps at y=72, bottom tip at y=128 → vertical center = 100 ✓ -->
+  <!-- Heart left at x=62, right at x=138 → horizontal center = 100 ✓ -->
+  <path d="
+    M100 128
+    C 85 118, 62 104, 62 86
+    C 62 74, 71 66, 81 66
+    C 89 66, 96 71, 100 77
+    C 104 71, 111 66, 119 66
+    C 129 66, 138 74, 138 86
+    C 138 104, 115 118, 100 128Z"
+    fill="#4CAF9A"/>
+
+  <!-- Heartbeat pulse centered vertically in heart -->
+  <polyline
+    points="74,92 82,92 88,78 95,108 100,84 106,92 118,92"
+    fill="none" stroke="white" stroke-width="2.8"
+    stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

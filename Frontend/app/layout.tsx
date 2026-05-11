@@ -21,6 +21,9 @@ const dmMono = DM_Mono({
 export const metadata: Metadata = {
   title: "CareCircle",
   description: "Smart health management for you and your loved ones",
+  icons: {
+    icon: "/carecircle-logo.svg",
+  },
 };
 
 export default function RootLayout({

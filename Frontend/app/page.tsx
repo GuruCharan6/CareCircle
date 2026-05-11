@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useState, useEffect, ReactNode } from "react";
 import {
   Pill,
@@ -136,19 +137,7 @@ function Navbar() {
       >
         {/* Logo */}
         <Link href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 10 }}>
-          <div
-            style={{
-              width: 34,
-              height: 34,
-              borderRadius: 10,
-              background: T.teal,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <Activity size={18} color="#fff" />
-          </div>
+          <Image src="/carecircle-logo.svg" alt="CareCircle Logo" width={34} height={34} />
           <span
             style={{
               fontFamily: "'DM Sans', sans-serif",

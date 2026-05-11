@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
 import { Search, LogOut, Upload, ShieldAlert } from "lucide-react";
 import { NotificationBell } from "./NotificationBell";
@@ -57,7 +58,10 @@ function Topbar({ patientName, unreadCount = 0, onNotificationClick, onCrisisCli
       )}
     >
       {/* Left: Page title */}
-      <h1 className="text-lg font-black text-[var(--color-primary)] tracking-tight">CareCircle</h1>
+      <div className="flex items-center gap-2">
+        <Image src="/carecircle-logo.svg" alt="Logo" width={28} height={28} className="w-7 h-7" />
+        <h1 className="text-lg font-black text-[var(--color-primary)] tracking-tight">CareCircle</h1>
+      </div>
 
       {/* Right: Actions */}
       <div className="flex items-center gap-2">

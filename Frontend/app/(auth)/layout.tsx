@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import Image from "next/image";
 
 const STATUS_PREVIEW = [
   { name: "Meera Sharma", status: "OK",    bg: "bg-[#639922]" },
@@ -38,10 +39,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
         <div className="relative z-10 flex flex-col gap-10">
           {/* Logo */}
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center"
-              style={{ background: "#1D9E75" }}>
-              <PulseIcon />
-            </div>
+            <Image src="/carecircle-logo.svg" alt="Logo" width={36} height={36} className="w-9 h-9" />
             <span className="text-white text-xl font-bold tracking-tight">CareCircle</span>
           </div>
 
@@ -88,10 +86,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
         {/* Mobile logo */}
         <div className="lg:hidden text-center mb-8">
           <div className="inline-flex items-center gap-2.5 mb-1">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center"
-              style={{ background: "#0D3B6E" }}>
-              <PulseIcon />
-            </div>
+            <Image src="/carecircle-logo.svg" alt="Logo" width={32} height={32} className="w-8 h-8" />
             <span className="text-[#0D3B6E] text-lg font-bold tracking-tight">CareCircle</span>
           </div>
           <p className="text-[#6B7280] text-sm">Smart health management</p>
