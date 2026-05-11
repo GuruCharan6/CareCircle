@@ -634,8 +634,8 @@ export type CrisisTrigger = "button_tap" | "keyword_detection";
 export interface CrisisMedicationItem {
   brand: string | null;
   generic: string;
-  dose: string;
-  frequency: string;
+  dose: string | null;
+  frequency: string | null;
   timing: string | null;
   is_active: boolean;
 }
