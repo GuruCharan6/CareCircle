@@ -8,4 +8,5 @@ celerybeat-schedule.dat
 celerybeat-schedule.dir
 error_log.txt
 tests/
+scratch/
 carecircle-bdb2b-firebase-ad*.json

@@ -109,12 +109,13 @@ class WhatsAppService:
             db_msg = await self._msg_repo.get_by_twilio_sid(msg.provider_message_id)
             if db_msg:
                 try:
-                    httpx.post(
-                        f"{settings.internal_base_url}/internal/events/whatsapp-media",
-                        params={"message_id": str(db_msg.id)},
-                        headers={"x-internal-secret": settings.internal_secret},
-                        timeout=10,
-                    )
+                    async with httpx.AsyncClient() as client:
+                        await client.post(
+                            f"{settings.internal_base_url}/internal/events/whatsapp-media",
+                            params={"message_id": str(db_msg.id)},
+                            headers={"x-internal-secret": settings.internal_secret},
+                            timeout=5.0,
+                        )
                     logger.info("whatsapp_service.media_task_triggered", message_id=str(db_msg.id))
                 except Exception as exc:
                     logger.error(
