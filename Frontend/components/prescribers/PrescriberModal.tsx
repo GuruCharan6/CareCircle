@@ -113,14 +113,21 @@ export function PrescriberModal({ open, onClose, onSubmit, initialData }: Prescr
 
             <div className="space-y-1.5">
               <label className="text-[10px] font-bold text-[var(--color-muted)] uppercase tracking-widest ml-1">Phone Number</label>
-              <div className="relative">
-                <Phone size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-muted)] opacity-50" />
+              <div className="flex h-12 rounded-xl border border-[var(--color-border)] overflow-hidden bg-white focus-within:ring-2 focus-within:ring-[var(--color-action)]">
+                <div className="flex items-center px-3 bg-[var(--color-surface)] border-r border-[var(--color-border)] shrink-0">
+                  <span className="text-sm font-bold text-[var(--color-text)]">+91</span>
+                </div>
                 <input
                   type="tel"
-                  placeholder="+91 XXXXX XXXXX"
-                  value={formData.phone}
-                  onChange={e => setFormData({ ...formData, phone: e.target.value })}
-                  className="w-full h-12 pl-12 pr-4 bg-white border border-[var(--color-border)] rounded-xl text-[15px] font-bold text-[var(--color-text)] focus:ring-2 focus:ring-[var(--color-action)] transition-all placeholder:text-[var(--color-muted)]/40"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  placeholder="98765 43210"
+                  value={formData.phone.startsWith("+91") ? formData.phone.slice(3) : formData.phone}
+                  onChange={e => {
+                    const digits = e.target.value.replace(/\D/g, "").slice(0, 10);
+                    setFormData({ ...formData, phone: digits ? `+91${digits}` : "" });
+                  }}
+                  className="flex-1 px-3 text-[15px] font-bold text-[var(--color-text)] focus:outline-none font-mono bg-transparent placeholder:text-[var(--color-muted)]/40"
                 />
               </div>
             </div>

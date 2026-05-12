@@ -1,20 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
+import { PhoneInput } from "@/components/ui/PhoneInput";
 import { GoogleButton } from "@/components/auth/GoogleButton";
 import { useAuth } from "@/hooks/useAuth";
-
-function PhoneIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-      stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1.27h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.91a16 16 0 0 0 6 6l.91-.91a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z" />
-    </svg>
-  );
-}
 
 function AlertIcon() {
   return (
@@ -42,9 +34,8 @@ export default function SignupPage() {
   const [phoneError, setPhoneError] = useState("");
 
   function validatePhone(value: string) {
-    const clean = value.trim();
-    if (!clean) return "Phone number required";
-    if (!/^\+[1-9]\d{7,14}$/.test(clean)) return "Use international format: +91XXXXXXXXXX";
+    if (!value) return "Phone number required";
+    if (!/^\+91\d{10}$/.test(value)) return "Enter a valid 10-digit Indian mobile number";
     return "";
   }
 
@@ -52,17 +43,18 @@ export default function SignupPage() {
     const err = validatePhone(phone);
     if (err) { setPhoneError(err); return; }
     setPhoneError("");
-    const ok = await sendOtp(phone.trim());
+    const ok = await sendOtp(phone);
     if (ok) {
-      sessionStorage.setItem("cc_otp_phone", phone.trim());
+      sessionStorage.setItem("cc_otp_phone", phone);
       sessionStorage.setItem("cc_auth_type", "signup");
       router.push("/otp");
     }
   }
 
-  async function handleGoogle(idToken: string) {
+  // useCallback prevents GoogleButton from re-rendering on every keystroke (fixes flickering)
+  const handleGoogle = useCallback(async (idToken: string) => {
     await googleSignInWithRedirect(idToken);
-  }
+  }, [googleSignInWithRedirect]);
 
   const fieldError = phoneError || error;
 
@@ -86,29 +78,13 @@ export default function SignupPage() {
         <label htmlFor="phone" className="text-sm font-semibold text-[var(--color-text)]">
           Mobile number
         </label>
-        <div
-          className={[
-            "flex h-11 rounded-xl border-2 overflow-hidden bg-white transition-colors duration-150",
-            fieldError
-              ? "border-[var(--color-alert)]"
-              : "border-[var(--color-border)] focus-within:border-[var(--color-action)]",
-          ].join(" ")}
-        >
-          <div className="flex items-center gap-2 px-3 bg-[var(--color-surface)] border-r border-[var(--color-border)] shrink-0">
-            <span className="text-[var(--color-muted)]"><PhoneIcon /></span>
-          </div>
-          <input
-            id="phone"
-            type="tel"
-            inputMode="tel"
-            placeholder="+91 98765 43210"
-            value={phone}
-            onChange={e => { setPhone(e.target.value); setPhoneError(""); }}
-            onKeyDown={e => e.key === "Enter" && handleSendOtp()}
-            autoComplete="tel"
-            className="flex-1 px-3 text-sm text-[var(--color-text)] placeholder:text-[var(--color-muted)]/60 focus:outline-none font-mono bg-transparent"
-          />
-        </div>
+        <PhoneInput
+          id="phone"
+          value={phone}
+          onChange={(v) => { setPhone(v); setPhoneError(""); }}
+          onKeyDown={(e) => e.key === "Enter" && handleSendOtp()}
+          className={fieldError ? "border-[var(--color-alert)]!" : ""}
+        />
         {fieldError ? (
           <p className="flex items-center gap-1.5 text-xs text-[var(--color-alert)]">
             <AlertIcon />
@@ -116,7 +92,7 @@ export default function SignupPage() {
           </p>
         ) : (
           <p className="text-xs text-[var(--color-muted)]">
-            International format e.g. +91 98765 43210
+            Enter your 10-digit mobile number
           </p>
         )}
       </div>

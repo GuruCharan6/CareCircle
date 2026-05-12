@@ -157,14 +157,17 @@ export function EditProfileModal({ open, onClose, user, onSave, onSavePhone, onA
   }
 
   async function handleSendPhoneOtp() {
-    if (!newPhone.startsWith("+")) {
-      setPhoneError("Use E.164 format e.g. +91XXXXXXXXXX");
+    const fullPhone = newPhone.startsWith("+91") ? newPhone : `+91${newPhone.replace(/\D/g, "")}`;
+    if (!/^\+91\d{10}$/.test(fullPhone)) {
+      setPhoneError("Enter a valid 10-digit mobile number");
       return;
     }
+    const phoneToSend = fullPhone;
     setPhoneBusy(true);
     setPhoneError(null);
     try {
-      await authApi.sendPhoneOtp(newPhone);
+      await authApi.sendPhoneOtp(phoneToSend);
+      setNewPhone(phoneToSend); // store E.164 for OTP step
       setPhoneStep("otp_sent");
     } catch (e: unknown) {
       setPhoneError(e instanceof Error ? e.message : "Failed to send OTP");
@@ -279,14 +282,21 @@ export function EditProfileModal({ open, onClose, user, onSave, onSavePhone, onA
             {/* Step: entering phone number */}
             {phoneStep === "entering" && (
               <div className="space-y-2">
-                <input
-                  type="tel"
-                  value={newPhone}
-                  onChange={e => setNewPhone(e.target.value)}
-                  placeholder="+91XXXXXXXXXX"
-                  className="w-full h-11 px-4 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  autoFocus
-                />
+                <div className="flex h-11 rounded-xl border border-slate-200 overflow-hidden bg-slate-50 focus-within:ring-2 focus-within:ring-blue-500">
+                  <div className="flex items-center px-3 bg-slate-100 border-r border-slate-200 shrink-0">
+                    <span className="text-sm font-semibold text-slate-600">+91</span>
+                  </div>
+                  <input
+                    type="tel"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    value={newPhone.startsWith("+91") ? newPhone.slice(3) : newPhone}
+                    onChange={e => setNewPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                    placeholder="98765 43210"
+                    className="flex-1 px-3 text-sm font-semibold text-slate-800 focus:outline-none font-mono bg-transparent"
+                    autoFocus
+                  />
+                </div>
                 <div className="flex gap-2">
                   <Button variant="outline" className="flex-1 h-9 text-sm" onClick={() => { setPhoneStep("idle"); setPhoneError(null); }} disabled={phoneBusy}>
                     Cancel

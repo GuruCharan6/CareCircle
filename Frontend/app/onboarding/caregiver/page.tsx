@@ -128,16 +128,21 @@ function OnboardingCaregiverContent() {
                 className="w-full h-11 pl-10 pr-4 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-[#0D3B6E] focus:ring-1 focus:ring-[#0D3B6E] transition-all"
               />
             </div>
-            <div className="relative">
-              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-                <Phone size={14} />
+            <div className="flex h-11 rounded-xl border border-slate-200 overflow-hidden bg-slate-50 focus-within:border-[#0D3B6E] focus-within:ring-1 focus-within:ring-[#0D3B6E]">
+              <div className="flex items-center px-3 bg-slate-100 border-r border-slate-200 shrink-0">
+                <span className="text-sm font-semibold text-slate-600">+91</span>
               </div>
               <input
                 type="tel"
-                placeholder="WhatsApp Number (e.g. +91...)"
-                value={form.phone}
-                onChange={e => setForm(prev => ({ ...prev, phone: e.target.value }))}
-                className="w-full h-11 pl-10 pr-4 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-[#0D3B6E] focus:ring-1 focus:ring-[#0D3B6E] transition-all"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                placeholder="98765 43210"
+                value={form.phone.startsWith("+91") ? form.phone.slice(3) : form.phone}
+                onChange={e => {
+                  const digits = e.target.value.replace(/\D/g, "").slice(0, 10);
+                  setForm(prev => ({ ...prev, phone: digits ? `+91${digits}` : "" }));
+                }}
+                className="flex-1 px-3 text-sm font-mono focus:outline-none bg-transparent"
               />
             </div>
             <div className="grid grid-cols-3 gap-2">

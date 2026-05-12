@@ -20,7 +20,7 @@ interface EmergencyDetailsModalProps {
 // ── Field row ─────────────────────────────────────────────────────────────────
 
 function Field({
-  label, value, onChange, placeholder, icon, type = "text",
+  label, value, onChange, placeholder, icon, type = "text", phonePrefix,
 }: {
   label: string;
   value: string;
@@ -28,7 +28,32 @@ function Field({
   placeholder?: string;
   icon?: React.ReactNode;
   type?: string;
+  phonePrefix?: boolean;
 }) {
+  if (phonePrefix) {
+    return (
+      <div className="space-y-1">
+        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{label}</label>
+        <div className="flex h-10 rounded-xl border border-slate-200 overflow-hidden bg-slate-50 focus-within:ring-2 focus-within:ring-red-400">
+          <div className="flex items-center px-3 bg-slate-100 border-r border-slate-200 shrink-0">
+            <span className="text-sm font-semibold text-slate-600">+91</span>
+          </div>
+          <input
+            type="tel"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            value={value.startsWith("+91") ? value.slice(3) : value}
+            onChange={e => {
+              const digits = e.target.value.replace(/\D/g, "").slice(0, 10);
+              onChange(digits ? `+91${digits}` : "");
+            }}
+            placeholder={placeholder ?? "98765 43210"}
+            className="flex-1 px-3 text-sm font-medium text-slate-800 focus:outline-none font-mono bg-transparent"
+          />
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="space-y-1">
       <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{label}</label>
@@ -87,9 +112,10 @@ function ContactBlock({
         label="Phone"
         value={contact.phone ?? ""}
         onChange={v => onChange({ ...contact, phone: v })}
-        placeholder="+91 XXXXX XXXXX"
+        placeholder="98765 43210"
         icon={<Phone size={13} />}
         type="tel"
+        phonePrefix
       />
       <Field
         label="Relationship"
@@ -213,9 +239,10 @@ export function EmergencyDetailsModal({
               label="Emergency Number"
               value={hospital.phone ?? ""}
               onChange={v => setHospital(prev => ({ ...prev, phone: v }))}
-              placeholder="+91 XXXXX XXXXX"
+              placeholder="98765 43210"
               icon={<Phone size={13} />}
               type="tel"
+              phonePrefix
             />
           </div>
         </div>

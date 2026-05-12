@@ -80,6 +80,9 @@ export default function OnboardingPatientPage() {
     setSaving(true);
     setError("");
     try {
+      const normalizePhone = (p: string) =>
+        p ? (p.startsWith("+") ? p : `+91${p.replace(/\D/g, "")}`) : p;
+
       const payload = {
         name: form.name,
         date_of_birth: form.date_of_birth,
@@ -95,19 +98,19 @@ export default function OnboardingPatientPage() {
         emergency_notes: form.emergency_notes || undefined,
         emergency_contact_primary:
           form.ec1_name && form.ec1_phone
-            ? { name: form.ec1_name, phone: form.ec1_phone, relationship: form.ec1_relationship || "Family" }
+            ? { name: form.ec1_name, phone: normalizePhone(form.ec1_phone), relationship: form.ec1_relationship || "Family" }
             : undefined,
         emergency_contact_secondary:
           showSecondary && form.ec2_name && form.ec2_phone
-            ? { name: form.ec2_name, phone: form.ec2_phone, relationship: form.ec2_relationship || "Family" }
+            ? { name: form.ec2_name, phone: normalizePhone(form.ec2_phone), relationship: form.ec2_relationship || "Family" }
             : undefined,
         primary_physician:
           form.doc_name && form.doc_phone
-            ? { name: form.doc_name, phone: form.doc_phone }
+            ? { name: form.doc_name, phone: normalizePhone(form.doc_phone) }
             : undefined,
         nearest_hospital:
           form.hospital_name && form.hospital_phone
-            ? { name: form.hospital_name, phone: form.hospital_phone }
+            ? { name: form.hospital_name, phone: normalizePhone(form.hospital_phone) }
             : undefined,
       };
 
@@ -224,13 +227,23 @@ export default function OnboardingPatientPage() {
           </Field>
         </div>
         <Field label="Phone number">
-          <input
-            type="tel"
-            placeholder="+91 98765 43210"
-            value={form.ec1_phone}
-            onChange={e => update("ec1_phone", e.target.value)}
-            className={inputCls}
-          />
+          <div className="flex h-10 rounded-lg border border-[var(--color-border)] overflow-hidden bg-white focus-within:border-[var(--color-action)] focus-within:ring-1 focus-within:ring-[var(--color-action)]">
+            <div className="flex items-center px-3 bg-[var(--color-surface)] border-r border-[var(--color-border)] shrink-0">
+              <span className="text-sm font-semibold text-[var(--color-text)]">+91</span>
+            </div>
+            <input
+              type="tel"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              placeholder="98765 43210"
+              value={form.ec1_phone.startsWith("+91") ? form.ec1_phone.slice(3) : form.ec1_phone}
+              onChange={e => {
+                const digits = e.target.value.replace(/\D/g, "").slice(0, 10);
+                update("ec1_phone", digits ? `+91${digits}` : "");
+              }}
+              className="flex-1 px-3 text-sm font-mono focus:outline-none bg-transparent"
+            />
+          </div>
         </Field>
       </Section>
 
@@ -266,13 +279,23 @@ export default function OnboardingPatientPage() {
             </Field>
           </div>
           <Field label="Phone number">
-            <input
-              type="tel"
-              placeholder="+91 98765 43210"
-              value={form.ec2_phone}
-              onChange={e => update("ec2_phone", e.target.value)}
-              className={inputCls}
-            />
+            <div className="flex h-10 rounded-lg border border-[var(--color-border)] overflow-hidden bg-white focus-within:border-[var(--color-action)] focus-within:ring-1 focus-within:ring-[var(--color-action)]">
+              <div className="flex items-center px-3 bg-[var(--color-surface)] border-r border-[var(--color-border)] shrink-0">
+                <span className="text-sm font-semibold text-[var(--color-text)]">+91</span>
+              </div>
+              <input
+                type="tel"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                placeholder="98765 43210"
+                value={form.ec2_phone.startsWith("+91") ? form.ec2_phone.slice(3) : form.ec2_phone}
+                onChange={e => {
+                  const digits = e.target.value.replace(/\D/g, "").slice(0, 10);
+                  update("ec2_phone", digits ? `+91${digits}` : "");
+                }}
+                className="flex-1 px-3 text-sm font-mono focus:outline-none bg-transparent"
+              />
+            </div>
           </Field>
           <button
             type="button"
@@ -297,13 +320,23 @@ export default function OnboardingPatientPage() {
             />
           </Field>
           <Field label="Phone number">
-            <input
-              type="tel"
-              placeholder="+91 98765 43210"
-              value={form.doc_phone}
-              onChange={e => update("doc_phone", e.target.value)}
-              className={inputCls}
-            />
+            <div className="flex h-10 rounded-lg border border-[var(--color-border)] overflow-hidden bg-white focus-within:border-[var(--color-action)] focus-within:ring-1 focus-within:ring-[var(--color-action)]">
+              <div className="flex items-center px-3 bg-[var(--color-surface)] border-r border-[var(--color-border)] shrink-0">
+                <span className="text-sm font-semibold text-[var(--color-text)]">+91</span>
+              </div>
+              <input
+                type="tel"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                placeholder="98765 43210"
+                value={form.doc_phone.startsWith("+91") ? form.doc_phone.slice(3) : form.doc_phone}
+                onChange={e => {
+                  const digits = e.target.value.replace(/\D/g, "").slice(0, 10);
+                  update("doc_phone", digits ? `+91${digits}` : "");
+                }}
+                className="flex-1 px-3 text-sm font-mono focus:outline-none bg-transparent"
+              />
+            </div>
           </Field>
         </div>
       </Section>

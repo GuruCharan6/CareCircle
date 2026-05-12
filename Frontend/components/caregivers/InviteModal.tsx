@@ -60,7 +60,8 @@ export function InviteModal({ open, onClose, onSubmit, initialData }: InviteModa
       // Clean data for backend
       const payload: CaregiverCreate = {
         ...formData,
-        phone_number: formData.phone_number.replace(/\s+/g, ""),
+        phone_number: formData.phone_number.startsWith("+") ? formData.phone_number.replace(/\s+/g, "") : `+91${formData.phone_number.replace(/\D/g, "")}`,
+        // phone_number already in E.164 format from the input
         visit_start_time: formData.visit_start_time || undefined,
         visit_end_time: formData.visit_end_time || undefined,
         notes: formData.notes || undefined,
@@ -127,15 +128,22 @@ export function InviteModal({ open, onClose, onSubmit, initialData }: InviteModa
               </div>
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-[var(--color-muted)] uppercase tracking-widest ml-1">WhatsApp Number</label>
-                <div className="relative">
-                  <Phone size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-muted)] opacity-50" />
+                <div className="flex h-12 rounded-xl border border-[var(--color-border)] overflow-hidden bg-white focus-within:ring-2 focus-within:ring-[var(--color-action)]">
+                  <div className="flex items-center px-3 bg-[var(--color-surface)] border-r border-[var(--color-border)] shrink-0">
+                    <span className="text-sm font-bold text-[var(--color-text)]">+91</span>
+                  </div>
                   <input
                     required
                     type="tel"
-                    placeholder="+91 XXXXX XXXXX"
-                    value={formData.phone_number}
-                    onChange={e => setFormData({ ...formData, phone_number: e.target.value })}
-                    className="w-full h-12 pl-12 pr-4 bg-white border border-[var(--color-border)] rounded-xl text-[15px] font-bold text-[var(--color-text)] focus:ring-2 focus:ring-[var(--color-action)] transition-all placeholder:text-[var(--color-muted)]/40"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    placeholder="98765 43210"
+                    value={formData.phone_number.startsWith("+91") ? formData.phone_number.slice(3) : formData.phone_number}
+                    onChange={e => {
+                      const digits = e.target.value.replace(/\D/g, "").slice(0, 10);
+                      setFormData({ ...formData, phone_number: digits ? `+91${digits}` : "" });
+                    }}
+                    className="flex-1 px-3 text-[15px] font-bold text-[var(--color-text)] focus:outline-none font-mono bg-transparent placeholder:text-[var(--color-muted)]/40"
                   />
                 </div>
               </div>
