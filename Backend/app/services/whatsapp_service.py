@@ -34,11 +34,17 @@ class WhatsAppService:
             return
 
         caregiver = await self._caregiver_repo.get_by_phone(msg.sender_phone)
+        user = None
         if not caregiver:
-            logger.warning("whatsapp_service.caregiver_not_found", phone=msg.sender_phone)
+            from app.repositories.user_repository import UserRepository
+            user_repo = UserRepository(self._msg_repo.conn)
+            user = await user_repo.get_by_phone(msg.sender_phone)
+
+        if not caregiver and not user:
+            logger.warning("whatsapp_service.sender_not_found", phone=msg.sender_phone)
 
         patient_id = caregiver.patient_id if caregiver else None
-        sender_type = "caregiver" if caregiver else "unknown"
+        sender_type = "caregiver" if caregiver else ("user" if user else "unknown")
 
         await self._msg_repo.create(
             direction="inbound",
@@ -54,12 +60,42 @@ class WhatsAppService:
 
         if caregiver:
             await self._handle_caregiver_message(caregiver, msg)
+        elif user:
+            await self._handle_user_message(user, msg)
         else:
             try:
                 logger.info("whatsapp_service.sending_default_reply", to=msg.sender_phone)
                 await self._provider.send_text(msg.sender_phone, _DEFAULT_REPLY)
             except Exception as exc:
                 logger.error("whatsapp_service.default_reply_failed", error=str(exc))
+
+    async def _handle_user_message(self, user, msg) -> None:
+        """Handle messages from the primary family user (Meera)."""
+        logger.info("whatsapp_service.user_message", user_id=str(user.id))
+
+        # Mark as connected if not already
+        prefs = user.preferences or {}
+        if not prefs.get("whatsapp_connected"):
+            from app.repositories.user_repository import UserRepository
+            user_repo = UserRepository(self._msg_repo.conn)
+            prefs["whatsapp_connected"] = True
+            prefs["whatsapp_number"] = msg.sender_phone
+            # Automatically enable digest if they are joining now
+            prefs["whatsapp_digest"] = True 
+            await user_repo.update_preferences(user.id, prefs)
+            
+            welcome = (
+                f"Welcome to CareCircle WhatsApp, {user.name}! 🌟\n\n"
+                "I've connected your account. You will now receive your daily health digests here."
+            )
+            await self._provider.send_text(msg.sender_phone, welcome)
+        else:
+            # If already connected, maybe they are asking the chatbot?
+            # For now, just acknowledge.
+            await self._provider.send_text(
+                msg.sender_phone, 
+                "I've received your message! If you have questions about your patient's health, please use the CareCircle app."
+            )
 
     async def _handle_caregiver_message(self, caregiver, msg) -> None:
         logger.info(

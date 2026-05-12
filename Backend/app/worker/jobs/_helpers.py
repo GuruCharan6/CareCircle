@@ -95,7 +95,7 @@ async def try_whatsapp(
         import json
         prefs = json.loads(prefs)
 
-    if not prefs.get("notifications_whatsapp_enabled", True):
+    if not prefs.get("whatsapp_connected") or not prefs.get("whatsapp_digest", True):
         return
 
     from app.providers.whatsapp.factory import get_whatsapp_provider
@@ -132,7 +132,7 @@ async def try_whatsapp_digest_cta(
         import json
         prefs = json.loads(prefs)
 
-    if not prefs.get("notifications_whatsapp_enabled", True):
+    if not prefs.get("whatsapp_connected") or not prefs.get("whatsapp_digest", True):
         return
 
     from app.core.redis import make_redis
