@@ -8,7 +8,7 @@ import type { ObservationResponse, ObservationSource } from "@/lib/types";
 const SOURCE_FILTERS: { label: string; value: ObservationSource | "all" }[] = [
   { label: "All",             value: "all" },
   { label: "Voice Notes",     value: "voice_log" },
-  { label: "Caregiver Notes", value: "caregiver_note" },
+  { label: "Caregiver Notes", value: "caregiver_voice" },
 ];
 
 interface ObservationListProps {

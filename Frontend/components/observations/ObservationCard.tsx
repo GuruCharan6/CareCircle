@@ -11,7 +11,7 @@ interface ObservationCardProps {
 function getTitle(obs: ObservationResponse): string {
   const hour = new Date(obs.created_at).getHours();
   const timeOfDay = hour < 12 ? "Morning" : hour < 17 ? "Afternoon" : "Evening";
-  if (obs.source_type === "caregiver_note") {
+  if (obs.source_type === "caregiver_voice") {
     return `${timeOfDay} Observation — Caregiver ${obs.caregiver_name || ""}`.trim();
   }
   return `${timeOfDay} Check — Voice Note`;
@@ -28,6 +28,8 @@ export function ObservationCard({ observation: obs, isFirst = false }: Observati
   });
 
   const title = getTitle(obs);
+
+  const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, " ");
 
   const meals = obs.meals_eaten as unknown as Record<string, boolean | null> | null;
   const mealText = obs.meal_notes ||
@@ -51,45 +53,45 @@ export function ObservationCard({ observation: obs, isFirst = false }: Observati
 
       {/* Timeline dot */}
       {isFirst ? (
-        <div className="absolute left-0 top-3 w-5 h-5 rounded-full bg-[var(--color-ok)] flex items-center justify-center z-10">
+        <div className="absolute left-0 top-3 w-5 h-5 rounded-full bg-green-500 flex items-center justify-center z-10">
           <div className="w-2 h-2 rounded-full bg-white" />
         </div>
       ) : (
-        <div className="absolute left-0 top-3 w-5 h-5 rounded-full border-2 border-[var(--color-border)] bg-white z-10" />
+        <div className="absolute left-0 top-3 w-5 h-5 rounded-full border-2 border-slate-200 bg-white z-10" />
       )}
 
       {/* Card */}
-      <div className="bg-white rounded-2xl border border-[var(--color-border)] px-5 py-4">
+      <div className="bg-white rounded-2xl border border-slate-100 px-6 py-5 shadow-sm hover:shadow-md transition-shadow">
         {/* Header row */}
-        <div className="flex items-start justify-between gap-4 mb-3">
+        <div className="flex items-start justify-between gap-4 mb-4">
           <div>
-            <h3 className="text-sm font-bold text-[var(--color-primary)]">{title}</h3>
-            <p className="text-xs text-[var(--color-muted)] mt-0.5">
-              {obs.source_type} · {dateStr} · {timeStr}
+            <h3 className="text-sm font-bold text-slate-800 tracking-tight">{title}</h3>
+            <p className="text-[11px] font-medium text-slate-400 mt-0.5">
+              {obs.source_type.replace(/_/g, " ")}  ·  {dateStr}  ·  {timeStr}
             </p>
           </div>
           {isWatch ? (
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-[var(--color-watch)]/10 text-[var(--color-watch)] border border-[var(--color-watch)]/20 whitespace-nowrap shrink-0">
-              <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-watch)] animate-pulse" />
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black bg-orange-50 text-orange-600 border border-orange-100 whitespace-nowrap shrink-0">
+              <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
               WATCH
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-[var(--color-ok)]/10 text-[var(--color-ok)] border border-[var(--color-ok)]/20 whitespace-nowrap shrink-0">
-              <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-ok)]" />
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black bg-green-50 text-green-600 border border-green-100 whitespace-nowrap shrink-0">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
               OK
             </span>
           )}
         </div>
 
         {/* Clinical fields */}
-        <div className="space-y-1.5 text-sm">
+        <div className="space-y-3 text-[13px] leading-relaxed">
           {(obs.symptoms_reported?.length ?? 0) > 0 && (
-            <div className="flex items-start gap-2 flex-wrap">
-              <span className="font-semibold text-[var(--color-text)] shrink-0">Symptoms reported:</span>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-bold text-slate-700 shrink-0">Symptoms reported:</span>
               {obs.symptoms_reported.map(s => (
                 <span
                   key={s}
-                  className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-[var(--color-alert)]/10 text-[var(--color-alert)] border border-[var(--color-alert)]/20"
+                  className="inline-flex px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-50 text-rose-500 border border-rose-100"
                 >
                   {s}
                 </span>
@@ -98,12 +100,12 @@ export function ObservationCard({ observation: obs, isFirst = false }: Observati
           )}
 
           {(obs.symptoms_denied?.length ?? 0) > 0 && (
-            <div className="flex items-start gap-2 flex-wrap">
-              <span className="font-semibold text-[var(--color-text)] shrink-0">Symptoms denied:</span>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-bold text-slate-700 shrink-0">Symptoms denied:</span>
               {obs.symptoms_denied.map(s => (
                 <span
                   key={s}
-                  className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-[var(--color-ok)]/10 text-[var(--color-ok)] border border-[var(--color-ok)]/20"
+                  className="inline-flex px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-green-50 text-green-600 border border-green-100"
                 >
                   {s}
                 </span>
@@ -112,50 +114,54 @@ export function ObservationCard({ observation: obs, isFirst = false }: Observati
           )}
 
           {mealText && (
-            <p className="text-[var(--color-text)]">
-              <span className="font-semibold">Meals:</span> {mealText}
+            <p className="text-slate-600">
+              <span className="font-bold text-slate-700">Meals:</span> {mealText}
             </p>
           )}
 
           {medText && (
-            <p className="flex items-center gap-1.5 text-[var(--color-text)]">
-              <span className="font-semibold">Medications taken:</span>
-              {obs.medications_taken ? (
-                <CheckCircle2 size={14} className="text-[var(--color-ok)] shrink-0" />
-              ) : (
-                <AlertCircle size={14} className="text-[var(--color-alert)] shrink-0" />
-              )}
-              <span className={obs.medications_taken ? "text-[var(--color-ok)]" : "text-[var(--color-alert)]"}>
-                {medText}
-              </span>
-            </p>
+            <div className="flex items-center gap-2 text-slate-600">
+              <span className="font-bold text-slate-700">Medications taken:</span>
+              <div className="flex items-center gap-1.5">
+                {obs.medications_taken ? (
+                  <CheckCircle2 size={14} className="text-green-500 shrink-0" />
+                ) : (
+                  <AlertCircle size={14} className="text-rose-500 shrink-0" />
+                )}
+                <span className={obs.medications_taken ? "text-green-600 font-medium" : "text-rose-500 font-medium"}>
+                  {medText}
+                </span>
+              </div>
+            </div>
           )}
 
           {(obs.mood || obs.energy_level) && (
-            <p className="text-[var(--color-text)]">
+            <p className="text-slate-600">
               {obs.mood && (
-                <><span className="font-semibold">Mood:</span> {obs.mood}</>
+                <><span className="font-bold text-slate-700">Mood:</span> {capitalize(obs.mood)}</>
               )}
               {obs.mood && obs.energy_level && (
-                <span className="text-[var(--color-muted)]"> · </span>
+                <span className="text-slate-300 mx-2">·</span>
               )}
               {obs.energy_level && (
-                <><span className="font-semibold">Energy:</span> {obs.energy_level}</>
+                <><span className="font-bold text-slate-700">Energy:</span> {capitalize(obs.energy_level)}</>
               )}
             </p>
           )}
 
           {obs.mobility_notes && (
-            <p className="text-[var(--color-text)]">
-              <span className="font-semibold">Mobility:</span> {obs.mobility_notes}
+            <p className="text-slate-600">
+              <span className="font-bold text-slate-700">Mobility:</span> {obs.mobility_notes}
             </p>
           )}
 
           {(obs.concerns_flagged?.length ?? 0) > 0 && (
-            <p className="text-[var(--color-text)]">
-              <span className="font-semibold">Concerns flagged:</span>{" "}
-              {obs.concerns_flagged.join(" — ")}
-            </p>
+            <div className="pt-1">
+              <p className="text-slate-600">
+                <span className="font-bold text-slate-700">Concerns flagged:</span>{" "}
+                {obs.concerns_flagged.join(" — ")}
+              </p>
+            </div>
           )}
         </div>
       </div>

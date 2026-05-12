@@ -224,7 +224,7 @@ export interface LabTrendItem {
 
 // ── Observation ───────────────────────────────────────────────────────────────
 
-export type ObservationSource = "manual_entry" | "voice_note" | "caregiver_note" | "voice_log" | "emergency_note";
+export type ObservationSource = "manual_entry" | "voice_note" | "caregiver_note" | "caregiver_voice" | "voice_log" | "emergency_note" | "meera_call_log";
 
 export interface ObservationCreate {
   source_type: ObservationSource;
