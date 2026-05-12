@@ -26,7 +26,7 @@ function AlertIcon() {
 
 export default function LoginPage() {
   const router = useRouter();
-  const { sendOtp, googleSignIn, loading, error } = useAuth();
+  const { sendOtp, googleSignInWithRedirect, loading, error } = useAuth();
   const [phone, setPhone] = useState("");
   const [phoneError, setPhoneError] = useState("");
 
@@ -50,8 +50,7 @@ export default function LoginPage() {
   }
 
   async function handleGoogle(idToken: string) {
-    const auth = await googleSignIn(idToken);
-    if (auth) router.replace("/dashboard");
+    await googleSignInWithRedirect(idToken);
   }
 
   const fieldError = phoneError || error;

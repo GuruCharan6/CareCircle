@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { authApi } from "@/lib/api/auth";
+import { onboardingApi } from "@/lib/api/onboarding";
 import { authStorage } from "@/lib/auth-storage";
 import type { UserResponse } from "@/lib/types";
 
@@ -66,6 +67,38 @@ export function useAuth() {
     }
   }, []);
 
+  /**
+   * Sign in with Google and automatically redirect:
+   * - New users (no completed onboarding) → /onboarding
+   * - Returning users → /dashboard
+   */
+  const googleSignInWithRedirect = useCallback(async (idToken: string) => {
+    setLoading(true);
+    try {
+      const auth = await authApi.googleSignIn({ id_token: idToken });
+      authStorage.save(auth);
+      setState({ user: auth.user, loading: false, error: null });
+
+      // Check if this user has already completed onboarding
+      try {
+        const status = await onboardingApi.getStatus();
+        if (status.complete) {
+          router.replace("/dashboard");
+        } else {
+          router.replace("/onboarding");
+        }
+      } catch {
+        // If the status check itself fails, treat as new user
+        router.replace("/onboarding");
+      }
+
+      return auth;
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Google sign-in failed");
+      return null;
+    }
+  }, [router]);
+
   const logout = useCallback(() => {
     authStorage.clear();
     setState({ user: null, loading: false, error: null });
@@ -116,6 +149,7 @@ export function useAuth() {
     sendOtp,
     verifyOtp,
     googleSignIn,
+    googleSignInWithRedirect,
     logout,
     refreshUser,
     updateProfile,
