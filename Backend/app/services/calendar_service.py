@@ -18,12 +18,18 @@ class CalendarService:
     async def create(
         self, patient_id: UUID, user_id: UUID, data: CalendarEventCreate
     ) -> CalendarEvent:
-        return await self._repo.create(
+        # Manual entries are confirmed by default
+        status = "confirmed" if data.source == "manual" else "suggested"
+        confirmed_by = user_id if status == "confirmed" else None
+
+        event = await self._repo.create(
             patient_id=patient_id,
             event_type=data.event_type,
             title=data.title,
             event_date=data.event_date,
             source=data.source,
+            status=status,
+            confirmed_by=confirmed_by,
             specialist_type=data.specialist_type,
             event_time=data.event_time,
             location=data.location,
@@ -33,6 +39,11 @@ class CalendarService:
             parent_event_id=data.parent_event_id,
             notes=data.notes,
         )
+
+        if status == "confirmed":
+            on_appointment_confirmed(str(patient_id))
+
+        return event
 
     async def list(
         self,

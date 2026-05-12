@@ -71,6 +71,7 @@ class CalendarEventRepository(BaseRepository):
         recurrence_pattern: str | None = None,
         parent_event_id: UUID | None = None,
         notes: str | None = None,
+        confirmed_by: UUID | None = None,
     ) -> CalendarEvent:
         row = await self.conn.fetchrow(
             """
@@ -78,14 +79,14 @@ class CalendarEventRepository(BaseRepository):
               (patient_id, event_type, title, specialist_type,
                event_date, event_time, location, source,
                status, required_tests, is_recurring, recurrence_pattern,
-               parent_event_id, notes)
-            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+               parent_event_id, notes, confirmed_by)
+            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
             RETURNING *
             """,
             patient_id, event_type, title, specialist_type,
             event_date, event_time, location, source,
             status, required_tests or [], is_recurring, recurrence_pattern,
-            parent_event_id, notes,
+            parent_event_id, notes, confirmed_by,
         )
         return CalendarEvent.from_record(row)
 
