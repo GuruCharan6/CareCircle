@@ -121,13 +121,13 @@ async def _async_run(message_id_str: str) -> None:
         - symptoms_reported: list[str]
         - symptoms_denied: list[str]
         - symptoms_absent: list[str] (symptoms notably NOT present)
-        - meals_eaten: {{ "breakfast": bool|null, "lunch": bool|null, "dinner": bool|null }}
+        - meals_eaten: { "breakfast": bool|null, "lunch": bool|null, "dinner": bool|null }
         - meal_notes: str (what they ate, appetite)
         - medications_taken: bool (true if taken, false if missed)
         - medication_timing_notes: str (e.g. 'on time', 'delayed by 1h')
         - mobility_notes: str (how they are moving/walking)
-        - mood: str (Happy, Neutral, Sad, Anxious, Agitated, Lethargic)
-        - energy_level: int (1-10)
+        - mood: str (one of: 'normal', 'good', 'low', 'anxious', 'irritable', 'confused')
+        - energy_level: str (one of: 'normal', 'low', 'very_low')
         - concerns_flagged: list[str] (any medical concerns identified)
         - summary: str (1-sentence overview)
         """
@@ -138,13 +138,13 @@ async def _async_run(message_id_str: str) -> None:
 
             obs_data = {
                 "patient_id": msg.patient_id,
-                "source_type": "caregiver_note",
+                "source_type": "caregiver_voice",
                 "caregiver_id": cg.id if cg else None,
                 "source_document_id": source_doc.id,
                 "observation_date": msg.created_at.date() if msg.created_at else date.today(),
                 "raw_transcript": transcript,
-                "mood": str(ext.get("mood", "Neutral")),
-                "energy_level": str(ext.get("energy_level", "5")),
+                "mood": str(ext.get("mood", "normal")),
+                "energy_level": str(ext.get("energy_level", "normal")),
                 "symptoms_reported": ext.get("symptoms_reported") or [],
                 "symptoms_denied": ext.get("symptoms_denied") or [],
                 "symptoms_absent": ext.get("symptoms_absent") or [],
