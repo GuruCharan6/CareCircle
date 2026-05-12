@@ -39,6 +39,7 @@ STRICT GUIDELINES:
    - If they haven't given a date, ask for it.
    - If they HAVE given a date, use the `propose_action` tool with `add_calendar_event` or `schedule_caregiver_visit`.
 3. Be concise and empathetic.
+4. DO NOT use Markdown formatting (no **, no ###). Provide ONLY plain, readable text. Use plain numbering (1, 2, 3) if needed for lists.
 """
 
 
@@ -234,7 +235,7 @@ class ChatbotService:
                                     f"Question: {query}\n\n"
                                     f"DATA:\n" + "\n\n".join(collected_contexts)
                                 ),
-                                system_prompt=f"You are a helpful health assistant. Today is {today}. Be concise.",
+                                system_prompt=f"You are a helpful health assistant. Today is {today}. Be concise. DO NOT use markdown formatting (no **, no ###).",
                             )
                             answer_text = f"{synthesis}\n\n{args.get('description', '')}. Tap Confirm to proceed."
                         else:
@@ -264,7 +265,7 @@ class ChatbotService:
                         f"Question: {query}\n\n"
                         f"DATA:\n" + "\n\n".join(collected_contexts)
                     ),
-                    system_prompt=f"You are a helpful health assistant. Today is {today}. Be concise.",
+                    system_prompt=f"You are a helpful health assistant. Today is {today}. Be concise. DO NOT use markdown formatting (no **, no ###).",
                 )
                 return ChatResponse(
                     answer=str(final_answer),
