@@ -10,6 +10,7 @@ from app.pipeline.layer5_reason.types import ThreePartOutput
 from app.pipeline.orchestrator import PipelineOrchestrator
 from app.providers.llm.base import LLMProvider
 from app.repositories.document_repository import DocumentRepository
+from app.repositories.patient_state_repository import PatientStateRepository
 
 logger = get_logger(__name__)
 
@@ -43,6 +44,7 @@ class IngestionOrchestrator:
         self._calendar_agent = CalendarWriterAgent(conn)
         self._gap_agent = GapDetectionAgent(conn)
         self._surface_agent = SurfaceAgent(conn)
+        self._state_repo = PatientStateRepository(conn)
 
     async def run(
         self,
@@ -74,6 +76,10 @@ class IngestionOrchestrator:
             "ingestion_orchestrator.pipeline_done",
             max_urgency=output.max_urgency,
         )
+
+        # Update patient state summary with Layer 5 output
+        if output.plain_summary:
+            await self._state_repo.update_summary(patient_id, output.plain_summary)
 
         # Step 2: Calendar event suggestion + lab report auto-complete
         # Load the document to inspect document_type and extracted_data

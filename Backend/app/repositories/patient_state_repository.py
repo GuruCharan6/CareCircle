@@ -73,3 +73,12 @@ class PatientStateRepository(BaseRepository):
             staleness_status, last_digest_summary,
         )
         return PatientState.from_record(row)
+    async def update_summary(self, patient_id: UUID, summary: str) -> None:
+        await self.conn.execute(
+            """
+            UPDATE public.patient_state
+            SET last_digest_summary = $2, updated_at = now()
+            WHERE patient_id = $1
+            """,
+            patient_id, summary,
+        )

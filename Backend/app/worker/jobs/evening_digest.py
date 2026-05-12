@@ -16,6 +16,7 @@ from app.worker.jobs._helpers import (
     try_push,
     try_whatsapp_digest_cta,
 )
+from app.repositories.patient_state_repository import PatientStateRepository
 
 logger = get_logger(__name__)
 
@@ -116,6 +117,10 @@ async def _digest_for_patient(conn, patient_id: UUID) -> None:
         digest_content=digest_content,
     )
     await notif_repo.mark_sent(notif.id)
+
+    # Persist summary to patient state for dashboard banner
+    state_repo = PatientStateRepository(conn)
+    await state_repo.update_summary(patient_id, body)
 
     if user_id:
         await try_push(conn, user_id, title, body, data={"type": "evening_digest"})

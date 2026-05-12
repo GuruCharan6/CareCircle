@@ -40,10 +40,18 @@ class DigestService:
 
         state = await self._state_repo.get_by_patient_id(patient_id)
         overall_status = state.overall_status if state else "unknown"
-        today_summary = (
-            state.last_digest_summary if state and state.last_digest_summary
-            else "Gathering patient data..."
-        )
+        if state and state.last_digest_summary:
+            today_summary = state.last_digest_summary
+        else:
+            # Fallback for new patients or before first digest/pipeline run
+            if overall_status == "ok":
+                today_summary = "System monitoring active. No urgent concerns at this time."
+            elif overall_status == "alert":
+                today_summary = "Health alert detected. Review the details below for necessary actions."
+            elif overall_status == "watch":
+                today_summary = "New health observations recorded. Monitoring for any changes."
+            else:
+                today_summary = "Gathering patient data..."
 
         # Upcoming events: 30-day window for system-wide consistency
         days_window = 30
