@@ -42,6 +42,7 @@ def _upload_to_supabase(audio_bytes: bytes, storage_path: str, content_type: str
 
 async def _async_run(message_id_str: str) -> None:
     message_id = UUID(message_id_str)
+    logger.info("process_whatsapp_media.started", message_id=message_id_str)
     async with worker_conn(max_size=3, command_timeout=60) as conn:
         msg_repo = WhatsAppMessageRepository(conn)
         obs_repo = ObservationRepository(conn)
@@ -121,7 +122,7 @@ async def _async_run(message_id_str: str) -> None:
         - symptoms_reported: list[str]
         - symptoms_denied: list[str]
         - symptoms_absent: list[str] (symptoms notably NOT present)
-        - meals_eaten: { "breakfast": bool|null, "lunch": bool|null, "dinner": bool|null }
+        - meals_eaten: {{ "breakfast": bool|null, "lunch": bool|null, "dinner": bool|null }}
         - meal_notes: str (what they ate, appetite)
         - medications_taken: bool (true if taken, false if missed)
         - medication_timing_notes: str (e.g. 'on time', 'delayed by 1h')
