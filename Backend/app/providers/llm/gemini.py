@@ -10,7 +10,6 @@ from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_ex
 from app.config import settings
 from app.core.logging import get_logger
 from app.providers.llm.base import LLMProvider
-from app.providers.llm.client_factory import build_genai_client
 
 logger = get_logger(__name__)
 
@@ -58,14 +57,13 @@ def _to_gemini_tools(tools: list[dict]) -> list[types.Tool]:
 
 class GeminiProvider(LLMProvider):
     def __init__(self) -> None:
-        # Uses Vertex AI when VERTEX_PROJECT is set (production), else AI Studio key (local dev)
-        self._client = build_genai_client()
+        self._client = genai.Client(api_key=settings.gemini_api_key)
         # text-embedding-004 requires v1 API; google-genai SDK defaults to v1beta
-        self._embed_client = build_genai_client(
+        self._embed_client = genai.Client(
+            api_key=settings.gemini_api_key,
             http_options=types.HttpOptions(api_version="v1"),
         )
         self._embedding_model = "text-embedding-004"
-
 
     @retry(
         retry=retry_if_exception_type(exceptions.ResourceExhausted),
