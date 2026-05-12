@@ -62,7 +62,7 @@ export default function ChatbotPage() {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-8rem)] max-w-5xl mx-auto">
+    <div className="flex flex-col h-[calc(100vh-8rem)] max-w-6xl mx-auto">
       {/* Header */}
       <div className="mb-6 shrink-0 px-1">
         <h1 className="text-2xl font-bold text-[var(--color-primary)]">AI Health Assistant</h1>

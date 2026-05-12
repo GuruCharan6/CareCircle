@@ -68,6 +68,8 @@ interface NotifPrefs {
   whatsapp_digest: boolean;
   morning_time: string;
   evening_time: string;
+  whatsapp_connected: boolean;
+  whatsapp_number: string | null;
 }
 
 type PhoneStep = "idle" | "entering" | "otp_sent" | "verified";
@@ -92,6 +94,8 @@ export default function SettingsPage() {
     whatsapp_digest: false,
     morning_time: "08:00",
     evening_time: "20:00",
+    whatsapp_connected: false,
+    whatsapp_number: null,
   });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -122,6 +126,8 @@ export default function SettingsPage() {
       whatsapp_digest: p.whatsapp_digest ?? false,
       morning_time:    p.morning_time    ?? "08:00",
       evening_time:    p.evening_time    ?? "20:00",
+      whatsapp_connected: p.whatsapp_connected ?? false,
+      whatsapp_number: p.whatsapp_number ?? null,
     });
   }, [user]);
 
@@ -351,6 +357,35 @@ export default function SettingsPage() {
 
                 {phoneError && <p className="text-xs text-red-500 font-medium">{phoneError}</p>}
               </div>
+
+              {/* WhatsApp Connection Instructions — Only show if NOT connected */}
+              {user?.phone_number && !prefs.whatsapp_connected && (
+                <div className="p-4 rounded-2xl border transition-all bg-amber-50 border-amber-100">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-2 h-2 rounded-full bg-amber-500" />
+                    <span className="text-xs font-bold uppercase tracking-wider text-amber-700">
+                      WhatsApp Not Connected
+                    </span>
+                  </div>
+
+                  <div className="space-y-3">
+                    <p className="text-xs text-amber-700 leading-relaxed">
+                      To receive digests and alerts on WhatsApp, you must join our sandbox first.
+                    </p>
+                    <Button
+                      variant="primary"
+                      className="w-full bg-[#25D366] hover:bg-[#20ba5a] border-none text-white shadow-sm"
+                      onClick={() => window.open(`https://wa.me/14155238886?text=join%20officer-magnet`, "_blank")}
+                    >
+                      <WA_ICON />
+                      <span className="ml-2">Join WhatsApp Sandbox</span>
+                    </Button>
+                    <p className="text-[10px] text-amber-600 text-center italic">
+                      Clicking will open WhatsApp. Just hit "Send".
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -378,7 +413,7 @@ export default function SettingsPage() {
               />
               <Toggle
                 label="WhatsApp Digest"
-                description="Receive daily digest on WhatsApp"
+                description={prefs.whatsapp_connected ? "Receive daily digest on WhatsApp" : "Join sandbox above to enable WhatsApp"}
                 icon={<span className="text-green-500"><WA_ICON /></span>}
                 iconBg="bg-green-50"
                 checked={prefs.whatsapp_digest}
