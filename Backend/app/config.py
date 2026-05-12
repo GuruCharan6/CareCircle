@@ -29,6 +29,15 @@ class Settings(BaseSettings):
     # External providers
     gemini_api_key: str = ""
     gemini_model: str = "gemini-2.0-flash"
+
+    # Google Vertex AI (preferred in production — no geographic restriction)
+    # Set these in Render env vars to switch from AI Studio to Vertex AI.
+    # When vertex_project is set, gemini_api_key is ignored for LLM/Vision calls.
+    vertex_project: str = ""        # e.g. "carecircle-prod"
+    vertex_location: str = "us-central1"
+    # Paste the full JSON contents of the GCP service account key file here.
+    google_credentials_json: str = ""
+
     firebase_credentials_path: str = ""
     twilio_account_sid: str = ""
     twilio_auth_token: str = ""

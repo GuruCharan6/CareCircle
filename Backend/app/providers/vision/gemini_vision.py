@@ -8,6 +8,7 @@ from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_ex
 
 from app.config import settings
 from app.core.logging import get_logger
+from app.providers.llm.client_factory import build_genai_client
 
 logger = get_logger(__name__)
 
@@ -162,7 +163,8 @@ _DOCUMENT_TYPE_TO_PROMPT: dict[str, str] = {
 
 class GeminiVisionClient:
     def __init__(self) -> None:
-        self._client = genai.Client(api_key=settings.gemini_api_key)
+        # Uses Vertex AI when VERTEX_PROJECT is set (production), else AI Studio key (local dev)
+        self._client = build_genai_client()
 
     @retry(
         retry=retry_if_exception_type(exceptions.ResourceExhausted),
