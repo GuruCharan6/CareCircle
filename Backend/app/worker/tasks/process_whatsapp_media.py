@@ -43,6 +43,8 @@ def _upload_to_supabase(audio_bytes: bytes, storage_path: str, content_type: str
 async def _async_run(message_id_str: str) -> None:
     message_id = UUID(message_id_str)
     logger.info("process_whatsapp_media.started", message_id=message_id_str)
+    source_doc = None
+    patient_id_str: str | None = None
     async with worker_conn(max_size=3, command_timeout=60) as conn:
         msg_repo = WhatsAppMessageRepository(conn)
         obs_repo = ObservationRepository(conn)
@@ -53,6 +55,7 @@ async def _async_run(message_id_str: str) -> None:
         if not msg or not msg.media_url or not msg.patient_id:
             logger.warning("whatsapp_task.invalid_message", message_id=message_id_str)
             return
+        patient_id_str = str(msg.patient_id)
 
         cg = await cg_repo.get_by_phone(msg.sender_phone)
         patient = await PatientRepository(conn).get_by_id(msg.patient_id)
@@ -139,7 +142,7 @@ async def _async_run(message_id_str: str) -> None:
 
             obs_data = {
                 "patient_id": msg.patient_id,
-                "source_type": "caregiver_voice",
+                "source_type": "caregiver_note",
                 "caregiver_id": cg.id if cg else None,
                 "source_document_id": source_doc.id,
                 "observation_date": msg.created_at.date() if msg.created_at else date.today(),
@@ -162,9 +165,27 @@ async def _async_run(message_id_str: str) -> None:
             await msg_repo.link_observation(message_id, obs.id)
             logger.info("process_whatsapp_media.success", message_id=message_id, observation_id=obs.id)
 
+            # Mark document user-approved so pipeline can run.
+            # Pipeline writes hypotheses + updates digest summary.
+            # Observation already created above — pipeline won't double-create it.
+            await conn.execute(
+                "UPDATE public.source_documents SET user_approved_at = now() WHERE id = $1",
+                source_doc.id,
+            )
+
         except Exception as exc:
             logger.error("process_whatsapp_media.extraction_failed", message_id=message_id, error=str(exc))
             await msg_repo.update_status(message_id, "failed", f"AI Extraction failed: {str(exc)}")
+            return
+
+    # Run pipeline outside worker_conn block (avoids nested pool contention).
+    # Direct async call — no HTTP event dispatch (sync httpx in async context deadlocks same server).
+    if source_doc is not None and patient_id_str is not None:
+        try:
+            from app.worker.tasks.run_pipeline import _async_run as _async_run_pipeline
+            await _async_run_pipeline(str(source_doc.id), patient_id_str)
+        except Exception as exc:
+            logger.error("whatsapp_task.pipeline_failed", error=str(exc))
 
 
 @shared_task(
