@@ -96,9 +96,9 @@ class VoiceNoteExtractor(BaseExtractor):
             nlp_data = await self._run_nlp(transcript, document.ingestion_source, llm)
 
         source_type = (
-            "caregiver_note"
+            "voice_note_caregiver"
             if "caregiver" in (document.ingestion_source or "").lower()
-            else "voice_log"
+            else "voice_note_meera"
         )
 
         return IngestedItem(
