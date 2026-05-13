@@ -93,7 +93,12 @@ class ObservationRepository(BaseRepository):
         row = await self.conn.fetchrow(
             """
             SELECT * FROM public.observations
-            WHERE patient_id = $1 AND source_type = $2
+            WHERE patient_id = $1
+              AND CASE source_type
+                    WHEN 'voice_note_caregiver' THEN 'caregiver_note'
+                    WHEN 'voice_note_meera'     THEN 'voice_log'
+                    ELSE source_type
+                  END = $2
             ORDER BY observation_date DESC
             LIMIT 1
             """,

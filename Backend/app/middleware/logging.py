@@ -24,17 +24,19 @@ class LoggingMiddleware(BaseHTTPMiddleware):
 
         start = time.perf_counter()
         request_id = getattr(request.state, "request_id", None)
-        user_id = getattr(request.state, "user_id", None)
 
         structlog.contextvars.clear_contextvars()
         structlog.contextvars.bind_contextvars(
             request_id=request_id,
-            user_id=user_id,
             method=request.method,
             path=path,
         )
 
         response = await call_next(request)
+
+        # user_id set by get_current_user() inside route handler — read after call_next
+        user_id = getattr(request.state, "user_id", None)
+        structlog.contextvars.bind_contextvars(user_id=user_id)
 
         duration_ms = round((time.perf_counter() - start) * 1000, 2)
         logger.info(

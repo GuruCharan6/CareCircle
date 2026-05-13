@@ -67,7 +67,7 @@ async def _async_run(message_id_str: str) -> None:
 
         # 2. Upload to Supabase Storage so frontend can play it
         ext = "ogg" if "ogg" in content_type else "mp4"
-        storage_path = f"voice_notes/{msg.patient_id}/{message_id}.{ext}"
+        storage_path = f"{msg.patient_id}/{message_id}.{ext}"
         try:
             await asyncio.get_running_loop().run_in_executor(
                 None, _upload_to_supabase, audio_bytes, storage_path, content_type

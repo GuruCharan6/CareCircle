@@ -77,9 +77,16 @@ class IngestionOrchestrator:
             max_urgency=output.max_urgency,
         )
 
-        # Update patient state summary with Layer 5 output
+        # Write Layer 5 summary to patient_state.
+        # upsert guarantees row creation if missing (update_summary is plain UPDATE — silent no-op otherwise).
+        # overall_status="ok" is temporary — rebuild_patient_state (fired by on_pipeline_complete) corrects it.
+        # COALESCE in upsert conflict clause preserves existing date fields; sets summary since it's non-null.
         if output.plain_summary:
-            await self._state_repo.update_summary(patient_id, output.plain_summary)
+            await self._state_repo.upsert(
+                patient_id=patient_id,
+                overall_status="ok",
+                last_digest_summary=output.plain_summary,
+            )
 
         # Step 2: Calendar event suggestion + lab report auto-complete
         # Load the document to inspect document_type and extracted_data
