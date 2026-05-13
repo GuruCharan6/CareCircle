@@ -1,8 +1,10 @@
 from fastapi import APIRouter, Depends
 from uuid import UUID
+from typing import Any
 
 from fastapi import HTTPException
 from app.api.deps import DBConn, get_current_user
+from app.core.logging import get_logger
 from app.models.user import User
 from app.repositories.user_repository import UserRepository
 from app.schemas.auth import (
@@ -19,6 +21,9 @@ from app.schemas.auth import (
     UserResponse,
 )
 from app.services.auth_service import AuthService
+from app.providers.whatsapp.factory import get_whatsapp_provider
+
+logger = get_logger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -162,6 +167,38 @@ async def remove_phone(
         role=updated.role,
         preferences=updated.preferences,
     )
+
+
+@router.post("/me/whatsapp/verify")
+async def verify_whatsapp_connection(
+    conn: DBConn,
+    current_user: User = Depends(get_current_user),
+) -> dict[str, Any]:
+    """
+    Verify WhatsApp sandbox connection by attempting to send a test message.
+    Twilio returns an error (63007) if the user hasn't joined the sandbox.
+    On success, marks whatsapp_connected=true in DB.
+    """
+    if not current_user.phone_number:
+        return {"connected": False, "error": "No phone number on file"}
+
+    provider = get_whatsapp_provider()
+    try:
+        await provider.send_text(
+            current_user.phone_number,
+            "✅ CareCircle WhatsApp connected! You'll receive your daily health digests here.",
+        )
+        repo = UserRepository(conn)
+        prefs: dict[str, Any] = dict(current_user.preferences or {})
+        prefs["whatsapp_connected"] = True
+        prefs["whatsapp_number"] = current_user.phone_number
+        prefs.setdefault("whatsapp_digest", True)
+        await repo.update_preferences(current_user.id, prefs)
+        logger.info("whatsapp.verified_via_send", user_id=str(current_user.id))
+        return {"connected": True}
+    except Exception as exc:
+        logger.warning("whatsapp.verify_failed", user_id=str(current_user.id), error=str(exc))
+        return {"connected": False, "error": str(exc)}
 
 
 @router.patch("/me", response_model=UpdateProfileResponse)
