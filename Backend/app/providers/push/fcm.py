@@ -26,15 +26,20 @@ class FCMError(Exception):
 
 class FCMClient:
     def __init__(self) -> None:
-        self._credentials_path = settings.firebase_credentials_path
         self._app = None
 
     def _get_app(self) -> Any:
         if self._app is None:
+            import json
             import firebase_admin
             from firebase_admin import credentials
             if not firebase_admin._apps:
-                cred = credentials.Certificate(self._credentials_path)
+                if settings.firebase_credentials_json:
+                    cred = credentials.Certificate(json.loads(settings.firebase_credentials_json))
+                elif settings.firebase_credentials_path:
+                    cred = credentials.Certificate(settings.firebase_credentials_path)
+                else:
+                    raise FCMError("Firebase not configured: set FIREBASE_CREDENTIALS_JSON or FIREBASE_CREDENTIALS_PATH")
                 self._app = firebase_admin.initialize_app(cred)
             else:
                 self._app = firebase_admin.get_app()
