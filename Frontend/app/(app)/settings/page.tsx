@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   Siren, Users, Plus, Trash2,
   LogOut, Phone, MessageSquare, Bell,
   ShieldCheck, ChevronRight,
-  Mail, Sun, Moon, CheckCircle2, User,
+  Mail, Sun, Moon, CheckCircle2, User, Wifi,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { usePatient } from "@/hooks/usePatient";
@@ -101,6 +101,10 @@ export default function SettingsPage() {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // WhatsApp join polling
+  const [waPolling, setWaPolling] = useState(false);
+  const waPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   // Phone verification state
   const [phoneStep, setPhoneStep] = useState<PhoneStep>("idle");
   const [newPhone, setNewPhone] = useState("");
@@ -130,6 +134,25 @@ export default function SettingsPage() {
       whatsapp_number: p.whatsapp_number ?? null,
     });
   }, [user]);
+
+  // Poll refreshUser when waiting for WA webhook to fire
+  useEffect(() => {
+    if (!waPolling) return;
+    waPollRef.current = setInterval(async () => {
+      await refreshUser();
+    }, 3000);
+    return () => {
+      if (waPollRef.current) clearInterval(waPollRef.current);
+    };
+  }, [waPolling, refreshUser]);
+
+  // Stop polling when whatsapp_connected flips true
+  useEffect(() => {
+    if (prefs.whatsapp_connected && waPolling) {
+      setWaPolling(false);
+      if (waPollRef.current) clearInterval(waPollRef.current);
+    }
+  }, [prefs.whatsapp_connected, waPolling]);
 
   function setPref<K extends keyof NotifPrefs>(key: K, val: NotifPrefs[K]) {
     setPrefs(prev => ({ ...prev, [key]: val }));
@@ -358,7 +381,21 @@ export default function SettingsPage() {
                 {phoneError && <p className="text-xs text-red-500 font-medium">{phoneError}</p>}
               </div>
 
-              {/* WhatsApp Connection Instructions — Only show if NOT connected */}
+              {/* WhatsApp — connected badge */}
+              {user?.phone_number && prefs.whatsapp_connected && (
+                <div className="flex items-center gap-3 px-4 py-3 bg-emerald-50 border border-emerald-200 rounded-xl">
+                  <WA_ICON />
+                  <div>
+                    <p className="text-sm font-semibold text-emerald-700">WhatsApp Connected</p>
+                    {prefs.whatsapp_number && (
+                      <p className="text-[11px] text-emerald-600">{String(prefs.whatsapp_number)}</p>
+                    )}
+                  </div>
+                  <CheckCircle2 size={16} className="ml-auto text-emerald-500 shrink-0" />
+                </div>
+              )}
+
+              {/* WhatsApp — not connected: show join flow */}
               {user?.phone_number && !prefs.whatsapp_connected && (
                 <div className="p-4 rounded-2xl border transition-all bg-amber-50 border-amber-100">
                   <div className="flex items-center gap-2 mb-3">
@@ -368,22 +405,43 @@ export default function SettingsPage() {
                     </span>
                   </div>
 
-                  <div className="space-y-3">
-                    <p className="text-xs text-amber-700 leading-relaxed">
-                      To receive digests and alerts on WhatsApp, you must join our sandbox first.
-                    </p>
-                    <Button
-                      variant="primary"
-                      className="w-full bg-[#25D366] hover:bg-[#20ba5a] border-none text-white shadow-sm"
-                      onClick={() => window.open(`https://wa.me/14155238886?text=join%20officer-magnet`, "_blank")}
-                    >
-                      <WA_ICON />
-                      <span className="ml-2">Join WhatsApp Sandbox</span>
-                    </Button>
-                    <p className="text-[10px] text-amber-600 text-center italic">
-                      Clicking will open WhatsApp. Just hit "Send".
-                    </p>
-                  </div>
+                  {!waPolling ? (
+                    <div className="space-y-3">
+                      <p className="text-xs text-amber-700 leading-relaxed">
+                        To receive digests and alerts on WhatsApp, join our sandbox first.
+                      </p>
+                      <Button
+                        variant="primary"
+                        className="w-full bg-[#25D366] hover:bg-[#20ba5a] border-none text-white shadow-sm"
+                        onClick={() => {
+                          window.open("https://wa.me/14155238886?text=join%20officer-magnet", "_blank");
+                          setWaPolling(true);
+                        }}
+                      >
+                        <WA_ICON />
+                        <span className="ml-2">Join WhatsApp Sandbox</span>
+                      </Button>
+                      <p className="text-[10px] text-amber-600 text-center italic">
+                        Opens WhatsApp. Just hit &quot;Send&quot;.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2 px-3 py-2.5 bg-white border border-amber-200 rounded-xl">
+                        <Wifi size={14} className="text-amber-500 animate-pulse shrink-0" />
+                        <p className="text-xs text-amber-700 font-medium">
+                          Waiting… Send &quot;join officer-magnet&quot; on WhatsApp then come back.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        className="text-[11px] text-slate-400 hover:text-slate-600 w-full text-center"
+                        onClick={() => setWaPolling(false)}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
