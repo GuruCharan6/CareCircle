@@ -1,46 +1,10 @@
-import json
-
 from app.core.logging import get_logger
 from app.pipeline.layer3_enrich.types import URGENCY_ALERT, URGENCY_INFORM, URGENCY_WATCH
-from app.pipeline.layer5_reason.system_prompt import LAYER5_PROMPT_TEMPLATE, LAYER5_SYSTEM_PROMPT
 from app.pipeline.layer5_reason.types import ReasoningInput, ThreePartOutput
-from app.providers.llm.base import LLMProvider
 
 logger = get_logger(__name__)
 
 _URGENCY_ORDER = {URGENCY_ALERT: 3, URGENCY_WATCH: 2, URGENCY_INFORM: 1}
-
-_STRUCTURED_SYSTEM_PROMPT = LAYER5_SYSTEM_PROMPT + """
-
-IMPORTANT: Return a JSON object with this exact structure:
-{
-  "known_facts": ["<fact 1 attributed to source>", ...],
-  "hypotheses_text": ["<hypothesis in plain language>", ...],
-  "unknowns": ["<specific gap + concrete action>", ...],
-  "plain_summary": "<full readable summary, 3-4 short paragraphs max>"
-}
-"""
-
-
-def _build_hypotheses_block(input: ReasoningInput) -> str:
-    if not input.hypotheses:
-        return "No clinical concerns flagged by rules engine."
-    lines = []
-    for h in input.hypotheses:
-        lines.append(f"- [{h.urgency.upper()}] {h.hypothesis_text}")
-    return "\n".join(lines)
-
-
-def _build_conflicts_block(input: ReasoningInput) -> str:
-    if not input.conflicts:
-        return "No conflicts detected between data sources."
-    lines = []
-    for c in input.conflicts:
-        lines.append(
-            f"- [{c.conflict_type.upper()}] {c.conflict_description}"
-            + (f" Suggested action: {c.meera_suggested_action}" if c.meera_suggested_action else "")
-        )
-    return "\n".join(lines)
 
 
 def _determine_max_urgency(input: ReasoningInput) -> str:
@@ -52,13 +16,31 @@ def _determine_max_urgency(input: ReasoningInput) -> str:
     )
 
 
+def _build_plain_summary(
+    known_facts: list[str],
+    hypotheses_text: list[str],
+    unknowns: list[str],
+    patient_name: str,
+) -> str:
+    parts: list[str] = []
+    if known_facts:
+        parts.append(f"For {patient_name}: " + " ".join(known_facts))
+    if hypotheses_text:
+        parts.append("Concerns to watch: " + " ".join(hypotheses_text))
+    if unknowns:
+        parts.append("Action needed: " + " ".join(unknowns))
+    if not parts:
+        return "No new clinical concerns from this document."
+    return "\n\n".join(parts)
+
+
 async def format_three_part_output(
     input: ReasoningInput,
-    llm: LLMProvider,
+    llm=None,  # kept for call-site compatibility — no longer used
 ) -> ThreePartOutput:
     """
-    Call LLM to produce the three-part output from pre-built inference.
-    LLM explains — it does NOT generate new clinical logic.
+    Build three-part output from pre-structured hypothesis/conflict data.
+    No LLM call — input is already plain-English from the rules engine.
     """
     if not input.hypotheses and not input.conflicts:
         return ThreePartOutput(
@@ -70,43 +52,47 @@ async def format_three_part_output(
             patient_id=input.patient_id,
         )
 
-    prompt = LAYER5_PROMPT_TEMPLATE.format(
-        patient_name=input.patient_name,
-        conditions=", ".join(input.known_conditions) if input.known_conditions else "no documented conditions",
-        hypotheses_block=_build_hypotheses_block(input),
-        conflicts_block=_build_conflicts_block(input),
-        source_type=input.source_type,
-        dimension=input.dimension,
-    )
+    # known_facts: inform-urgency hypotheses — background context, no action needed
+    known_facts = [
+        h.hypothesis_text
+        for h in input.hypotheses
+        if h.urgency == URGENCY_INFORM
+    ]
 
-    try:
-        result = await llm.complete_json(prompt, system_prompt=_STRUCTURED_SYSTEM_PROMPT)
-    except Exception as exc:
-        logger.error("layer5.llm_error", patient_id=str(input.patient_id), error=str(exc))
-        # Fallback: return raw hypothesis text without LLM formatting.
-        return _fallback_output(input)
+    # hypotheses_text: watch + alert hypotheses — clinical concerns requiring attention
+    hypotheses_text = [
+        h.hypothesis_text
+        for h in input.hypotheses
+        if h.urgency in (URGENCY_WATCH, URGENCY_ALERT)
+    ]
+
+    # unknowns: conflicts — data gaps with suggested actions
+    unknowns = []
+    for c in input.conflicts:
+        entry = c.conflict_description
+        if c.meera_suggested_action:
+            entry += f" → {c.meera_suggested_action}"
+        unknowns.append(entry)
 
     max_urgency = _determine_max_urgency(input)
-
-    return ThreePartOutput(
-        known_facts=result.get("known_facts") or [],
-        hypotheses_text=result.get("hypotheses_text") or [],
-        unknowns=result.get("unknowns") or [],
-        max_urgency=max_urgency,
-        plain_summary=result.get("plain_summary") or "",
-        patient_id=input.patient_id,
+    plain_summary = _build_plain_summary(
+        known_facts, hypotheses_text, unknowns, input.patient_name
     )
 
-
-def _fallback_output(input: ReasoningInput) -> ThreePartOutput:
-    """Used when LLM call fails — surfaces raw rule output without formatting."""
-    max_urgency = _determine_max_urgency(input)
-    facts = [h.hypothesis_text for h in input.hypotheses]
-    return ThreePartOutput(
-        known_facts=facts,
-        hypotheses_text=[],
-        unknowns=[c.meera_suggested_action or "" for c in input.conflicts if c.meera_suggested_action],
+    logger.info(
+        "layer5.template_output",
+        patient_id=str(input.patient_id),
+        known_facts=len(known_facts),
+        hypotheses=len(hypotheses_text),
+        unknowns=len(unknowns),
         max_urgency=max_urgency,
-        plain_summary="\n".join(facts) if facts else "No concerns flagged.",
+    )
+
+    return ThreePartOutput(
+        known_facts=known_facts,
+        hypotheses_text=hypotheses_text,
+        unknowns=unknowns,
+        max_urgency=max_urgency,
+        plain_summary=plain_summary,
         patient_id=input.patient_id,
     )

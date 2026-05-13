@@ -9,7 +9,6 @@ from app.providers.llm.base import LLMProvider
 
 logger = get_logger(__name__)
 
-# Observation fields we expect from NLP extraction.
 _EXPECTED_FIELDS = {
     "symptoms_reported",
     "symptoms_denied",
@@ -24,7 +23,7 @@ You are a medical information extractor. Extract structured health data from voi
 The transcript may contain Hindi-English code-switching (Hinglish).
 Common Hinglish terms: dawai=medicine, ghabraaya=anxious/dizzy, dard=pain, bukhar=fever,
 kamzori=weakness, BP=blood pressure, sugar=blood sugar, dawa khatam=medicine finished,
-theek hain=doing fine.
+theek hain=doing fine, mana kar diya=refused, nahi khaya=didn't eat, ulti=vomiting.
 Return ONLY valid JSON. No prose, no explanation.
 """
 
@@ -39,14 +38,14 @@ Return JSON with this exact structure:
 {{
   "symptoms_reported": ["<symptom>"],
   "symptoms_denied": ["<symptom>"],
-  "symptoms_absent": ["<symptom that was notable by absence — most important field>"],
+  "symptoms_absent": ["<symptom that was notable by absence>"],
   "meals_eaten": {{"breakfast": true/false/null, "lunch": true/false/null, "dinner": true/false/null}},
   "meal_notes": "<details or null>",
   "medications_taken": true/false/null,
   "medication_timing_notes": "<timing or deviation or null>",
   "mobility_notes": "<mobility observations or null>",
-  "mood": "<good|neutral|low|anxious|null>",
-  "energy_level": "<high|normal|low|null>",
+  "mood": "<good|neutral|low|anxious|irritable|confused|null>",
+  "energy_level": "<high|normal|low|very_low|null>",
   "meera_mood_read": "<reporter's read of patient mood or null>",
   "concerns_flagged": ["<concern>"]
 }}
@@ -54,7 +53,6 @@ Return JSON with this exact structure:
 
 
 def _has_structured_fields(data: dict[str, Any]) -> bool:
-    """Check if extracted_data already has NLP-parsed fields."""
     return bool(_EXPECTED_FIELDS.intersection(data.keys()))
 
 
@@ -62,10 +60,10 @@ class VoiceNoteExtractor(BaseExtractor):
     """
     Handles caregiver WhatsApp voice notes and Meera's post-call voice logs.
 
-    If extracted_data already has NLP-structured fields (from ingestion_service),
-    uses them directly. Otherwise does LLM-based NLP extraction from the transcript.
+    Transcription: Sarvam STT (handled upstream in extract_document task).
+    NLP extraction: Gemini (gemini-2.5-flash) — handles Hinglish paraphrase.
 
-    This is the only extractor that calls the LLM — and only as fallback.
+    Falls back to pre-extracted NLP fields if already present in extracted_data.
     """
 
     async def extract(
@@ -78,15 +76,12 @@ class VoiceNoteExtractor(BaseExtractor):
 
         if not transcript:
             raise ValueError(
-                f"Voice note document {document.id} has no extracted_text (transcript)"
+                f"Voice note document {document.id} has no extracted_text (transcript). "
+                "Sarvam transcription must run before extraction."
             )
 
-        # Use pre-extracted NLP fields if available.
         if _has_structured_fields(data):
-            logger.info(
-                "voice_note.using_preextracted",
-                source_document_id=str(document.id),
-            )
+            logger.info("voice_note.using_preextracted", source_document_id=str(document.id))
             nlp_data = data
         else:
             if llm is None:
@@ -145,4 +140,4 @@ class VoiceNoteExtractor(BaseExtractor):
             speaker_role=speaker_role,
             transcript=transcript,
         )
-        return await llm.complete_json(prompt, system_prompt=_NLP_SYSTEM_PROMPT)
+        return await llm.complete_json(prompt, system_prompt=_NLP_SYSTEM_PROMPT, thinking_budget=512)

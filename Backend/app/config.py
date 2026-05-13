@@ -28,7 +28,7 @@ class Settings(BaseSettings):
 
     # External providers
     gemini_api_key: str = ""
-    gemini_model: str = "gemini-2.0-flash"
+    gemini_model: str = "gemini-2.5-flash"
     firebase_credentials_path: str = ""
     twilio_account_sid: str = ""
     twilio_auth_token: str = ""

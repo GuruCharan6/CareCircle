@@ -23,6 +23,7 @@ class LLMProvider(ABC):
         self,
         prompt: str,
         system_prompt: str | None = None,
+        thinking_budget: int = 0,
     ) -> dict[str, Any]:
         """Generate JSON-structured completion. Used for drug interaction checker.
         Must return valid parsed dict — never raw string.

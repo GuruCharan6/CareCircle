@@ -8,7 +8,7 @@ from celery import shared_task
 from app.config import settings
 from app.core.logging import get_logger
 from app.core.supabase import supabase_admin
-from app.providers.llm import get_llm_provider
+from app.providers.llm.gemini import GeminiProvider
 from app.providers.transcription.saravam import SaravamClient
 from app.repositories.caregiver_repository import CaregiverRepository
 from app.repositories.document_repository import DocumentRepository
@@ -80,7 +80,7 @@ async def _async_run(message_id_str: str) -> None:
             logger.error("whatsapp_task.upload_failed", error=str(exc))
             # Non-fatal — continue without audio playback
 
-        # 3. Create SourceDocument with Supabase path (not Twilio URL)
+        # 3. Create SourceDocument with Supabase path
         source_doc = await doc_repo.create(
             patient_id=msg.patient_id,
             document_type="voice_note",
@@ -92,7 +92,7 @@ async def _async_run(message_id_str: str) -> None:
         )
         await msg_repo.link_source_document(message_id, source_doc.id)
 
-        # 4. Transcribe to English
+        # 4. Transcribe to English via Sarvam (handles Hinglish natively)
         if msg.message_type != "audio":
             return
 
@@ -115,30 +115,29 @@ async def _async_run(message_id_str: str) -> None:
         if not transcript:
             return
 
-        # 5. AI extraction
-        llm = get_llm_provider()
-        prompt = f"""
-        Extract detailed clinical observations from this caregiver voice note transcript:
-        "{transcript}"
+        # 5. Gemini NLP extraction — handles Hinglish paraphrase
+        _NLP_PROMPT = f"""
+Extract detailed clinical observations from this caregiver voice note transcript:
+"{transcript}"
 
-        Return ONLY a JSON object with these fields:
-        - symptoms_reported: list[str]
-        - symptoms_denied: list[str]
-        - symptoms_absent: list[str] (symptoms notably NOT present)
-        - meals_eaten: {{ "breakfast": bool|null, "lunch": bool|null, "dinner": bool|null }}
-        - meal_notes: str (what they ate, appetite)
-        - medications_taken: bool (true if taken, false if missed)
-        - medication_timing_notes: str (e.g. 'on time', 'delayed by 1h')
-        - mobility_notes: str (how they are moving/walking)
-        - mood: str (one of: 'normal', 'good', 'low', 'anxious', 'irritable', 'confused')
-        - energy_level: str (one of: 'normal', 'low', 'very_low')
-        - concerns_flagged: list[str] (any medical concerns identified)
-        - summary: str (1-sentence overview)
-        """
-
+Return ONLY a JSON object with these fields:
+- symptoms_reported: list[str]
+- symptoms_denied: list[str]
+- symptoms_absent: list[str] (symptoms notably NOT present)
+- meals_eaten: {{ "breakfast": bool|null, "lunch": bool|null, "dinner": bool|null }}
+- meal_notes: str (what they ate, appetite)
+- medications_taken: bool (true if taken, false if missed, null if unknown)
+- medication_timing_notes: str (e.g. 'on time', 'delayed by 1h', or null)
+- mobility_notes: str (how they are moving/walking, or null)
+- mood: str (one of: 'normal', 'good', 'low', 'anxious', 'irritable', 'confused')
+- energy_level: str (one of: 'normal', 'low', 'very_low')
+- concerns_flagged: list[str] (any medical concerns identified)
+- summary: str (1-sentence overview)
+"""
         try:
-            extraction = await llm.complete_json(prompt)
-            ext = extraction[0] if isinstance(extraction, list) else (extraction or {})
+            llm = GeminiProvider()
+            raw = await llm.complete_json(_NLP_PROMPT, thinking_budget=512)
+            ext_data = raw[0] if isinstance(raw, list) else (raw or {})
 
             obs_data = {
                 "patient_id": msg.patient_id,
@@ -147,17 +146,19 @@ async def _async_run(message_id_str: str) -> None:
                 "source_document_id": source_doc.id,
                 "observation_date": msg.created_at.date() if msg.created_at else date.today(),
                 "raw_transcript": transcript,
-                "mood": str(ext.get("mood", "normal")),
-                "energy_level": str(ext.get("energy_level", "normal")),
-                "symptoms_reported": ext.get("symptoms_reported") or [],
-                "symptoms_denied": ext.get("symptoms_denied") or [],
-                "symptoms_absent": ext.get("symptoms_absent") or [],
-                "meals_eaten": ext.get("meals_eaten"),
-                "meal_notes": ext.get("meal_notes"),
-                "medications_taken": ext.get("medications_taken") if isinstance(ext.get("medications_taken"), bool) else None,
-                "medication_timing_notes": ext.get("medication_timing_notes"),
-                "mobility_notes": ext.get("mobility_notes"),
-                "concerns_flagged": ext.get("concerns_flagged") or ([ext.get("summary")] if ext.get("summary") else []),
+                "mood": ext_data.get("mood", "normal"),
+                "energy_level": ext_data.get("energy_level", "normal"),
+                "symptoms_reported": ext_data.get("symptoms_reported") or [],
+                "symptoms_denied": ext_data.get("symptoms_denied") or [],
+                "symptoms_absent": ext_data.get("symptoms_absent") or [],
+                "meals_eaten": ext_data.get("meals_eaten"),
+                "meal_notes": ext_data.get("meal_notes"),
+                "medications_taken": ext_data.get("medications_taken") if isinstance(ext_data.get("medications_taken"), bool) else None,
+                "medication_timing_notes": ext_data.get("medication_timing_notes"),
+                "mobility_notes": ext_data.get("mobility_notes"),
+                "concerns_flagged": ext_data.get("concerns_flagged") or (
+                    [ext_data.get("summary")] if ext_data.get("summary") else []
+                ),
             }
 
             obs = await obs_repo.create(**obs_data)
@@ -165,9 +166,7 @@ async def _async_run(message_id_str: str) -> None:
             await msg_repo.link_observation(message_id, obs.id)
             logger.info("process_whatsapp_media.success", message_id=message_id, observation_id=obs.id)
 
-            # Mark document user-approved so pipeline can run.
-            # Pipeline writes hypotheses + updates digest summary.
-            # Observation already created above — pipeline won't double-create it.
+            # Mark document approved so pipeline can run
             await conn.execute(
                 "UPDATE public.source_documents SET user_approved_at = now() WHERE id = $1",
                 source_doc.id,
@@ -175,11 +174,10 @@ async def _async_run(message_id_str: str) -> None:
 
         except Exception as exc:
             logger.error("process_whatsapp_media.extraction_failed", message_id=message_id, error=str(exc))
-            await msg_repo.update_status(message_id, "failed", f"AI Extraction failed: {str(exc)}")
+            await msg_repo.update_status(message_id, "failed", f"Extraction failed: {str(exc)}")
             return
 
-    # Run pipeline outside worker_conn block (avoids nested pool contention).
-    # Direct async call — no HTTP event dispatch (sync httpx in async context deadlocks same server).
+    # Run pipeline outside worker_conn block
     if source_doc is not None and patient_id_str is not None:
         try:
             from app.worker.tasks.run_pipeline import _async_run as _async_run_pipeline

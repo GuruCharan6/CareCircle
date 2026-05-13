@@ -56,7 +56,7 @@ def _to_gemini_tools(tools: list[dict]) -> list[types.Tool]:
 
 
 class GeminiProvider(LLMProvider):
-    def __init__(self) -> None:
+    def __init__(self, model: str | None = None) -> None:
         self._client = genai.Client(api_key=settings.gemini_api_key)
         # text-embedding-004 requires v1 API; google-genai SDK defaults to v1beta
         self._embed_client = genai.Client(
@@ -64,6 +64,7 @@ class GeminiProvider(LLMProvider):
             http_options=types.HttpOptions(api_version="v1"),
         )
         self._embedding_model = "text-embedding-004"
+        self._model = model or settings.gemini_model
 
     @retry(
         retry=retry_if_exception_type(exceptions.ResourceExhausted),
@@ -85,6 +86,8 @@ class GeminiProvider(LLMProvider):
             tools=gemini_tools,
             # Disable AFC — we handle tool dispatch manually in chatbot_service
             automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True),
+            # Cap thinking budget — chatbot benefits from reasoning but not unlimited
+            thinking_config=types.ThinkingConfig(thinking_budget=512),
         )
 
         if history:
@@ -96,14 +99,14 @@ class GeminiProvider(LLMProvider):
                 })
             
             chat = self._client.aio.chats.create(
-                model=settings.gemini_model,
+                model=self._model,
                 history=gemini_history,
                 config=config,
             )
             response = await chat.send_message(prompt)
         else:
             response = await self._client.aio.models.generate_content(
-                model=settings.gemini_model,
+                model=self._model,
                 contents=prompt,
                 config=config,
             )
@@ -136,14 +139,16 @@ class GeminiProvider(LLMProvider):
         self,
         prompt: str,
         system_prompt: str | None = None,
+        thinking_budget: int = 0,
     ) -> dict[str, Any]:
         config = types.GenerateContentConfig(
             temperature=0.0,
             response_mime_type="application/json",
             system_instruction=system_prompt,
+            thinking_config=types.ThinkingConfig(thinking_budget=thinking_budget),
         )
         response = await self._client.aio.models.generate_content(
-            model=settings.gemini_model,
+            model=self._model,
             contents=prompt,
             config=config,
         )

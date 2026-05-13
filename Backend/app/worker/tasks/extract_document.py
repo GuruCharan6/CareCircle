@@ -68,6 +68,8 @@ async def _async_extract(document_id: str) -> None:
                     document = updated_doc
                 logger.info("extract_document.transcription_done", document_id=document_id)
 
+            # Voice NLP uses cheaper flash-8b — transcript already clean English from Sarvam
+            # All other doc types (prescriptions, labs) use default model for vision accuracy
             llm = GeminiProvider()
             # Layer 1 Ingest: AI Vision/OCR/STT
             ingested_item = await ingest(document, llm)
