@@ -5,6 +5,7 @@ from uuid import UUID
 
 import asyncpg
 
+from app.cache.query_embedding_cache import get_query_embedding, set_query_embedding
 from app.providers.llm.gemini import GeminiProvider
 from app.repositories.document_chunk_repository import DocumentChunkRepository
 from app.repositories.document_repository import DocumentRepository
@@ -78,14 +79,24 @@ class SearchService:
         
         return results[:limit]
 
+    async def _get_query_embedding(self, query: str) -> list[float]:
+        cached = await get_query_embedding(query)
+        if cached is not None:
+            return cached
+        embedding = await self._llm.embed_query(query)
+        await set_query_embedding(query, embedding)
+        return embedding
+
     async def _search_documents(
         self, query: str, patient_id: UUID, doc_type: str | None, limit: int
     ) -> list[SearchResult]:
-        """Hybrid search on documents."""
         sql_results = await self._sql_search_documents(query, patient_id, doc_type, limit)
-        # For universal search, we skip semantic for speed if query is short, 
-        # but here we follow the existing pattern.
-        return sql_results
+        sem_results = await self._semantic_search_documents(query, patient_id, doc_type, limit)
+        seen: dict[UUID, SearchResult] = {r.entity_id: r for r in sql_results}
+        for r in sem_results:
+            if r.entity_id not in seen:
+                seen[r.entity_id] = r
+        return list(seen.values())
 
     async def _sql_search_documents(
         self,
@@ -169,7 +180,7 @@ class SearchService:
         limit: int,
     ) -> list[SearchResult]:
         """Vector similarity search on document_chunks → fetch parent source_document."""
-        query_embedding = await self._llm.embed_query(query)
+        query_embedding = await self._get_query_embedding(query)
 
         # If doc_type filter, get candidate doc IDs first
         source_document_ids = None

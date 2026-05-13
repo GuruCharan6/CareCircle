@@ -45,6 +45,7 @@ async def _async_run(message_id_str: str) -> None:
     logger.info("process_whatsapp_media.started", message_id=message_id_str)
     source_doc = None
     patient_id_str: str | None = None
+    transcript: str | None = None
     async with worker_conn(max_size=3, command_timeout=60) as conn:
         msg_repo = WhatsAppMessageRepository(conn)
         obs_repo = ObservationRepository(conn)
@@ -177,13 +178,30 @@ Return ONLY a JSON object with these fields:
             await msg_repo.update_status(message_id, "failed", f"Extraction failed: {str(exc)}")
             return
 
-    # Run pipeline outside worker_conn block
+    # Run pipeline and embed transcript outside worker_conn block
     if source_doc is not None and patient_id_str is not None:
         try:
             from app.worker.tasks.run_pipeline import _async_run as _async_run_pipeline
             await _async_run_pipeline(str(source_doc.id), patient_id_str)
         except Exception as exc:
             logger.error("whatsapp_task.pipeline_failed", error=str(exc))
+
+        if transcript:
+            try:
+                from app.lib.embedding import embed_and_store_document
+                async with worker_conn(max_size=2, command_timeout=30) as embed_conn:
+                    llm = GeminiProvider()
+                    await embed_and_store_document(
+                        source_document_id=source_doc.id,
+                        patient_id=UUID(patient_id_str),
+                        text=transcript,
+                        metadata={"document_type": "voice_note", "source": "whatsapp_caregiver"},
+                        conn=embed_conn,
+                        llm=llm,
+                    )
+                logger.info("whatsapp_task.transcript_embedded", source_doc_id=str(source_doc.id))
+            except Exception as exc:
+                logger.error("whatsapp_task.embed_failed", error=str(exc))
 
 
 @shared_task(

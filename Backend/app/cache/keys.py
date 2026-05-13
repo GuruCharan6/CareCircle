@@ -18,6 +18,9 @@ MEDICATION_LIST_TTL = 600
 # phone_otp: 10 min — user must verify before TTL expires
 PHONE_OTP_TTL = 600
 
+# query_embedding: 1 hour — same query text always produces same vector
+QUERY_EMBEDDING_TTL = 3600
+
 
 # ── Key templates ─────────────────────────────────────────────────────────────
 # Prefix: cc:{entity}:{id}[:{variant}]
@@ -42,3 +45,9 @@ def medication_list_key(patient_id: UUID) -> str:
 
 def phone_otp_key(user_id: UUID) -> str:
     return f"cc:phone_otp:{user_id}"
+
+
+def query_embedding_key(query: str) -> str:
+    import hashlib
+    h = hashlib.sha256(query.lower().strip().encode()).hexdigest()[:16]
+    return f"cc:qemb:{h}"
