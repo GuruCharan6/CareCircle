@@ -24,28 +24,17 @@ export default function OnboardingWhatsAppPage() {
 
   const [finishing, setFinishing] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
-
-  // WhatsApp connection polling
-  const [waitingForWA, setWaitingForWA] = useState(false);
   const [waConnected, setWaConnected] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Phone entry (email-signup users who have no phone yet)
+  // Phone entry (email-signup users with no phone yet)
   const [phoneStep, setPhoneStep] = useState<PhoneStep>("idle");
   const [newPhone, setNewPhone] = useState("");
   const [otp, setOtp] = useState("");
   const [phoneError, setPhoneError] = useState<string | null>(null);
   const [phoneBusy, setPhoneBusy] = useState(false);
 
-  // Detect already-connected on mount / user change
-  useEffect(() => {
-    if (!user) return;
-    const prefs = user.preferences ?? {};
-    if (prefs.whatsapp_connected) {
-      setWaConnected(true);
-      stopPolling();
-    }
-  }, [user]);
+  const hasPhone = !!user?.phone_number;
 
   function stopPolling() {
     if (pollRef.current) {
@@ -55,21 +44,31 @@ export default function OnboardingWhatsAppPage() {
   }
 
   function startPolling() {
-    if (pollRef.current) return;
+    if (pollRef.current) return; // already running
     pollRef.current = setInterval(async () => {
       await refreshUser();
     }, POLL_INTERVAL_MS);
   }
 
-  useEffect(() => {
-    return () => stopPolling();
-  }, []);
+  // Cleanup on unmount
+  useEffect(() => () => stopPolling(), []);
 
-  function handleOpenWhatsApp() {
-    window.open(WHATSAPP_URL, "_blank");
-    setWaitingForWA(true);
-    startPolling();
-  }
+  // Start polling as soon as phone is available (covers both button-click AND QR-scan paths)
+  useEffect(() => {
+    if (hasPhone && !waConnected) {
+      startPolling();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasPhone, waConnected]);
+
+  // Detect connection via polling result
+  useEffect(() => {
+    if (!user) return;
+    if (user.preferences?.whatsapp_connected) {
+      setWaConnected(true);
+      stopPolling();
+    }
+  }, [user]);
 
   async function handleFinish() {
     setFinishing(true);
@@ -91,7 +90,7 @@ export default function OnboardingWhatsAppPage() {
     setTimeout(() => setCopied(null), 2000);
   };
 
-  // Phone OTP handlers (for email-signup users with no phone)
+  // Phone OTP handlers
   async function handleSendPhoneOtp() {
     if (!newPhone.startsWith("+")) {
       setPhoneError("Use E.164 format e.g. +91XXXXXXXXXX");
@@ -116,7 +115,7 @@ export default function OnboardingWhatsAppPage() {
     try {
       await authApi.verifyPhoneOtp(newPhone, otp);
       setPhoneStep("verified");
-      await refreshUser();
+      await refreshUser(); // refreshUser updates user.phone_number → hasPhone → startPolling fires
       setTimeout(() => { setPhoneStep("idle"); setNewPhone(""); setOtp(""); }, 1000);
     } catch (e: unknown) {
       setPhoneError(e instanceof Error ? e.message : "Invalid OTP");
@@ -125,9 +124,7 @@ export default function OnboardingWhatsAppPage() {
     }
   }
 
-  const hasPhone = !!user?.phone_number;
-
-  // Already connected state
+  // Already connected — show success + Finish button
   if (waConnected) {
     return (
       <div className="space-y-6">
@@ -143,7 +140,7 @@ export default function OnboardingWhatsAppPage() {
           </div>
           <div className="text-center">
             <p className="text-base font-black text-[#0D3B6E]">WhatsApp Connected!</p>
-            <p className="text-xs text-slate-500 mt-1">You'll receive daily health digests on WhatsApp.</p>
+            <p className="text-xs text-slate-500 mt-1">You&apos;ll receive daily health digests on WhatsApp.</p>
           </div>
         </div>
 
@@ -166,11 +163,13 @@ export default function OnboardingWhatsAppPage() {
           {isEdit ? "WhatsApp Connection" : "Final Step — Join WhatsApp"}
         </h2>
         <p className="text-[11px] text-slate-500 mt-1 max-w-sm mx-auto">
-          {isEdit ? "Review your WhatsApp connection status." : "Activate hands-free updates and daily health digests."}
+          {isEdit
+            ? "Review your WhatsApp connection status."
+            : "Activate hands-free updates and daily health digests."}
         </p>
       </div>
 
-      {/* Phone entry for email-signup users */}
+      {/* Phone entry — email users with no phone */}
       {!hasPhone && (
         <div className="p-4 rounded-2xl border border-blue-100 bg-blue-50/50 space-y-3">
           <div className="flex items-center gap-2">
@@ -244,7 +243,7 @@ export default function OnboardingWhatsAppPage() {
         </div>
       )}
 
-      {/* WA join instructions — only show if phone exists */}
+      {/* WA join instructions — shown when phone exists */}
       {hasPhone && (
         <>
           <div className="flex flex-col md:flex-row items-stretch gap-6 py-2">
@@ -291,13 +290,15 @@ export default function OnboardingWhatsAppPage() {
                 </div>
               </div>
 
-              <button
-                onClick={handleOpenWhatsApp}
+              <a
+                href={WHATSAPP_URL}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="flex items-center justify-center gap-2 w-full py-3 bg-[#007AFF] hover:bg-[#0066D6] text-white rounded-xl text-xs font-black shadow-lg shadow-blue-500/20 transition-all active:scale-95"
               >
                 Open WhatsApp
                 <ExternalLink size={12} />
-              </button>
+              </a>
             </div>
 
             {/* Middle: OR */}
@@ -338,15 +339,13 @@ export default function OnboardingWhatsAppPage() {
             </div>
           </div>
 
-          {/* Waiting for connection indicator */}
-          {waitingForWA && (
-            <div className="flex items-center gap-3 px-4 py-3 bg-amber-50 border border-amber-100 rounded-xl">
-              <Wifi size={14} className="text-amber-500 animate-pulse" />
-              <p className="text-xs text-amber-700 font-medium">
-                Waiting for WhatsApp connection… Send &quot;join officer-magnet&quot; then come back.
-              </p>
-            </div>
-          )}
+          {/* Always show waiting indicator when phone exists but not yet connected */}
+          <div className="flex items-center gap-3 px-4 py-3 bg-amber-50 border border-amber-100 rounded-xl">
+            <Wifi size={14} className="text-amber-500 animate-pulse" />
+            <p className="text-xs text-amber-700 font-medium">
+              Watching for connection… Use button or scan QR, then send &quot;join officer-magnet&quot;.
+            </p>
+          </div>
         </>
       )}
 
@@ -358,15 +357,15 @@ export default function OnboardingWhatsAppPage() {
           loading={finishing}
           onClick={handleSkip}
         >
-          {waitingForWA ? "Skip for Now" : "Skip"}
+          Skip
         </Button>
 
         {hasPhone && (
           <Button
             variant="primary"
-            className="flex-1 h-12 text-sm font-black shadow-xl shadow-blue-500/30 bg-gradient-to-r from-[#007AFF] to-[#0055FF] border-none hover:scale-[1.01] active:scale-[0.99] transition-all"
+            className="flex-1 h-12 text-sm font-black shadow-xl shadow-blue-500/30 bg-gradient-to-r from-[#007AFF] to-[#0055FF] border-none hover:scale-[1.01] active:scale-[0.99] transition-all disabled:opacity-40 disabled:scale-100"
             loading={finishing}
-            disabled={!waitingForWA && !waConnected}
+            disabled={!waConnected}
             onClick={handleFinish}
           >
             Finish Setup →
@@ -374,9 +373,9 @@ export default function OnboardingWhatsAppPage() {
         )}
       </div>
 
-      {hasPhone && !waitingForWA && (
+      {hasPhone && !waConnected && (
         <p className="text-[10px] text-slate-400 text-center">
-          Open WhatsApp above to activate, then &quot;Finish Setup&quot; will unlock.
+          &quot;Finish Setup&quot; unlocks automatically once WhatsApp is connected.
         </p>
       )}
     </div>

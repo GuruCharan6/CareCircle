@@ -100,6 +100,7 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [userLoading, setUserLoading] = useState(true);
 
   // WhatsApp join polling
   const [waPolling, setWaPolling] = useState(false);
@@ -114,7 +115,7 @@ export default function SettingsPage() {
   const [removingPhone, setRemovingPhone] = useState(false);
 
   useEffect(() => {
-    refreshUser();
+    refreshUser().finally(() => setUserLoading(false));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -381,8 +382,16 @@ export default function SettingsPage() {
                 {phoneError && <p className="text-xs text-red-500 font-medium">{phoneError}</p>}
               </div>
 
+              {/* WhatsApp — loading skeleton while initial refresh pending */}
+              {user?.phone_number && userLoading && (
+                <div className="flex items-center gap-3 px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl animate-pulse">
+                  <div className="w-4 h-4 rounded-full bg-slate-200 shrink-0" />
+                  <div className="h-3 bg-slate-200 rounded w-40" />
+                </div>
+              )}
+
               {/* WhatsApp — connected badge */}
-              {user?.phone_number && prefs.whatsapp_connected && (
+              {user?.phone_number && !userLoading && prefs.whatsapp_connected && (
                 <div className="flex items-center gap-3 px-4 py-3 bg-emerald-50 border border-emerald-200 rounded-xl">
                   <WA_ICON />
                   <div>
@@ -396,7 +405,7 @@ export default function SettingsPage() {
               )}
 
               {/* WhatsApp — not connected: show join flow */}
-              {user?.phone_number && !prefs.whatsapp_connected && (
+              {user?.phone_number && !userLoading && !prefs.whatsapp_connected && (
                 <div className="p-4 rounded-2xl border transition-all bg-amber-50 border-amber-100">
                   <div className="flex items-center gap-2 mb-3">
                     <div className="w-2 h-2 rounded-full bg-amber-500" />
