@@ -42,4 +42,8 @@ export const authApi = {
   removePhone() {
     return api.delete<UserResponse>("/auth/me/phone");
   },
+
+  verifyWhatsApp() {
+    return api.post<{ connected: boolean; error?: string }>("/auth/me/whatsapp/verify", {});
+  },
 };

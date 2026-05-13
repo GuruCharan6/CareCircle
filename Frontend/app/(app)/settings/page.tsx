@@ -104,6 +104,7 @@ export default function SettingsPage() {
 
   // WhatsApp join polling
   const [waPolling, setWaPolling] = useState(false);
+  const [waVerifying, setWaVerifying] = useState(false);
   const waPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Phone verification state
@@ -171,6 +172,21 @@ export default function SettingsPage() {
       setError(e instanceof Error ? e.message : "Save failed");
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleVerifyWhatsApp() {
+    setWaVerifying(true);
+    try {
+      const result = await authApi.verifyWhatsApp();
+      if (result.connected) {
+        await refreshUser();
+        setWaPolling(false);
+      }
+    } catch {
+      // silently fail — user can retry
+    } finally {
+      setWaVerifying(false);
     }
   }
 
@@ -439,9 +455,18 @@ export default function SettingsPage() {
                       <div className="flex items-center gap-2 px-3 py-2.5 bg-white border border-amber-200 rounded-xl">
                         <Wifi size={14} className="text-amber-500 animate-pulse shrink-0" />
                         <p className="text-xs text-amber-700 font-medium">
-                          Waiting… Send &quot;join officer-magnet&quot; on WhatsApp then come back.
+                          Send &quot;join officer-magnet&quot; on WhatsApp, then tap verify below.
                         </p>
                       </div>
+                      <Button
+                        variant="primary"
+                        className="w-full bg-[#25D366] hover:bg-[#20ba5a] border-none text-white shadow-sm"
+                        loading={waVerifying}
+                        onClick={handleVerifyWhatsApp}
+                      >
+                        <WA_ICON />
+                        <span className="ml-2">Verify Connection</span>
+                      </Button>
                       <button
                         type="button"
                         className="text-[11px] text-slate-400 hover:text-slate-600 w-full text-center"
