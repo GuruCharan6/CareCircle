@@ -73,12 +73,6 @@ async def get_current_user(request: Request, conn: DBConn) -> User:
             # If auto-creation fails, we must return 401 to trigger a logout/redirect
             raise UnauthorizedError("User record not found and could not be created. Please sign in again.")
 
-    # Stamp last_login — fire-and-forget, don't raise on failure
-    try:
-        await repo.update_last_login(user_id)
-    except Exception:
-        pass
-
     request.state.user_id = str(user_id)
     return user
 
