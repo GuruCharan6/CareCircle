@@ -49,7 +49,7 @@ export default function DailyDigestPage() {
               <ChevronLeft size={20} />
             </Button>
           </Link>
-          <h1 className="text-2xl font-bold text-[var(--color-primary)]">Daily Digest</h1>
+          <h1 className="text-xl lg:text-2xl font-bold text-[var(--color-primary)]">Daily Digest</h1>
         </div>
         <Button 
           variant="secondary" 
@@ -67,7 +67,7 @@ export default function DailyDigestPage() {
         <DigestCard digest={digest} loading={digestLoading} />
         
         {digest && !digestLoading && (
-          <div className="p-8 space-y-8">
+          <div className="p-4 lg:p-8 space-y-8">
             {digest.known_facts && digest.known_facts.length > 0 && (
               <section>
                 <h2 className="text-sm font-bold text-[var(--color-muted)] uppercase tracking-widest mb-4">Tracking Today</h2>

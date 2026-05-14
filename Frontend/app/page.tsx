@@ -112,6 +112,14 @@ const btn = {
    NAV
    ───────────────────────────────────────────── */
 function Navbar() {
+  const [mobile, setMobile] = useState(false);
+  useEffect(() => {
+    const check = () => setMobile(window.innerWidth < 520);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
   return (
     <nav
       style={{
@@ -128,21 +136,21 @@ function Navbar() {
         style={{
           maxWidth: 1100,
           margin: "0 auto",
-          padding: "0 24px",
-          height: 68,
+          padding: "0 16px",
+          height: 60,
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
         }}
       >
         {/* Logo */}
-        <Link href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 10 }}>
-          <Image src="/carecircle-logo.svg" alt="CareCircle Logo" width={34} height={34} />
+        <Link href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 8 }}>
+          <Image src="/carecircle-logo.svg" alt="CareCircle Logo" width={28} height={28} />
           <span
             style={{
               fontFamily: "'DM Sans', sans-serif",
               fontWeight: 700,
-              fontSize: 18,
+              fontSize: 16,
               color: T.white,
               letterSpacing: "-0.3px",
             }}
@@ -153,11 +161,13 @@ function Navbar() {
 
         {/* Nav links */}
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <Link href="/login" style={{ ...btn.ghost, fontSize: 14, padding: "9px 20px" }}>
-            Log In
-          </Link>
-          <Link href="/signup" style={{ ...btn.primary, fontSize: 14, padding: "9px 20px" }}>
-            Get started
+          {!mobile && (
+            <Link href="/login" style={{ ...btn.ghost, fontSize: 13, padding: "8px 16px" }}>
+              Log In
+            </Link>
+          )}
+          <Link href="/signup" style={{ ...btn.primary, fontSize: 13, padding: "8px 16px", whiteSpace: "nowrap" }}>
+            {mobile ? "Sign up" : "Get started"}
           </Link>
         </div>
       </div>
@@ -180,7 +190,7 @@ function Hero() {
         justifyContent: "center",
         position: "relative",
         overflow: "hidden",
-        paddingTop: 100,
+        paddingTop: 88,
         paddingBottom: 80,
       }}
     >
@@ -437,7 +447,7 @@ function StatusPill({ label, value, status, note }: StatusPillProps) {
         display: "flex",
         alignItems: "center",
         gap: 8,
-        flex: "1 1 160px",
+        flex: "1 1 calc(50% - 6px)",
         minWidth: 0,
       }}
     >
@@ -1570,15 +1580,11 @@ function SectionHeader({ mono, title, sub }: SectionHeaderProps) {
    ───────────────────────────────────────────── */
 export default function RootPage() {
   return (
-    <div style={{ background: T.bg, minHeight: "100vh" }}>
+    <div style={{ background: T.bg, minHeight: "100vh", overflowX: "hidden" }}>
       {/* Font import — add to your globals.css or layout.tsx instead */}
       <style dangerouslySetInnerHTML={{
-        __html: `
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300;1,9..40,400&family=DM+Mono:wght@300;400;500&display=swap');
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        html { scroll-behavior: smooth; }
-        body { margin: 0; padding: 0; }
-      ` }} />
+        __html: `@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300;1,9..40,400&family=DM+Mono:wght@300;400;500&display=swap');`
+      }} />
 
       <Navbar />
       <main style={{ margin: 0, padding: 0 }}>

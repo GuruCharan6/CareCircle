@@ -27,8 +27,8 @@ export default function MedicationsPage() {
 
   const load = useCallback(() => {
     if (activePatient) {
-      fetch(activePatient.id, false); // fetch all meds
-      fetchInteractions(activePatient.id); // fetch existing interactions — don't trigger new check on every load
+      fetch(activePatient.id, false);
+      fetchInteractions(activePatient.id);
     }
   }, [activePatient, fetch, fetchInteractions]);
 
@@ -40,7 +40,6 @@ export default function MedicationsPage() {
       if (target) {
         setEditing(target);
         setModalOpen(true);
-        // Clear param
         router.replace("/medications");
       }
     }
@@ -60,54 +59,63 @@ export default function MedicationsPage() {
 
   if (!activePatient) return null;
 
-  const TABS: { key: Tab; label: string }[] = [
-    { key: "active",       label: `Active (${counts.active})` },
-    { key: "discontinued", label: `Discontinued (${counts.discontinued})` },
-    { key: "all",          label: "All" },
+  const TABS: { key: Tab; label: string; mobileLabel: string }[] = [
+    { key: "active",       label: `Active (${counts.active})`,            mobileLabel: `Active (${counts.active})` },
+    { key: "discontinued", label: `Discontinued (${counts.discontinued})`, mobileLabel: `Stopped (${counts.discontinued})` },
+    { key: "all",          label: "All",                                   mobileLabel: "All" },
   ];
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 pb-12">
       {/* Page heading */}
       <div>
-        <h1 className="text-2xl font-bold text-[var(--color-primary)]">Medications</h1>
+        <h1 className="text-xl lg:text-2xl font-bold text-[var(--color-primary)]">Medications</h1>
         <p className="text-sm text-[var(--color-muted)] mt-0.5">
           Active prescriptions for {activePatient.name}
         </p>
       </div>
 
       {/* Tab bar + Add button */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="inline-flex items-center bg-white border border-[var(--color-border)] rounded-xl overflow-hidden">
-          {TABS.map(({ key, label }) => (
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        {/* Pill-style tabs */}
+        <div className="flex gap-1 bg-[var(--color-surface)] rounded-xl p-1 w-fit">
+          {TABS.map(({ key, label, mobileLabel }) => (
             <button
               key={key}
               onClick={() => setTab(key)}
               className={cn(
-                "px-5 py-2 text-sm font-semibold transition-colors",
+                "px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors duration-150 whitespace-nowrap",
                 tab === key
-                  ? "bg-white text-[var(--color-primary)] border-r border-[var(--color-border)]"
-                  : "text-[var(--color-muted)] hover:text-[var(--color-text)] border-r border-[var(--color-border)] last:border-r-0"
+                  ? "bg-[var(--color-primary)] text-white shadow-sm"
+                  : "text-[var(--color-muted)] hover:text-[var(--color-text)]"
               )}
             >
-              {label}
+              <span className="lg:hidden">{mobileLabel}</span>
+              <span className="hidden lg:inline">{label}</span>
             </button>
           ))}
         </div>
 
         <button
           onClick={() => { setEditing(null); setModalOpen(true); }}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[var(--color-action)] hover:bg-[var(--color-action)]/90 text-white text-sm font-bold transition-colors"
+          className="w-full sm:w-auto flex items-center justify-center gap-2 h-12 px-5 rounded-xl bg-[var(--color-action)] hover:bg-[var(--color-action)]/90 text-white text-sm font-bold transition-colors"
         >
           <Plus size={16} />
           Add Medication
         </button>
       </div>
 
-      {/* Table */}
-      <div className="bg-white rounded-2xl border border-[var(--color-border)] shadow-sm overflow-hidden">
-        {loading ? (
-          <div className="animate-pulse space-y-0 divide-y divide-[var(--color-border)]">
+      {/* Table / Cards */}
+      {loading ? (
+        <>
+          {/* Mobile skeleton */}
+          <div className="lg:hidden space-y-2">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="h-24 bg-white rounded-2xl border border-[rgba(0,0,0,0.06)] shadow-[0_1px_3px_rgba(0,0,0,0.08)] animate-pulse" />
+            ))}
+          </div>
+          {/* Desktop skeleton */}
+          <div className="hidden lg:block bg-white rounded-2xl border border-[var(--color-border)] shadow-sm animate-pulse space-y-0 divide-y divide-[var(--color-border)]">
             {[1, 2, 3, 4].map(i => (
               <div key={i} className="px-6 py-5 flex gap-4">
                 <div className="flex-1 space-y-2">
@@ -118,15 +126,15 @@ export default function MedicationsPage() {
               </div>
             ))}
           </div>
-        ) : (
-          <MedTable
-            medications={filtered}
-            interactions={interactions}
-            onEdit={m => { setEditing(m); setModalOpen(true); }}
-            onDiscontinue={m => discontinue(activePatient.id, m.id)}
-          />
-        )}
-      </div>
+        </>
+      ) : (
+        <MedTable
+          medications={filtered}
+          interactions={interactions}
+          onEdit={m => { setEditing(m); setModalOpen(true); }}
+          onDiscontinue={m => discontinue(activePatient.id, m.id)}
+        />
+      )}
 
       <MedModal
         open={modalOpen}

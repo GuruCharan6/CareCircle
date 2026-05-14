@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, type KeyboardEvent } from "react";
-import { Send } from "lucide-react";
+import { ArrowUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ChatQueryType } from "@/lib/types";
 
@@ -46,7 +46,7 @@ export function ChatInput({ onSend, disabled, placeholder = "Ask anything about 
   }
 
   return (
-    <div className="flex items-end gap-3">
+    <div className="flex items-end gap-2.5">
       <textarea
         ref={textareaRef}
         rows={1}
@@ -56,14 +56,14 @@ export function ChatInput({ onSend, disabled, placeholder = "Ask anything about 
         onInput={handleInput}
         disabled={disabled}
         placeholder={placeholder}
-        className="flex-1 resize-none rounded-[10px] border border-[#E5E7EB] px-4 py-3 text-sm focus:outline-none focus:border-[#10B981] transition-all disabled:opacity-50 max-h-[120px] overflow-y-auto bg-white"
+        className="flex-1 resize-none rounded-2xl border border-[#E5E7EB] px-4 py-3 text-sm focus:outline-none focus:border-[#0D3B6E] transition-all disabled:opacity-50 max-h-[120px] overflow-y-auto bg-white"
       />
       <button
         onClick={handleSend}
         disabled={!text.trim() || disabled}
-        className="h-[46px] px-6 rounded-[10px] bg-[#10B981] text-white font-bold text-sm hover:bg-[#059669] transition-all disabled:opacity-40 disabled:cursor-not-allowed shrink-0 shadow-sm"
+        className="w-11 h-11 rounded-full bg-[#0D3B6E] text-white flex items-center justify-center hover:bg-[#1a4f8a] transition-all disabled:opacity-30 disabled:cursor-not-allowed shrink-0 shadow-md"
       >
-        Send
+        <ArrowUp size={18} strokeWidth={2.5} />
       </button>
     </div>
   );

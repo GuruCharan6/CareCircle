@@ -83,6 +83,10 @@ export function PatientProvider({ children }: { children: React.ReactNode }) {
       fetchPatients();
     } else {
       setLoading(false);
+      // No token on mount (login page) — fetch when login completes
+      const handleLogin = () => fetchPatients();
+      window.addEventListener("cc:auth:login", handleLogin);
+      return () => window.removeEventListener("cc:auth:login", handleLogin);
     }
   }, [fetchPatients]);
 

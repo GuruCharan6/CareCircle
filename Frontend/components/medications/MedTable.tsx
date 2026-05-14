@@ -1,7 +1,9 @@
 "use client";
 
 import type { MedicationResponse, DrugInteractionResponse } from "@/lib/types";
-import { TriangleAlert } from "lucide-react";
+import { TriangleAlert, Edit2, XCircle } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Card } from "@/components/ui/Card";
 
 interface MedTableProps {
   medications: MedicationResponse[];
@@ -26,6 +28,28 @@ function formatDate(dateStr: string | null | undefined): string {
   });
 }
 
+function StatusBadge({ med, interactionFlag }: { med: MedicationResponse; interactionFlag: boolean }) {
+  if (interactionFlag) {
+    return (
+      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#EF9F27]/10 text-[#EF9F27] border border-[#EF9F27]/25 whitespace-nowrap">
+        <TriangleAlert size={11} /> interaction
+      </span>
+    );
+  }
+  if (med.status === "active") {
+    return (
+      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#639922]/10 text-[#639922] border border-[#639922]/25 whitespace-nowrap">
+        <span className="w-1.5 h-1.5 rounded-full bg-[#639922]" /> active
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-500 border border-slate-200 whitespace-nowrap">
+      <span className="w-1.5 h-1.5 rounded-full bg-slate-400" /> {med.status}
+    </span>
+  );
+}
+
 export function MedTable({ medications, interactions, onEdit, onDiscontinue }: MedTableProps) {
   if (!medications.length) {
     return (
@@ -36,108 +60,143 @@ export function MedTable({ medications, interactions, onEdit, onDiscontinue }: M
   }
 
   return (
-    <table className="w-full text-sm">
-      <thead>
-        <tr className="bg-[var(--color-bg)] border-b border-[var(--color-border)]">
-          {["MEDICATION", "DOSE & FREQUENCY", "PRESCRIBER", "VALID UNTIL", "STATUS", "ACTIONS"].map(col => (
-            <th
-              key={col}
-              className="px-5 py-3 text-left text-[10px] font-bold text-[var(--color-muted)] uppercase tracking-widest whitespace-nowrap"
-            >
-              {col}
-            </th>
-          ))}
-        </tr>
-      </thead>
-      <tbody className="divide-y divide-[var(--color-border)]">
+    <>
+      {/* ── Mobile card list ─────────────────────────────── */}
+      <div className="lg:hidden space-y-2">
         {medications.map(med => {
           const interactionFlag = hasInteraction(med, interactions);
           const isActive = med.status === "active";
-
           return (
-            <tr key={med.id} className="hover:bg-[var(--color-bg)]/50 transition-colors">
-              {/* MEDICATION */}
-              <td className="px-5 py-4 align-middle">
-                <p className="font-bold text-[var(--color-text)]">{med.generic_name}</p>
-                <p className="text-xs text-[var(--color-muted)] mt-0.5">
-                  {[med.brand_name, med.drug_class].filter(Boolean).join(" · ")}
-                </p>
-              </td>
-
-              {/* DOSE & FREQUENCY */}
-              <td className="px-5 py-4 align-middle">
-                <p className="font-semibold text-[var(--color-text)]">
-                  {[med.dose, med.frequency].filter(Boolean).join(" · ")}
-                </p>
-                {med.timing && (
-                  <p className="text-xs text-[var(--color-action)] mt-0.5">{med.timing}</p>
-                )}
-              </td>
-
-              {/* PRESCRIBER */}
-              <td className="px-5 py-4 align-middle">
-                {med.prescriber_name ? (
-                  <>
-                    <p className="font-semibold text-[var(--color-text)]">
-                      {med.prescriber_name.match(/^Dr\./i) ? med.prescriber_name : `Dr. ${med.prescriber_name}`}
-                    </p>
+            <Card key={med.id} padding="none" className="relative">
+              <div className="p-4 flex items-start gap-3">
+                <div className="flex-1 min-w-0 space-y-1.5">
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="text-base font-semibold text-[var(--color-text)] leading-snug">{med.generic_name}</p>
+                    <StatusBadge med={med} interactionFlag={interactionFlag} />
+                  </div>
+                  {(med.brand_name || med.drug_class) && (
                     <p className="text-xs text-[var(--color-muted)] mt-0.5">
-                      {[med.prescriber_specialty, med.prescriber_hospital].filter(Boolean).join(" · ")}
+                      {[med.brand_name, med.drug_class].filter(Boolean).join(" · ")}
                     </p>
-                  </>
-                ) : (
-                  <span className="text-[var(--color-muted)]">—</span>
-                )}
-              </td>
-
-              {/* VALID UNTIL */}
-              <td className="px-5 py-4 align-middle text-sm text-[var(--color-text)] whitespace-nowrap">
-                {formatDate(med.valid_until)}
-              </td>
-
-              {/* STATUS */}
-              <td className="px-5 py-4 align-middle">
-                {interactionFlag ? (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#EF9F27]/10 text-[#EF9F27] border border-[#EF9F27]/20 whitespace-nowrap">
-                    <TriangleAlert size={12} />
-                    interaction
-                  </span>
-                ) : med.status === "active" ? (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#639922]/10 text-[#639922] border border-[#639922]/20 whitespace-nowrap">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#639922]" />
-                    active
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-500 border border-slate-200 whitespace-nowrap">
-                    <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
-                    {med.status}
-                  </span>
-                )}
-              </td>
-
-              {/* ACTIONS */}
-              <td className="px-5 py-4 align-middle">
-                <div className="flex items-center gap-2">
+                  )}
+                  {(med.dose || med.frequency) && (
+                    <p className="text-sm text-[var(--color-text)]">
+                      {[med.dose, med.frequency].filter(Boolean).join(" · ")}
+                      {med.timing && (
+                        <span className="text-[var(--color-action)] font-medium ml-1">· {med.timing}</span>
+                      )}
+                    </p>
+                  )}
+                  {med.prescriber_name && (
+                    <p className="text-xs text-[var(--color-muted)] mt-1">
+                      Dr. {med.prescriber_name.replace(/^Dr\.\s*/i, "")}
+                    </p>
+                  )}
+                  {med.valid_until && (
+                    <p className="text-[11px] text-[var(--color-muted)]">Valid until {formatDate(med.valid_until)}</p>
+                  )}
+                </div>
+                <div className="flex flex-col gap-2 shrink-0">
                   <button
                     onClick={() => onEdit(med)}
-                    className="px-3 py-1.5 rounded-lg border border-[var(--color-border)] text-xs font-semibold text-[var(--color-primary)] hover:bg-[var(--color-bg)] transition-colors"
+                    className="w-9 h-9 flex items-center justify-center rounded-lg border border-[var(--color-border)] text-[var(--color-primary)] hover:bg-[var(--color-bg)] active:scale-95 transition-all"
                   >
-                    Edit
+                    <Edit2 size={14} />
                   </button>
                   {isActive && (
                     <button
                       onClick={() => onDiscontinue(med)}
-                      className="px-3 py-1.5 rounded-lg bg-[var(--color-alert)] hover:bg-[var(--color-alert)]/90 text-white text-xs font-semibold transition-colors"
+                      className="w-9 h-9 flex items-center justify-center rounded-lg bg-[var(--color-alert)]/10 text-[var(--color-alert)] hover:bg-[var(--color-alert)]/20 active:scale-95 transition-all"
                     >
-                      Discontinue
+                      <XCircle size={14} />
                     </button>
                   )}
                 </div>
-              </td>
-            </tr>
+              </div>
+            </Card>
           );
         })}
-      </tbody>
-    </table>
+      </div>
+
+      {/* ── Desktop table ─────────────────────────────────── */}
+      <div className="hidden lg:block bg-white rounded-2xl border border-[var(--color-border)] shadow-sm overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="bg-[var(--color-bg)] border-b border-[var(--color-border)]">
+              {["MEDICATION", "DOSE & FREQUENCY", "PRESCRIBER", "VALID UNTIL", "STATUS", "ACTIONS"].map(col => (
+                <th
+                  key={col}
+                  className="px-5 py-3 text-left text-[10px] font-bold text-[var(--color-muted)] uppercase tracking-widest whitespace-nowrap"
+                >
+                  {col}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-[var(--color-border)]">
+            {medications.map(med => {
+              const interactionFlag = hasInteraction(med, interactions);
+              const isActive = med.status === "active";
+              return (
+                <tr key={med.id} className="hover:bg-[var(--color-bg)]/50 transition-colors">
+                  <td className="px-5 py-4 align-middle">
+                    <p className="font-bold text-[var(--color-text)]">{med.generic_name}</p>
+                    <p className="text-xs text-[var(--color-muted)] mt-0.5">
+                      {[med.brand_name, med.drug_class].filter(Boolean).join(" · ")}
+                    </p>
+                  </td>
+                  <td className="px-5 py-4 align-middle">
+                    <p className="font-semibold text-[var(--color-text)]">
+                      {[med.dose, med.frequency].filter(Boolean).join(" · ")}
+                    </p>
+                    {med.timing && (
+                      <p className="text-xs text-[var(--color-action)] mt-0.5">{med.timing}</p>
+                    )}
+                  </td>
+                  <td className="px-5 py-4 align-middle">
+                    {med.prescriber_name ? (
+                      <>
+                        <p className="font-semibold text-[var(--color-text)]">
+                          {med.prescriber_name.match(/^Dr\./i) ? med.prescriber_name : `Dr. ${med.prescriber_name}`}
+                        </p>
+                        <p className="text-xs text-[var(--color-muted)] mt-0.5">
+                          {[med.prescriber_specialty, med.prescriber_hospital].filter(Boolean).join(" · ")}
+                        </p>
+                      </>
+                    ) : (
+                      <span className="text-[var(--color-muted)]">—</span>
+                    )}
+                  </td>
+                  <td className="px-5 py-4 align-middle text-sm text-[var(--color-text)] whitespace-nowrap">
+                    {formatDate(med.valid_until)}
+                  </td>
+                  <td className="px-5 py-4 align-middle">
+                    <StatusBadge med={med} interactionFlag={interactionFlag} />
+                  </td>
+                  <td className="px-5 py-4 align-middle">
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => onEdit(med)}
+                        className="px-3 py-1.5 rounded-lg border border-[var(--color-border)] text-xs font-semibold text-[var(--color-primary)] hover:bg-[var(--color-bg)] transition-colors"
+                      >
+                        Edit
+                      </button>
+                      {isActive && (
+                        <button
+                          onClick={() => onDiscontinue(med)}
+                          className="px-3 py-1.5 rounded-lg bg-[var(--color-alert)] hover:bg-[var(--color-alert)]/90 text-white text-xs font-semibold transition-colors"
+                        >
+                          Discontinue
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 }

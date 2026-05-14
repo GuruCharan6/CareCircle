@@ -39,11 +39,11 @@ export default function UploadPage() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 pb-12">
-      <h1 className="text-2xl font-bold text-[var(--color-primary)]">Upload & Capture</h1>
+      <h1 className="text-xl lg:text-2xl font-bold text-[var(--color-primary)]">Upload & Capture</h1>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* File upload */}
-        <div className="col-span-2">
+        <div className="col-span-1 lg:col-span-2">
           <Card>
             <CardHeader>
               <CardTitle>Upload document</CardTitle>

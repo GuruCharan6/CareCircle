@@ -29,26 +29,26 @@ export function PatientCard({ patient, patientState, onEmergencyClick, emergency
 
   return (
     <div
-      className="rounded-2xl p-6 text-white overflow-hidden relative"
+      className="rounded-2xl p-4 lg:p-6 text-white overflow-hidden relative"
       style={{ background: "linear-gradient(135deg, #0D3B6E 0%, #1a5499 100%)" }}
     >
-      {/* Header row */}
-      <div className="flex items-start justify-between gap-4">
+      {/* Header — single row, avatar + name left, status + button right */}
+      <div className="flex items-center justify-between gap-3">
         {/* Avatar + identity */}
-        <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center shrink-0">
-            <span className="text-xl font-bold text-white">{initials(patient.name)}</span>
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-11 h-11 lg:w-14 lg:h-14 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+            <span className="text-base lg:text-xl font-bold text-white">{initials(patient.name)}</span>
           </div>
-          <div>
-            <h2 className="text-2xl font-bold text-white leading-tight">{patient.name}</h2>
-            <p className="text-sm text-white/70 mt-0.5 capitalize">
+          <div className="min-w-0">
+            <h2 className="text-base lg:text-2xl font-bold text-white leading-tight truncate">{patient.name}</h2>
+            <p className="text-xs text-white/70 mt-0.5 capitalize truncate">
               {age} yrs · {patient.gender}{patient.blood_type ? ` · Blood type ${patient.blood_type}` : ""}
             </p>
           </div>
         </div>
 
-        {/* Status + Emergency button */}
-        <div className="flex items-center gap-3 shrink-0">
+        {/* Status badge + Emergency button */}
+        <div className="flex items-center gap-2 shrink-0">
           {status && (() => {
             const statusColors: Record<string, string> = {
               ok: "#639922",
@@ -57,9 +57,9 @@ export function PatientCard({ patient, patientState, onEmergencyClick, emergency
             };
             const statusColor = statusColors[status.toLowerCase()] || "#EF9F27";
             return (
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/15 border border-white/25 text-sm font-semibold text-white">
-                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: statusColor }} />
-                {status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()}
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/15 border border-white/25 text-xs font-semibold text-white">
+                <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: statusColor }} />
+                <span className="hidden sm:inline">{status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()}</span>
               </div>
             );
           })()}
@@ -67,9 +67,9 @@ export function PatientCard({ patient, patientState, onEmergencyClick, emergency
             <button
               onClick={onEmergencyClick}
               disabled={emergencyLoading}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#E24B4A] hover:bg-opacity-90 text-white text-sm font-bold transition-colors disabled:opacity-60 shadow-lg"
+              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#E24B4A] hover:bg-opacity-90 text-white text-xs font-bold transition-colors disabled:opacity-60 shadow-lg"
             >
-              <Download size={15} />
+              <Download size={13} />
               {emergencyLoading ? "Generating…" : "Emergency Card"}
             </button>
           )}
@@ -78,7 +78,7 @@ export function PatientCard({ patient, patientState, onEmergencyClick, emergency
 
       {/* Condition + allergy pills */}
       {(patient.known_conditions?.length > 0 || patient.known_allergies?.length > 0) && (
-        <div className="flex flex-wrap gap-2 mt-4">
+        <div className="flex flex-wrap gap-1.5 mt-3">
           {patient.known_conditions?.map((c, i) => (
             <span
               key={i}
@@ -100,7 +100,7 @@ export function PatientCard({ patient, patientState, onEmergencyClick, emergency
       )}
 
       {/* Stats row */}
-      <div className="grid grid-cols-3 gap-4 mt-5 pt-5 border-t border-white/20">
+      <div className="grid grid-cols-3 gap-3 mt-4 pt-4 border-t border-white/20">
         <StatItem
           label="PRIMARY DOCTOR"
           value={patient.primary_physician?.name ?? "—"}
@@ -108,7 +108,7 @@ export function PatientCard({ patient, patientState, onEmergencyClick, emergency
         />
         <StatItem
           label="LAST UPDATED"
-          value={patientState ? new Date(patientState.computed_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "—"}
+          value={patientState ? new Date(patientState.computed_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" }) : "—"}
           sub="State computed"
         />
         <StatItem
@@ -123,10 +123,10 @@ export function PatientCard({ patient, patientState, onEmergencyClick, emergency
 
 function StatItem({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
-    <div>
-      <p className="text-[10px] font-bold text-white/50 uppercase tracking-widest mb-1">{label}</p>
-      <p className="text-sm font-bold text-white">{value}</p>
-      {sub && <p className="text-xs text-white/60 mt-0.5">{sub}</p>}
+    <div className="min-w-0">
+      <p className="text-[9px] font-bold text-white/50 uppercase tracking-widest mb-0.5 truncate">{label}</p>
+      <p className="text-xs font-bold text-white truncate">{value}</p>
+      {sub && <p className="text-[10px] text-white/60 mt-0.5 truncate">{sub}</p>}
     </div>
   );
 }

@@ -58,7 +58,7 @@ function OtpForm({ phone, onVerify, onResend, loading, error }: OtpFormProps) {
   return (
     <div className="space-y-6">
       {/* OTP digit inputs */}
-      <div role="group" aria-label="One-time password" className="flex gap-2 justify-center">
+      <div role="group" aria-label="One-time password" className="flex gap-1.5 w-full">
         {digits.map((digit, i) => (
           <input
             key={i}
@@ -73,11 +73,11 @@ function OtpForm({ phone, onVerify, onResend, loading, error }: OtpFormProps) {
             onPaste={i === 0 ? handlePaste : undefined}
             onFocus={e => e.target.select()}
             className={cn(
-              "w-11 h-14 text-center text-xl font-bold rounded-xl border-2 font-mono",
+              "flex-1 min-w-0 h-12 text-center text-lg font-bold rounded-xl border-2 font-mono",
               "transition-all duration-150 focus:outline-none",
               "cursor-pointer select-none",
               error
-                ? "border-[var(--color-alert)] bg-red-50 text-[var(--color-alert)]"
+                ? "border-red-400 bg-red-50 text-red-500"
                 : digit
                   ? "border-[var(--color-action)] bg-[var(--color-surface)] text-[var(--color-primary)]"
                   : "border-[var(--color-border)] bg-white text-[var(--color-text)] focus:border-[var(--color-action)]"

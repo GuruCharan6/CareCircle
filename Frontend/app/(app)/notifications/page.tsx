@@ -74,7 +74,7 @@ export default function NotificationsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-[var(--color-primary)]">Notifications</h1>
+          <h1 className="text-xl lg:text-2xl font-bold text-[var(--color-primary)]">Notifications</h1>
           {unreadCount > 0 && (
             <p className="text-sm text-[var(--color-muted)]">{unreadCount} unread</p>
           )}
@@ -87,16 +87,16 @@ export default function NotificationsPage() {
         )}
       </div>
 
-      {/* Filter tabs */}
+      {/* Pill-style filter tabs */}
       <div className="flex gap-1 bg-[var(--color-surface)] rounded-xl p-1 w-fit">
         {(["all", "unread"] as Filter[]).map(f => (
           <button
             key={f}
             onClick={() => setFilter(f)}
             className={cn(
-              "px-4 py-1.5 rounded-lg text-sm font-medium capitalize transition-colors",
+              "px-4 py-1.5 rounded-lg text-sm font-semibold capitalize transition-colors duration-150",
               filter === f
-                ? "bg-white text-[var(--color-primary)] shadow-sm"
+                ? "bg-[var(--color-primary)] text-white shadow-sm"
                 : "text-[var(--color-muted)] hover:text-[var(--color-text)]"
             )}
           >

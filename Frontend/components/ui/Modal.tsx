@@ -56,7 +56,7 @@ function Modal({ open, onClose, title, children, className, size = "md" }: Modal
       {/* Panel */}
       <div
         className={cn(
-          "relative w-full bg-white rounded-2xl shadow-xl p-6",
+          "relative w-full bg-white rounded-2xl shadow-xl p-4 lg:p-6 max-h-[90vh] overflow-y-auto",
           sizeClasses[size],
           className
         )}

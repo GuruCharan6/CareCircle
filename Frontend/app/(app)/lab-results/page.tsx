@@ -16,9 +16,9 @@ type Tab = "all" | "abnormal" | "trends";
 
 export default function LabResultsPage() {
   const { activePatient } = usePatient();
-  const { 
-    results, loading, error, fetch, 
-    trend, trendLoading, fetchTrend 
+  const {
+    results, loading, error, fetch,
+    trend, trendLoading, fetchTrend
   } = useLabResults();
 
   const [activeTab, setActiveTab] = useState<Tab>("all");
@@ -47,23 +47,24 @@ export default function LabResultsPage() {
     <div className="max-w-6xl mx-auto space-y-6 pb-12">
       {/* Page heading */}
       <div>
-        <h1 className="text-2xl font-bold text-[var(--color-primary)]">Lab Results</h1>
+        <h1 className="text-xl lg:text-2xl font-bold text-[var(--color-primary)]">Lab Results</h1>
         <p className="text-sm text-[var(--color-muted)] mt-0.5">
           Pathology tests and analysis for {activePatient.name}
         </p>
       </div>
 
       {/* Tab bar + Actions */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="inline-flex items-center bg-white border border-[var(--color-border)] rounded-xl overflow-hidden">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        {/* Pill-style tabs */}
+        <div className="flex gap-1 bg-[var(--color-surface)] rounded-xl p-1 w-fit">
           {(["all", "abnormal", "trends"] as const).map(t => (
             <button
               key={t}
               onClick={() => setActiveTab(t)}
               className={cn(
-                "px-5 py-2 text-sm font-semibold transition-colors border-r border-[var(--color-border)] last:border-r-0",
+                "px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors duration-150 whitespace-nowrap",
                 activeTab === t
-                  ? "bg-white text-[var(--color-primary)]"
+                  ? "bg-[var(--color-primary)] text-white shadow-sm"
                   : "text-[var(--color-muted)] hover:text-[var(--color-text)]"
               )}
             >
@@ -73,31 +74,29 @@ export default function LabResultsPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" className="font-bold text-[var(--color-muted)]">
-            <Download size={16} className="mr-2" />
+          <button className="h-10 px-4 rounded-xl border border-[var(--color-border)] flex items-center gap-2 text-sm font-semibold text-[var(--color-muted)] hover:text-[var(--color-text)] transition-colors">
+            <Download size={16} />
             Export PDF
-          </Button>
-          <Button 
+          </button>
+          <button
             onClick={() => setModalOpen(true)}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[var(--color-action)] hover:bg-[var(--color-action)]/90 text-white text-sm font-bold transition-colors"
+            className="h-10 px-4 rounded-xl bg-[var(--color-action)] hover:bg-[var(--color-action)]/90 text-white flex items-center gap-2 text-sm font-bold transition-colors"
           >
-            <Plus size={18} />
+            <Plus size={16} />
             Add Result
-          </Button>
+          </button>
         </div>
       </div>
 
       {activeTab === "trends" ? (
         <LabTrendsView patientId={activePatient.id} results={results} />
       ) : (
-        <div className="bg-white rounded-2xl border border-[var(--color-border)] shadow-sm overflow-hidden">
-          <LabTable results={filtered} onSelect={handleSelect} />
-        </div>
+        <LabTable results={filtered} onSelect={handleSelect} />
       )}
 
-      <LabModal 
-        open={modalOpen} 
-        onClose={handleCloseModal} 
+      <LabModal
+        open={modalOpen}
+        onClose={handleCloseModal}
         result={selectedResult}
         trend={trend}
         trendLoading={trendLoading}

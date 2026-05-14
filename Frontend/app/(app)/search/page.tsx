@@ -68,7 +68,7 @@ export default function SearchPage() {
   return (
     <div className="max-w-6xl mx-auto space-y-6 pb-12">
       <div>
-        <h1 className="text-2xl font-bold text-[var(--color-primary)]">Search Records</h1>
+        <h1 className="text-xl lg:text-2xl font-bold text-[var(--color-primary)]">Search Records</h1>
         <p className="text-sm text-slate-400 mt-1">
           Search across all of {activePatient.name}'s documents
         </p>

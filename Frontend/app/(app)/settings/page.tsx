@@ -34,21 +34,19 @@ function Toggle({
   iconBg?: string;
 }) {
   return (
-    <div className="flex items-center justify-between py-3">
-      <div className="flex items-center gap-3">
-        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${iconBg ?? "bg-slate-100 text-slate-500"}`}>
-          {icon}
-        </div>
-        <div>
-          <p className="text-sm font-semibold text-slate-800">{label}</p>
-          <p className="text-[11px] text-slate-400">{description}</p>
-        </div>
+    <div className="flex items-center gap-3 px-4 py-3.5">
+      <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${iconBg ?? "bg-slate-100 text-slate-500"}`}>
+        {icon}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-slate-800 leading-tight">{label}</p>
+        <p className="text-[11px] text-slate-400 truncate">{description}</p>
       </div>
       <button
         type="button"
         onClick={() => onChange(!checked)}
         className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${
-          checked ? "bg-blue-500" : "bg-slate-200"
+          checked ? "bg-[var(--color-action)]" : "bg-slate-200"
         }`}
       >
         <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
@@ -254,7 +252,7 @@ export default function SettingsPage() {
     <div className="max-w-6xl mx-auto space-y-6 pb-12">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-[var(--color-primary)]">Settings</h1>
+        <h1 className="text-xl lg:text-2xl font-bold text-[var(--color-primary)]">Settings</h1>
         <p className="text-sm text-[var(--color-muted)] mt-0.5">Manage your account and preferences</p>
       </div>
 
@@ -266,13 +264,13 @@ export default function SettingsPage() {
           {/* Profile */}
           <div className="bg-white rounded-2xl border border-[var(--color-border)] overflow-hidden shadow-sm">
             <div className="px-6 py-4 border-b border-[var(--color-border)]">
-              <h2 className="text-sm font-bold text-[var(--color-text)] uppercase tracking-widest">Profile</h2>
+              <h2 className="text-xs font-semibold text-[var(--color-muted)] uppercase tracking-widest">Profile</h2>
             </div>
             <div className="p-6 space-y-5">
 
               {/* Avatar */}
               <div className="flex justify-center">
-                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-3xl font-bold shadow-lg">
+                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-2xl font-bold shadow-lg">
                   {initials || <User size={32} />}
                 </div>
               </div>
@@ -483,10 +481,10 @@ export default function SettingsPage() {
 
           {/* Notifications */}
           <div className="bg-white rounded-2xl border border-[var(--color-border)] overflow-hidden shadow-sm">
-            <div className="px-6 py-4 border-b border-[var(--color-border)]">
-              <h2 className="text-sm font-bold text-[var(--color-text)] uppercase tracking-widest">Notifications</h2>
+            <div className="px-4 py-4 border-b border-[var(--color-border)]">
+              <h2 className="text-xs font-semibold text-[var(--color-muted)] uppercase tracking-widest">Notifications</h2>
             </div>
-            <div className="px-6 divide-y divide-slate-100">
+            <div className="divide-y divide-slate-100">
               <Toggle
                 label="SMS Alerts"
                 description="Critical alerts via text message"
@@ -516,25 +514,29 @@ export default function SettingsPage() {
 
           {/* Digest Timings */}
           <div className="bg-white rounded-2xl border border-[var(--color-border)] overflow-hidden shadow-sm">
-            <div className="px-6 py-4 border-b border-[var(--color-border)]">
-              <h2 className="text-sm font-bold text-[var(--color-text)] uppercase tracking-widest">Daily Digest Timings</h2>
+            <div className="px-4 py-4 border-b border-[var(--color-border)]">
+              <h2 className="text-xs font-semibold text-[var(--color-muted)] uppercase tracking-widest">Daily Digest Timings</h2>
             </div>
-            <div className="p-6 grid grid-cols-2 gap-3">
+            <div className="p-4 flex flex-col gap-3">
               {/* Morning */}
-              <div className={`space-y-2 rounded-xl p-3 border transition-all ${
-                prefs.morning_digest ? "bg-green-50 border-green-100" : "bg-slate-50 border-slate-100 opacity-50"
+              <div className={`rounded-2xl p-4 border-2 transition-all ${
+                prefs.morning_digest
+                  ? "bg-gradient-to-b from-green-50 to-emerald-50 border-green-200"
+                  : "bg-slate-50 border-slate-100"
               }`}>
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-1.5">
-                    <Sun size={12} className="text-green-600" />
-                    <span className="text-[10px] font-bold text-green-700 uppercase tracking-wide">Morning</span>
+                    <Sun size={15} className={prefs.morning_digest ? "text-green-500" : "text-slate-300"} />
+                    <span className={`text-[10px] font-black uppercase tracking-widest ${prefs.morning_digest ? "text-green-600" : "text-slate-300"}`}>
+                      Morning
+                    </span>
                   </div>
                   <button
                     type="button"
                     onClick={() => setPref("morning_digest", !prefs.morning_digest)}
-                    className={`relative w-8 h-4 rounded-full transition-colors ${prefs.morning_digest ? "bg-green-500" : "bg-slate-300"}`}
+                    className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${prefs.morning_digest ? "bg-green-400" : "bg-slate-200"}`}
                   >
-                    <span className={`absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full shadow transition-transform ${prefs.morning_digest ? "translate-x-4" : "translate-x-0"}`} />
+                    <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${prefs.morning_digest ? "translate-x-4" : "translate-x-0"}`} />
                   </button>
                 </div>
                 <input
@@ -542,25 +544,31 @@ export default function SettingsPage() {
                   value={prefs.morning_time}
                   onChange={e => setPref("morning_time", e.target.value)}
                   disabled={!prefs.morning_digest}
-                  className="w-full h-9 px-2 bg-white border border-green-200 rounded-lg text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-green-400 disabled:opacity-40"
+                  className={`w-full bg-transparent border-none text-3xl font-black text-center focus:outline-none p-0 [&::-webkit-calendar-picker-indicator]:hidden transition-colors ${
+                    prefs.morning_digest ? "text-green-700" : "text-slate-200"
+                  }`}
                 />
               </div>
 
               {/* Evening */}
-              <div className={`space-y-2 rounded-xl p-3 border transition-all ${
-                prefs.evening_digest ? "bg-purple-50 border-purple-100" : "bg-slate-50 border-slate-100 opacity-50"
+              <div className={`rounded-2xl p-4 border-2 transition-all ${
+                prefs.evening_digest
+                  ? "bg-gradient-to-b from-violet-50 to-purple-50 border-purple-200"
+                  : "bg-slate-50 border-slate-100"
               }`}>
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-1.5">
-                    <Moon size={12} className="text-purple-600" />
-                    <span className="text-[10px] font-bold text-purple-700 uppercase tracking-wide">Evening</span>
+                    <Moon size={15} className={prefs.evening_digest ? "text-purple-500" : "text-slate-300"} />
+                    <span className={`text-[10px] font-black uppercase tracking-widest ${prefs.evening_digest ? "text-purple-600" : "text-slate-300"}`}>
+                      Evening
+                    </span>
                   </div>
                   <button
                     type="button"
                     onClick={() => setPref("evening_digest", !prefs.evening_digest)}
-                    className={`relative w-8 h-4 rounded-full transition-colors ${prefs.evening_digest ? "bg-purple-500" : "bg-slate-300"}`}
+                    className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${prefs.evening_digest ? "bg-purple-400" : "bg-slate-200"}`}
                   >
-                    <span className={`absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full shadow transition-transform ${prefs.evening_digest ? "translate-x-4" : "translate-x-0"}`} />
+                    <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${prefs.evening_digest ? "translate-x-4" : "translate-x-0"}`} />
                   </button>
                 </div>
                 <input
@@ -568,7 +576,9 @@ export default function SettingsPage() {
                   value={prefs.evening_time}
                   onChange={e => setPref("evening_time", e.target.value)}
                   disabled={!prefs.evening_digest}
-                  className="w-full h-9 px-2 bg-white border border-purple-200 rounded-lg text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-400 disabled:opacity-40"
+                  className={`w-full bg-transparent border-none text-3xl font-black text-center focus:outline-none p-0 [&::-webkit-calendar-picker-indicator]:hidden transition-colors ${
+                    prefs.evening_digest ? "text-purple-700" : "text-slate-200"
+                  }`}
                 />
               </div>
             </div>
@@ -595,7 +605,7 @@ export default function SettingsPage() {
             <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)]">
               <div className="flex items-center gap-2">
                 <Users size={15} className="text-[var(--color-action)]" />
-                <h2 className="text-sm font-bold text-[var(--color-text)] uppercase tracking-widest">Patients</h2>
+                <h2 className="text-xs font-semibold text-[var(--color-muted)] uppercase tracking-widest">Patients</h2>
               </div>
               <button
                 onClick={() => router.push("/onboarding/patient")}
@@ -671,7 +681,7 @@ export default function SettingsPage() {
           <div className="bg-white rounded-2xl border border-[var(--color-border)] overflow-hidden shadow-sm">
             <div className="flex items-center gap-2 px-6 py-4 border-b border-[var(--color-border)]">
               <Siren size={15} className="text-[var(--color-alert)]" />
-              <h2 className="text-sm font-bold text-[var(--color-text)] uppercase tracking-widest">Emergency</h2>
+              <h2 className="text-xs font-semibold text-[var(--color-muted)] uppercase tracking-widest">Emergency</h2>
             </div>
             <div className="p-4">
               <div className="flex items-start gap-3 mb-4">

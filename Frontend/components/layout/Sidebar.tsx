@@ -23,7 +23,7 @@ const SECTIONS = [
     items: [
       { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
       { href: "/daily-digest", label: "Daily Digest", icon: Coffee },
-      { href: "/chatbot", label: "AI Assistant", icon: Sparkles },
+      { href: "/chatbot", label: "Ask AI", icon: Sparkles },
     ],
   },
   {
@@ -114,7 +114,7 @@ function Sidebar({ className }: SidebarProps) {
 
   const initials = user?.name
     ? user.name.split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2)
-    : "?";
+    : null;
 
   // Dynamic Badge Logic
   const getBadge = (label: string) => {
@@ -164,7 +164,7 @@ function Sidebar({ className }: SidebarProps) {
     <aside
       suppressHydrationWarning
       className={cn(
-        "bg-[#0D3B6E] flex flex-col shrink-0 h-full border-r border-white/10",
+        "bg-[#0D3B6E] hidden lg:flex flex-col shrink-0 h-full border-r border-white/10",
         isLoaded ? "transition-all duration-300 ease-in-out" : "transition-none",
         isCollapsed ? "w-20" : "w-56",
         className
@@ -256,7 +256,7 @@ function Sidebar({ className }: SidebarProps) {
           )}
         >
           <div className="w-9 h-9 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white text-xs font-bold shrink-0 group-hover:border-white/40 transition-colors">
-            {initials}
+            {initials ?? <UserCircle size={20} className="text-white/70" />}
           </div>
           {!isCollapsed && (
             <div className="flex-1 min-w-0 text-left">

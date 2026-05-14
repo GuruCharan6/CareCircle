@@ -76,7 +76,7 @@ export default function DashboardPage() {
       <div className="space-y-5 max-w-6xl mx-auto pb-12 animate-pulse">
         <div className="h-52 bg-[var(--color-border)] rounded-2xl" />
         <div className="h-40 bg-[var(--color-border)] rounded-2xl" />
-        <div className="grid grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           {[1, 2, 3].map(i => <div key={i} className="h-28 bg-[var(--color-border)] rounded-xl" />)}
         </div>
       </div>
@@ -275,7 +275,7 @@ function StatCard({
         <p className="text-[10px] font-bold text-[var(--color-muted)] uppercase tracking-widest">{label}</p>
         {icon}
       </div>
-      <p className="text-4xl font-bold text-[var(--color-text)] leading-none mb-1">{value}</p>
+      <p className="text-2xl lg:text-4xl font-bold text-[var(--color-text)] leading-none mb-1">{value}</p>
       <p className="text-xs text-[var(--color-muted)]">{sub}</p>
     </div>
   );

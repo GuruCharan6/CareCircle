@@ -15,15 +15,15 @@ function GoogleButton({ onSuccess, onError }: GoogleButtonProps) {
 
   useEffect(() => {
     const google = (window as any).google;
-    if (!google) return;
+    if (!google || !btnRef.current) return;
 
-    // Only initialize once per page lifecycle — avoids flicker on re-renders
+    const width = btnRef.current.offsetWidth || 320;
+
     if (!(window as any).__cc_gsi_initialized) {
       google.accounts.id.initialize({
         client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
         callback: (response: any) => {
           if (response.credential) {
-            // Always call the latest handler without re-subscribing
             onSuccessRef.current(response.credential);
           }
         },
@@ -31,22 +31,20 @@ function GoogleButton({ onSuccess, onError }: GoogleButtonProps) {
       (window as any).__cc_gsi_initialized = true;
     }
 
-    if (btnRef.current) {
-      google.accounts.id.renderButton(btnRef.current, {
-        width: 358,
-        text: "continue_with",
-        shape: "rectangular",
-        theme: "outline",
-        logo_alignment: "left",
-      });
-    }
-  // Run only ONCE on mount — ref pattern keeps callback fresh without re-running
+    google.accounts.id.renderButton(btnRef.current, {
+      width,
+      text: "continue_with",
+      shape: "rectangular",
+      theme: "outline",
+      logo_alignment: "left",
+      size: "large",
+    });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
-    <div className="w-full flex justify-center min-h-[40px]">
-      <div ref={btnRef} />
+    <div className="w-full min-h-[44px] overflow-hidden">
+      <div ref={btnRef} className="w-full" />
     </div>
   );
 }

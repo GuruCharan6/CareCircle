@@ -11,23 +11,23 @@ interface CardProps extends Omit<React.HTMLAttributes<HTMLDivElement>, "title"> 
 const paddingClasses = {
   none: "",
   sm:   "p-3",
-  md:   "p-5",
+  md:   "p-4",
   lg:   "p-6",
 };
 
-function Card({ 
-  padding = "md", 
-  title, 
+function Card({
+  padding = "md",
+  title,
   icon,
-  headerAction, 
-  className, 
-  children, 
-  ...props 
+  headerAction,
+  className,
+  children,
+  ...props
 }: CardProps) {
   return (
     <div
       className={cn(
-        "bg-white rounded-xl border border-[var(--color-border)] shadow-sm overflow-hidden",
+        "bg-white rounded-2xl border border-[rgba(0,0,0,0.06)] shadow-[0_1px_3px_rgba(0,0,0,0.08)] overflow-hidden",
         className
       )}
       {...props}

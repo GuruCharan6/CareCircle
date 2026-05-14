@@ -3,29 +3,11 @@
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { PhoneInput } from "@/components/ui/PhoneInput";
 import { GoogleButton } from "@/components/auth/GoogleButton";
 import { useAuth } from "@/hooks/useAuth";
-
-function AlertIcon() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
-    </svg>
-  );
-}
-
-function CheckBadge() {
-  return (
-    <div className="flex items-center gap-2 text-xs text-[var(--color-ok)]">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
-      </svg>
-      <span>Free forever · No credit card</span>
-    </div>
-  );
-}
 
 export default function SignupPage() {
   const router = useRouter();
@@ -51,7 +33,6 @@ export default function SignupPage() {
     }
   }
 
-  // useCallback prevents GoogleButton from re-rendering on every keystroke (fixes flickering)
   const handleGoogle = useCallback(async (idToken: string) => {
     await googleSignInWithRedirect(idToken);
   }, [googleSignInWithRedirect]);
@@ -59,59 +40,58 @@ export default function SignupPage() {
   const fieldError = phoneError || error;
 
   return (
-    <div className="space-y-6">
-      {/* Heading */}
+    <div className="space-y-5">
       <div>
-        <h2 className="text-2xl font-bold text-[var(--color-primary)] tracking-tight">
-          Start monitoring
-        </h2>
-        <p className="text-sm text-[var(--color-muted)] mt-1">
-          Set up your care circle in minutes
-        </p>
-        <div className="mt-2.5">
-          <CheckBadge />
-        </div>
+        <h2 className="text-2xl font-bold text-[#0D3B6E] tracking-tight">Get started free</h2>
+        <p className="text-sm text-[#6B7280] mt-1">Enter your mobile number to receive an OTP</p>
       </div>
 
       {/* Phone input */}
       <div className="space-y-1.5">
-        <label htmlFor="phone" className="text-sm font-semibold text-[var(--color-text)]">
-          Mobile number
+        <label htmlFor="phone" className="text-[10px] font-bold text-[#9CA3AF] uppercase tracking-widest">
+          Mobile Number
         </label>
         <PhoneInput
           id="phone"
           value={phone}
           onChange={(v) => { setPhone(v); setPhoneError(""); }}
           onKeyDown={(e) => e.key === "Enter" && handleSendOtp()}
-          className={fieldError ? "border-[var(--color-alert)]!" : ""}
+          className={fieldError ? "border-red-400!" : ""}
         />
-        {fieldError ? (
-          <p className="flex items-center gap-1.5 text-xs text-[var(--color-alert)]">
-            <AlertIcon />
-            {fieldError}
-          </p>
-        ) : (
-          <p className="text-xs text-[var(--color-muted)]">
-            Enter your 10-digit mobile number
-          </p>
+        {fieldError && (
+          <p className="text-xs text-red-500 font-medium">{fieldError}</p>
         )}
       </div>
 
-      <Button variant="primary" size="lg" className="w-full" loading={loading} onClick={handleSendOtp}>
-        Get started free
+      <Button
+        variant="primary"
+        size="lg"
+        className="w-full flex items-center justify-center gap-2 bg-[#0D3B6E] hover:bg-[#0a2f58]"
+        loading={loading}
+        onClick={handleSendOtp}
+      >
+        Send OTP <ArrowRight size={16} />
       </Button>
 
       <div className="flex items-center gap-3">
-        <div className="flex-1 h-px bg-[var(--color-border)]" />
-        <span className="text-xs text-[var(--color-muted)] font-medium">or</span>
-        <div className="flex-1 h-px bg-[var(--color-border)]" />
+        <div className="flex-1 h-px bg-[#E5E7EB]" />
+        <span className="text-xs text-[#9CA3AF] font-medium">or</span>
+        <div className="flex-1 h-px bg-[#E5E7EB]" />
       </div>
 
       <GoogleButton onSuccess={handleGoogle} onError={() => {}} />
 
-      <p className="text-center text-sm text-[var(--color-muted)]">
+      {/* WhatsApp note */}
+      <div className="flex items-start gap-2.5 px-3 py-3 bg-[#E8F5F2] rounded-xl">
+        <span className="text-base shrink-0 mt-0.5">💬</span>
+        <p className="text-[11px] text-[#2D7A5F] leading-relaxed">
+          You&apos;ll receive morning &amp; evening health digests via WhatsApp — no extra setup required.
+        </p>
+      </div>
+
+      <p className="text-center text-sm text-[#6B7280]">
         Already have an account?{" "}
-        <Link href="/login" className="text-[var(--color-action)] font-semibold hover:underline">
+        <Link href="/login" className="text-[#1D9E75] font-semibold hover:underline">
           Sign in
         </Link>
       </p>

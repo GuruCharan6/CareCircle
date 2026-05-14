@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useRef, type DragEvent, type ChangeEvent } from "react";
-import { Upload, File } from "lucide-react";
-import { Button } from "@/components/ui/Button";
+import { Upload, Camera } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { DocumentType } from "@/lib/types";
 
@@ -18,6 +17,7 @@ export function UploadZone({ onUpload, loading }: UploadZoneProps) {
   const [dragging, setDragging] = useState(false);
   const [fileError, setFileError] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
 
   async function calculateHash(file: File): Promise<string> {
     const buffer = await file.arrayBuffer();
@@ -56,55 +56,57 @@ export function UploadZone({ onUpload, loading }: UploadZoneProps) {
 
   return (
     <div className="space-y-3">
-      {/* Drop zone */}
+      {/* Drop zone — tap anywhere to pick file */}
       <div
         onDragOver={e => { e.preventDefault(); setDragging(true); }}
         onDragLeave={() => setDragging(false)}
         onDrop={handleDrop}
+        onClick={() => !loading && inputRef.current?.click()}
         className={cn(
-          "border-2 border-dashed rounded-xl p-8 flex flex-col items-center gap-3 text-center transition-colors",
+          "rounded-2xl py-10 px-6 flex flex-col items-center gap-4 text-center transition-all cursor-pointer select-none",
           dragging
-            ? "border-[var(--color-action)] bg-[var(--color-surface)]"
-            : "border-[var(--color-border)] hover:border-[var(--color-action)]/50"
+            ? "bg-[#C8EDE4] scale-[0.99]"
+            : "bg-[#DFF0EB] hover:bg-[#C8EDE4] active:scale-[0.99]"
         )}
       >
-        <div className="w-12 h-12 rounded-full bg-[var(--color-surface)] flex items-center justify-center">
+        {/* Icon circle */}
+        <div className="w-14 h-14 rounded-full bg-white flex items-center justify-center shadow-sm">
           {loading ? (
             <svg className="animate-spin h-5 w-5 text-[var(--color-action)]" viewBox="0 0 24 24" fill="none">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 11-8 8z" />
             </svg>
-          ) : dragging ? (
-            <File size={22} className="text-[var(--color-action)]" />
           ) : (
             <Upload size={22} className="text-[var(--color-action)]" />
           )}
         </div>
 
-        <div>
-          <p className="font-medium text-sm text-[var(--color-text)]">
-            {loading ? "Uploading…" : "Drop file here or click to browse"}
+        <div className="space-y-1">
+          <p className="font-bold text-base text-[var(--color-primary)]">
+            {loading ? "Uploading…" : "Upload a document"}
           </p>
-          <p className="text-xs text-[var(--color-muted)] mt-0.5">PDF, JPG, PNG, HEIC — up to 20 MB</p>
+          <p className="text-sm text-[var(--color-muted)]">
+            Prescription, lab report, discharge summary
+          </p>
+          <p className="text-xs text-[var(--color-muted)] font-medium opacity-70 mt-1">
+            PDF&nbsp;·&nbsp;JPG&nbsp;·&nbsp;PNG&nbsp;·&nbsp;Voice Note
+          </p>
         </div>
 
-        <input
-          ref={inputRef}
-          type="file"
-          accept={ACCEPTED}
-          onChange={handleChange}
-          className="sr-only"
-          aria-label="Upload document"
-        />
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={() => inputRef.current?.click()}
-          disabled={loading}
-        >
-          Choose file
-        </Button>
+        {/* Hidden inputs */}
+        <input ref={inputRef} type="file" accept={ACCEPTED} onChange={handleChange} className="sr-only" aria-label="Upload document" />
+        <input ref={cameraRef} type="file" accept="image/*" capture="environment" onChange={handleChange} className="sr-only" aria-label="Take photo" />
       </div>
+
+      {/* Camera button — mobile only, separate below zone */}
+      <button
+        onClick={() => cameraRef.current?.click()}
+        disabled={loading}
+        className="lg:hidden w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-[var(--color-border)] bg-white text-sm font-semibold text-[var(--color-text)] hover:bg-[var(--color-surface)] transition-colors disabled:opacity-50"
+      >
+        <Camera size={16} className="text-[var(--color-action)]" />
+        Take a photo
+      </button>
 
       {fileError && <p className="text-xs text-[var(--color-alert)]">{fileError}</p>}
     </div>

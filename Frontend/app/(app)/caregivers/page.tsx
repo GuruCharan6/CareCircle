@@ -41,14 +41,14 @@ export default function CaregiversPage() {
     <div className="max-w-6xl mx-auto space-y-6 pb-12">
       {/* Page heading */}
       <div>
-        <h1 className="text-2xl font-bold text-[var(--color-primary)]">Caregivers</h1>
+        <h1 className="text-xl lg:text-2xl font-bold text-[var(--color-primary)]">Caregivers</h1>
         <p className="text-sm text-[var(--color-muted)] mt-0.5">
           Caregivers helping with {activePatient.name}'s daily needs
         </p>
       </div>
 
       {/* Actions row */}
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex items-center justify-between gap-4 flex-wrap">
         <button
           onClick={() => setActiveOnly(!activeOnly)}
           className={cn(
@@ -63,16 +63,16 @@ export default function CaregiversPage() {
 
         <button
           onClick={() => { setEditingCaregiver(null); setModalOpen(true); }}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[var(--color-action)] hover:bg-[var(--color-action)]/90 text-white text-sm font-bold transition-colors shadow-sm"
+          className="w-full sm:w-auto flex items-center justify-center gap-2 h-12 px-5 rounded-xl bg-[var(--color-action)] hover:bg-[var(--color-action)]/90 text-white text-sm font-bold transition-colors shadow-sm"
         >
           <Plus size={18} />
           Add Caregiver
         </button>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
         {loading ? (
-          [1, 2].map(i => <div key={i} className="h-44 bg-slate-50 rounded-3xl animate-pulse" />)
+          [1, 2].map(i => <div key={i} className="h-44 bg-white rounded-2xl border border-[rgba(0,0,0,0.06)] shadow-[0_1px_3px_rgba(0,0,0,0.08)] animate-pulse" />)
         ) : caregivers.length === 0 ? (
           <div className="col-span-full py-20 text-center bg-white rounded-2xl border border-dashed border-[var(--color-border)]">
             <Users size={40} className="mx-auto mb-3 text-[var(--color-border)]" />

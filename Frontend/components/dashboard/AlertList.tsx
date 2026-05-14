@@ -85,7 +85,7 @@ export function AlertList({
         </div>
       </CardHeader>
 
-      <div className="space-y-3 px-6 pb-6">
+      <div className="space-y-3 px-4 lg:px-6 pb-4 lg:pb-6">
         {/* EMERGENCY FOLLOW-UPS */}
         {emergencyFollowUps.map((e) => (
           <div
@@ -125,18 +125,10 @@ export function AlertList({
                 <AlertTriangle size={20} className={style.icon} />
               </div>
               <div className="flex-1 min-w-0 space-y-1">
-                <div className="flex items-center justify-between gap-2">
-                  <h4 className="text-[13px] font-bold text-[#0D3B6E]">
-                    {i.drug_a_generic} + {i.drug_b_generic}
-                  </h4>
-                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-tight ${style.badge}`}>
-                    {sev}
-                  </span>
-                </div>
-                <p className="text-[12px] text-slate-500 leading-relaxed line-clamp-2">
-                  {i.mechanism || "Combined use may lead to adverse effects. Monitor symptoms closely."}
-                </p>
-                <div className="flex items-center gap-1.5 text-[11px] font-bold text-indigo-600 mt-1.5">
+                <h4 className="text-[13px] font-bold text-[#0D3B6E]">
+                  {i.drug_a_generic} + {i.drug_b_generic}
+                </h4>
+                <div className="flex items-center gap-1.5 text-[11px] font-bold text-indigo-600 mt-1">
                   Review Interaction <ChevronRight size={14} />
                 </div>
               </div>
@@ -166,10 +158,7 @@ export function AlertList({
                     {urg}
                   </span>
                 </div>
-                <p className="text-[12px] text-slate-500 leading-relaxed">
-                  Supply runs out soon. Request a refill to avoid missing doses.
-                </p>
-                <div className="flex items-center gap-1.5 text-[11px] font-bold text-amber-600 mt-1.5">
+                <div className="flex items-center gap-1.5 text-[11px] font-bold text-amber-600 mt-1">
                   Manage Refill <ChevronRight size={14} />
                 </div>
               </div>

@@ -12,9 +12,9 @@ interface PageHeaderProps {
 
 export function PageHeader({ title, subtitle, children, className }: PageHeaderProps) {
   return (
-    <div className={cn("flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8", className)}>
+    <div className={cn("flex flex-col md:flex-row md:items-end justify-between gap-4 mb-4 lg:mb-8", className)}>
       <div>
-        <h1 className="text-2xl font-bold text-[var(--color-primary)]">
+        <h1 className="text-xl lg:text-2xl font-bold text-[var(--color-primary)]">
           {title}
         </h1>
         {subtitle && (

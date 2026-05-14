@@ -41,12 +41,29 @@
   --color-ok:          #639922;
   --color-muted:       #6B7280;
   --color-border:      #D9D5CD;
+
+  /* Line-height tokens */
+  --leading-snug:      1.35;
+  --leading-relaxed:   1.6;
+}
+
+/* ── Mobile tap highlight ──────────────────────────────── */
+* {
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* ── Base styles ───────────────────────────────────────── */
 html {
   background: var(--color-bg);
   color: var(--color-text);
+  scroll-behavior: smooth;
+}
+
+/* 15px base on mobile — prevents rem-based inputs inheriting 16px which causes iOS zoom */
+@media (max-width: 1023px) {
+  html {
+    font-size: 15px;
+  }
 }
 
 body {
@@ -55,10 +72,29 @@ body {
   color: var(--color-text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overscroll-behavior-y: contain;
+}
+
+/* Explicitly 16px on inputs to prevent iOS zoom regardless of base font */
+input, select, textarea {
+  font-size: 16px;
 }
 
 code, kbd, pre, samp {
   font-family: var(--font-mono);
+}
+
+/* ── Safe area / PWA ───────────────────────────────────── */
+body {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* ── Scrollable containers ─────────────────────────────── */
+.overflow-y-auto,
+.overflow-y-scroll,
+.overflow-x-auto,
+.overflow-x-scroll {
+  -webkit-overflow-scrolling: touch;
 }
 
 /* ── Scrollbar ─────────────────────────────────────────── */
@@ -75,4 +111,11 @@ code, kbd, pre, samp {
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #092C52;
+}
+
+/* ── Mobile typography scale ───────────────────────────── */
+@media (max-width: 1023px) {
+  h1 { font-size: 1.25rem; line-height: 1.75rem; }
+  h2 { font-size: 1.125rem; line-height: 1.5rem; }
+  h3 { font-size: 1rem; line-height: 1.5rem; }
 }

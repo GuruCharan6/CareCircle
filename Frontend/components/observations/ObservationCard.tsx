@@ -2,6 +2,7 @@
 
 import { CheckCircle2, AlertCircle } from "lucide-react";
 import type { ObservationResponse } from "@/lib/types";
+import { Card } from "@/components/ui/Card";
 
 interface ObservationCardProps {
   observation: ObservationResponse;
@@ -47,124 +48,122 @@ export function ObservationCard({ observation: obs, isFirst = false }: Observati
     : null;
 
   return (
-    <div className="relative pl-10 pb-4 last:pb-0">
-      {/* Timeline line — hidden on last card */}
-      <div className="absolute left-[10px] top-6 bottom-0 w-px bg-[var(--color-border)] last:hidden" />
+    <div className="relative pl-8 pb-3 last:pb-0">
+      {/* Timeline vertical line */}
+      <div className="absolute left-[4px] top-6 bottom-0 w-px bg-[var(--color-border)] last:hidden" />
 
-      {/* Timeline dot */}
+      {/* Timeline dot — 10px */}
       {isFirst ? (
-        <div className="absolute left-0 top-3 w-5 h-5 rounded-full bg-green-500 flex items-center justify-center z-10">
-          <div className="w-2 h-2 rounded-full bg-white" />
-        </div>
+        <div className="absolute left-0 top-3 w-2.5 h-2.5 rounded-full bg-[var(--color-ok)] z-10" />
       ) : (
-        <div className="absolute left-0 top-3 w-5 h-5 rounded-full border-2 border-slate-200 bg-white z-10" />
+        <div className="absolute left-0 top-3 w-2.5 h-2.5 rounded-full border-2 border-[var(--color-border)] bg-white z-10" />
       )}
 
       {/* Card */}
-      <div className="bg-white rounded-2xl border border-slate-100 px-6 py-5 shadow-sm hover:shadow-md transition-shadow">
-        {/* Header row */}
-        <div className="flex items-start justify-between gap-4 mb-4">
-          <div>
-            <h3 className="text-sm font-bold text-slate-800 tracking-tight">{title}</h3>
-            <p className="text-[11px] font-medium text-slate-400 mt-0.5">
-              {obs.source_type.replace(/_/g, " ")}  ·  {dateStr}  ·  {timeStr}
-            </p>
-          </div>
-          {isWatch ? (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black bg-orange-50 text-orange-600 border border-orange-100 whitespace-nowrap shrink-0">
-              <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
-              WATCH
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black bg-green-50 text-green-600 border border-green-100 whitespace-nowrap shrink-0">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
-              OK
-            </span>
-          )}
-        </div>
-
-        {/* Clinical fields */}
-        <div className="space-y-3 text-[13px] leading-relaxed">
-          {(obs.symptoms_reported?.length ?? 0) > 0 && (
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-bold text-slate-700 shrink-0">Symptoms reported:</span>
-              {obs.symptoms_reported.map(s => (
-                <span
-                  key={s}
-                  className="inline-flex px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-50 text-rose-500 border border-rose-100"
-                >
-                  {s}
-                </span>
-              ))}
-            </div>
-          )}
-
-          {(obs.symptoms_denied?.length ?? 0) > 0 && (
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-bold text-slate-700 shrink-0">Symptoms denied:</span>
-              {obs.symptoms_denied.map(s => (
-                <span
-                  key={s}
-                  className="inline-flex px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-green-50 text-green-600 border border-green-100"
-                >
-                  {s}
-                </span>
-              ))}
-            </div>
-          )}
-
-          {mealText && (
-            <p className="text-slate-600">
-              <span className="font-bold text-slate-700">Meals:</span> {mealText}
-            </p>
-          )}
-
-          {medText && (
-            <div className="flex items-center gap-2 text-slate-600">
-              <span className="font-bold text-slate-700">Medications taken:</span>
-              <div className="flex items-center gap-1.5">
-                {obs.medications_taken ? (
-                  <CheckCircle2 size={14} className="text-green-500 shrink-0" />
-                ) : (
-                  <AlertCircle size={14} className="text-rose-500 shrink-0" />
-                )}
-                <span className={obs.medications_taken ? "text-green-600 font-medium" : "text-rose-500 font-medium"}>
-                  {medText}
-                </span>
-              </div>
-            </div>
-          )}
-
-          {(obs.mood || obs.energy_level) && (
-            <p className="text-slate-600">
-              {obs.mood && (
-                <><span className="font-bold text-slate-700">Mood:</span> {capitalize(obs.mood)}</>
-              )}
-              {obs.mood && obs.energy_level && (
-                <span className="text-slate-300 mx-2">·</span>
-              )}
-              {obs.energy_level && (
-                <><span className="font-bold text-slate-700">Energy:</span> {capitalize(obs.energy_level)}</>
-              )}
-            </p>
-          )}
-
-          {obs.mobility_notes && (
-            <p className="text-slate-600">
-              <span className="font-bold text-slate-700">Mobility:</span> {obs.mobility_notes}
-            </p>
-          )}
-
-          {(obs.concerns_flagged?.length ?? 0) > 0 && (
-            <div className="pt-1">
-              <p className="text-slate-600">
-                <span className="font-bold text-slate-700">Concerns flagged:</span>{" "}
-                {obs.concerns_flagged.join(" — ")}
+      <Card padding="none" className="hover:shadow-md transition-shadow">
+        <div className="px-4 py-4">
+          {/* Header row */}
+          <div className="flex items-start justify-between gap-3 mb-3">
+            <div className="min-w-0">
+              <h3 className="text-base font-semibold text-[var(--color-text)] leading-snug">{title}</h3>
+              <p className="text-xs text-[var(--color-muted)] mt-0.5">
+                {obs.source_type.replace(/_/g, " ")} · {dateStr} · {timeStr}
               </p>
             </div>
-          )}
+            {isWatch ? (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-[var(--color-watch)]/10 text-[var(--color-watch)] border border-[var(--color-watch)]/25 whitespace-nowrap shrink-0">
+                <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-watch)] animate-pulse" />
+                WATCH
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-[var(--color-ok)]/10 text-[var(--color-ok)] border border-[var(--color-ok)]/25 whitespace-nowrap shrink-0">
+                <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-ok)]" />
+                OK
+              </span>
+            )}
+          </div>
+
+          {/* Clinical fields */}
+          <div className="space-y-2 text-sm leading-relaxed">
+            {(obs.symptoms_reported?.length ?? 0) > 0 && (
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-bold text-[var(--color-text)] shrink-0">Symptoms reported:</span>
+                {obs.symptoms_reported.map(s => (
+                  <span
+                    key={s}
+                    className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-500 border border-red-100"
+                  >
+                    {s}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {(obs.symptoms_denied?.length ?? 0) > 0 && (
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-bold text-[var(--color-text)] shrink-0">Symptoms denied:</span>
+                {obs.symptoms_denied.map(s => (
+                  <span
+                    key={s}
+                    className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-600 border border-green-100"
+                  >
+                    {s}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {mealText && (
+              <p className="text-[var(--color-muted)]">
+                <span className="font-bold text-[var(--color-text)]">Meals:</span> {mealText}
+              </p>
+            )}
+
+            {medText && (
+              <div className="flex items-center gap-2 text-[var(--color-muted)]">
+                <span className="font-bold text-[var(--color-text)]">Medications taken:</span>
+                <div className="flex items-center gap-1.5">
+                  {obs.medications_taken ? (
+                    <CheckCircle2 size={14} className="text-[var(--color-ok)] shrink-0" />
+                  ) : (
+                    <AlertCircle size={14} className="text-[var(--color-alert)] shrink-0" />
+                  )}
+                  <span className={obs.medications_taken ? "text-[var(--color-ok)] font-medium" : "text-[var(--color-alert)] font-medium"}>
+                    {medText}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {(obs.mood || obs.energy_level) && (
+              <p className="text-[var(--color-muted)]">
+                {obs.mood && (
+                  <><span className="font-bold text-[var(--color-text)]">Mood:</span> {capitalize(obs.mood)}</>
+                )}
+                {obs.mood && obs.energy_level && (
+                  <span className="opacity-30 mx-2">·</span>
+                )}
+                {obs.energy_level && (
+                  <><span className="font-bold text-[var(--color-text)]">Energy:</span> {capitalize(obs.energy_level)}</>
+                )}
+              </p>
+            )}
+
+            {obs.mobility_notes && (
+              <p className="text-[var(--color-muted)]">
+                <span className="font-bold text-[var(--color-text)]">Mobility:</span> {obs.mobility_notes}
+              </p>
+            )}
+
+            {(obs.concerns_flagged?.length ?? 0) > 0 && (
+              <p className="text-[var(--color-muted)]">
+                <span className="font-bold text-[var(--color-text)]">Concerns flagged:</span>{" "}
+                {obs.concerns_flagged.join(" — ")}
+              </p>
+            )}
+          </div>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

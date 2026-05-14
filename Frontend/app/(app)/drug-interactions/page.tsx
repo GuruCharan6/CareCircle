@@ -20,36 +20,40 @@ export default function DrugInteractionsPage() {
 
   const handleRecheck = async () => {
     if (activePatient) {
-      await triggerCheck(activePatient.id); // internally fetches after check completes
+      await triggerCheck(activePatient.id);
     }
   };
 
   if (!activePatient) return null;
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8 pb-12">
-      <PageHeader 
-        title="Drug Interactions" 
-        subtitle="AI-detected interactions across all active medications"
-      >
-        <Button 
-          onClick={handleRecheck}
-          loading={checking}
-          className="bg-[#1D9E75] hover:bg-[#157A5A] text-white font-bold h-10"
-        >
-          <Search size={18} className="mr-2" />
-          Re-check Interactions
-        </Button>
-      </PageHeader>
+    <div className="max-w-6xl mx-auto space-y-6 pb-12">
+      {/* Page heading */}
+      <div>
+        <h1 className="text-xl lg:text-2xl font-bold text-[var(--color-primary)]">Drug Interactions</h1>
+        <p className="text-sm text-[var(--color-muted)] mt-0.5">
+          AI-detected interactions across all active medications
+        </p>
+      </div>
 
-      <div className="space-y-4">
+      {/* Re-check button — full width on mobile */}
+      <Button
+        onClick={handleRecheck}
+        loading={checking}
+        className="w-full h-12 rounded-xl bg-[#1D9E75] hover:bg-[#157A5A] text-white font-bold flex items-center justify-center gap-2"
+      >
+        <Search size={18} />
+        Re-check Interactions
+      </Button>
+
+      <div className="space-y-3">
         {loading ? (
-          [1, 2, 3].map(i => <div key={i} className="h-44 bg-slate-50 rounded-3xl animate-pulse" />)
+          [1, 2, 3].map(i => <div key={i} className="h-44 bg-white rounded-2xl border border-[rgba(0,0,0,0.06)] shadow-[0_1px_3px_rgba(0,0,0,0.08)] animate-pulse" />)
         ) : interactions.length === 0 ? (
-          <div className="py-24 text-center bg-white rounded-[32px] border border-slate-100 shadow-sm">
+          <div className="py-24 text-center bg-white rounded-2xl border border-[rgba(0,0,0,0.06)] shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
             <ShieldCheck size={48} className="mx-auto mb-4 text-green-500" />
-            <h3 className="text-xl font-bold text-[#0D3B6E]">No Interactions Detected</h3>
-            <p className="text-slate-500">All active medications appear safe to take together.</p>
+            <h3 className="text-lg lg:text-xl font-bold text-[#0D3B6E]">No Interactions Detected</h3>
+            <p className="text-slate-500 mt-1">All active medications appear safe to take together.</p>
           </div>
         ) : (
           interactions.map(ix => <InteractionCard key={ix.id} interaction={ix} />)
@@ -82,26 +86,44 @@ function InteractionCard({ interaction }: { interaction: DrugInteractionResponse
   }
 
   return (
-    <Card className={cn("border-l-4 border-none shadow-sm rounded-2xl overflow-hidden", borderClass)}>
-      <div className="p-6 flex items-start gap-6">
-        <div className="flex-1 space-y-3">
-          <div className="flex items-center gap-3">
-            <h3 className="text-lg font-bold text-[#0D3B6E]">{interaction.drug_a_generic} ↔ {interaction.drug_b_generic}</h3>
-            <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-black tracking-widest border uppercase", 
-              isHigh ? "bg-red-50 text-red-700 border-red-100" : isModerate ? "bg-amber-50 text-amber-700 border-amber-100" : "bg-green-50 text-green-700 border-green-100"
-            )}>
-              {label}
-            </span>
+    <Card className={cn("border-l-4 border-none shadow-sm overflow-hidden", borderClass)}>
+      <div className="p-4 sm:p-5">
+        {/* Header row: drug names + icon (icon confined here, not stealing width below) */}
+        <div className="flex items-start justify-between gap-3 mb-3">
+          <div className="min-w-0">
+            <h3 className="text-base font-semibold text-[#0D3B6E] leading-snug">
+              {interaction.drug_a_generic} ↔ {interaction.drug_b_generic}
+            </h3>
+            <div className="mt-1.5">
+              <span className={cn(
+                "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border",
+                isHigh ? "bg-red-50 text-red-700 border-red-100" : isModerate ? "bg-amber-50 text-amber-700 border-amber-100" : "bg-green-50 text-green-700 border-green-100"
+              )}>
+                {label}
+              </span>
+            </div>
           </div>
-          <div className="text-sm space-y-2">
-            {interaction.drug_class && <p className="text-slate-400 font-bold"><span className="font-medium">Class:</span> {interaction.drug_class}</p>}
-            <p className="text-[#475569]"><span className="font-bold text-[#0D3B6E]">Mechanism:</span> {interaction.mechanism}</p>
-            {interaction.recommendation && <p className="text-[#475569]"><span className="font-bold text-[#0D3B6E]">Recommendation:</span> {interaction.recommendation}</p>}
+          <div className="flex flex-col items-center gap-0.5 shrink-0">
+            <Icon size={36} className={iconColor} strokeWidth={1.5} />
+            <span className={cn("text-[10px] font-black", iconColor)}>{label}</span>
           </div>
         </div>
-        <div className="flex flex-col items-center gap-1 shrink-0">
-          <Icon size={32} className={iconColor} />
-          <span className={cn("text-[10px] font-black", iconColor)}>{label}</span>
+
+        {/* Full-width content below header */}
+        <div className="space-y-2">
+          {interaction.drug_class && (
+            <p className="text-sm text-slate-400"><span className="font-medium text-slate-500">Class:</span> {interaction.drug_class}</p>
+          )}
+          <div>
+            <p className="text-sm font-semibold text-[var(--color-primary)]">Mechanism</p>
+            <p className="text-sm text-[var(--color-muted)] mt-1 leading-relaxed">{interaction.mechanism}</p>
+          </div>
+          {interaction.recommendation && (
+            <div>
+              <p className="text-sm font-semibold text-[var(--color-primary)]">Recommendation</p>
+              <p className="text-sm text-[var(--color-muted)] mt-1 leading-relaxed">{interaction.recommendation}</p>
+            </div>
+          )}
         </div>
       </div>
     </Card>

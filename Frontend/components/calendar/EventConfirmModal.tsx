@@ -79,36 +79,39 @@ export function EventConfirmModal({ open, onClose, event, onConfirm, onCancel, o
         </div>
 
         {isActionable && (
-          <div className="flex gap-3 pt-4 border-t border-[#F3F4F6]">
-            <Button
-              variant="outline"
-              size="md"
-              className="flex-1 rounded-xl text-red-500 border-red-100 hover:bg-red-50 hover:border-red-200"
-              loading={cancelling}
-              onClick={handleCancel}
-            >
-              <Trash2 size={16} className="mr-2" />
-              Remove
-            </Button>
-            <Button
-              variant="secondary"
-              size="md"
-              className="flex-1 rounded-xl"
-              onClick={() => { onEdit(event!); onClose(); }}
-            >
-              <Edit3 size={16} className="mr-2" />
-              Edit
-            </Button>
+          <div className="flex flex-col gap-2 pt-4 border-t border-[#F3F4F6]">
             {isSuggested && (
               <Button
                 variant="primary"
-                className="flex-[2] rounded-xl bg-[#0D3B6E] shadow-lg shadow-[#0D3B6E]/20"
+                size="md"
+                className="w-full rounded-xl bg-[#0D3B6E] shadow-lg shadow-[#0D3B6E]/20"
                 loading={confirming}
                 onClick={handleConfirm}
               >
                 Confirm Appointment
               </Button>
             )}
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="md"
+                className="flex-1 rounded-xl text-red-500 border-red-100 hover:bg-red-50 hover:border-red-200"
+                loading={cancelling}
+                onClick={handleCancel}
+              >
+                <Trash2 size={15} className="mr-1.5" />
+                Remove
+              </Button>
+              <Button
+                variant="secondary"
+                size="md"
+                className="flex-1 rounded-xl"
+                onClick={() => { onEdit(event!); onClose(); }}
+              >
+                <Edit3 size={15} className="mr-1.5" />
+                Edit
+              </Button>
+            </div>
           </div>
         )}
       </div>

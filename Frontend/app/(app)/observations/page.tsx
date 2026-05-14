@@ -28,7 +28,7 @@ export default function ObservationsPage() {
     <div className="max-w-6xl mx-auto space-y-6 pb-12">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-[var(--color-primary)]">Observations</h1>
+        <h1 className="text-xl lg:text-2xl font-bold text-[var(--color-primary)]">Observations</h1>
         <p className="text-sm text-[var(--color-muted)] mt-0.5">
           Daily health observations, symptoms &amp; mood logs
         </p>

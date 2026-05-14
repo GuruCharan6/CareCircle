@@ -43,7 +43,7 @@ export default function PrescribersPage() {
     <div className="max-w-6xl mx-auto space-y-6 pb-12">
       {/* Page heading */}
       <div>
-        <h1 className="text-2xl font-bold text-[var(--color-primary)]">Prescribers</h1>
+        <h1 className="text-xl lg:text-2xl font-bold text-[var(--color-primary)]">Prescribers</h1>
         <p className="text-sm text-[var(--color-muted)] mt-0.5">
           Doctors managing {activePatient.name}'s care
         </p>

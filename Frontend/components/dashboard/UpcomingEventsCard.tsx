@@ -123,7 +123,7 @@ export function UpcomingEventsCard({ patientId }: { patientId: string }) {
                     </div>
                   </div>
 
-                  <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+                  <div className="lg:opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
                     <button
                       onClick={() => {
                         if (confirm("Delete this schedule?")) remove(patientId, event.id);

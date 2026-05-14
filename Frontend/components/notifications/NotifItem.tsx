@@ -80,17 +80,25 @@ export function NotifItem({ notification, patientId, onAcknowledge, onCrisisFoll
   const canMarkRefilled = isUnread && notification.type === "refill_reminder" && unactioned;
   const canUpload = isUnread && (notification.type === "staleness_notice" || notification.type === "gap_reminder");
 
+  const showUnreadDot = isUnread && !needsAck && !canAddNote && !canAddToCalendar && !canMarkRefilled && !canUpload;
+
   return (
     <div
       onClick={() => isUnread && onMarkRead?.(notification.id)}
       className={cn(
-        "flex items-start gap-3 px-4 py-3 transition-colors",
+        "flex items-start gap-3 px-4 py-4 transition-colors",
         isUnread ? "bg-[var(--color-surface)] cursor-pointer hover:bg-slate-50" : "bg-white"
       )}
     >
-      {/* Type icon */}
-      <div className={cn("w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-0.5", bg)}>
-        <Icon size={14} className={text} />
+      {/* Unread dot — left side, aligned with icon */}
+      <div className="flex flex-col items-center gap-1 shrink-0 pt-1">
+        {showUnreadDot && (
+          <div className={cn("w-2 h-2 rounded-full mb-1", dot)} />
+        )}
+        {/* Type icon — 36px circle */}
+        <div className={cn("w-9 h-9 rounded-full flex items-center justify-center shrink-0", bg)}>
+          <Icon size={15} className={text} />
+        </div>
       </div>
 
       {/* Content */}
@@ -102,7 +110,7 @@ export function NotifItem({ notification, patientId, onAcknowledge, onCrisisFoll
           )}>
             {notification.title}
           </p>
-          <span className="text-[10px] text-[var(--color-muted)] shrink-0 mt-0.5">
+          <span className="text-xs text-[var(--color-muted)] shrink-0 mt-0.5">
             {timeAgo(notification.created_at)}
           </span>
         </div>
@@ -131,7 +139,6 @@ export function NotifItem({ notification, patientId, onAcknowledge, onCrisisFoll
           </div>
         )}
 
-        {/* Crisis / watch: add note or voice record */}
         {canAddNote && onCrisisFollowUp && (
           <button
             onClick={e => { e.stopPropagation(); onCrisisFollowUp(patientId, notification.id); }}
@@ -142,7 +149,6 @@ export function NotifItem({ notification, patientId, onAcknowledge, onCrisisFoll
           </button>
         )}
 
-        {/* Calendar reminder: confirm event then navigate to calendar */}
         {canAddToCalendar && onAcknowledge && (
           <button
             onClick={async e => {
@@ -164,7 +170,6 @@ export function NotifItem({ notification, patientId, onAcknowledge, onCrisisFoll
           </button>
         )}
 
-        {/* Refill reminder: mark as refilled */}
         {canMarkRefilled && onAcknowledge && (
           <button
             onClick={e => { e.stopPropagation(); onAcknowledge(notification.id, "handled"); }}
@@ -175,7 +180,6 @@ export function NotifItem({ notification, patientId, onAcknowledge, onCrisisFoll
           </button>
         )}
 
-        {/* Staleness / gap: go to home to upload */}
         {canUpload && (
           <button
             onClick={e => { e.stopPropagation(); router.push("/"); }}
@@ -186,7 +190,6 @@ export function NotifItem({ notification, patientId, onAcknowledge, onCrisisFoll
           </button>
         )}
 
-        {/* Acknowledged badge */}
         {notification.acknowledged_at && (
           <div className="mt-1.5">
             <span className={cn(
@@ -200,11 +203,6 @@ export function NotifItem({ notification, patientId, onAcknowledge, onCrisisFoll
           </div>
         )}
       </div>
-
-      {/* Unread dot — only when no action CTA is shown */}
-      {isUnread && !needsAck && !canAddNote && !canAddToCalendar && !canMarkRefilled && !canUpload && (
-        <div className={cn("w-2 h-2 rounded-full shrink-0 mt-2", dot)} />
-      )}
     </div>
   );
 }

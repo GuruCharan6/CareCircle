@@ -32,7 +32,7 @@ function TypeButton({
       type="button"
       onClick={onClick}
       className={cn(
-        "flex flex-col items-center justify-center p-4 rounded-[20px] border-2 transition-all gap-2 text-center min-h-[110px] shadow-sm",
+        "flex flex-col items-center justify-center p-3 lg:p-4 rounded-[16px] lg:rounded-[20px] border-2 transition-all gap-1.5 text-center min-h-[90px] lg:min-h-[110px] shadow-sm",
         active 
           ? "border-[#0D3B6E] bg-[#0D3B6E]/5 text-[#0D3B6E] scale-[1.02]" 
           : "border-[#F3F4F6] bg-white text-[#9CA3AF] hover:border-[#E5E7EB] hover:text-[#6B7280]"
@@ -90,8 +90,8 @@ export function CalendarEventForm({ open, onClose, onSubmit, initialDate, initia
   }
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#0D3B6E]/20 backdrop-blur-md">
-      <div className="bg-white w-full max-w-md rounded-[24px] shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-[#E5E7EB] overflow-hidden">
+    <div className="fixed inset-0 z-[100] flex items-end lg:items-center justify-center p-0 lg:p-4 bg-[#0D3B6E]/20 backdrop-blur-md">
+      <div className="bg-white w-full max-w-md rounded-t-[24px] lg:rounded-[24px] shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-[#E5E7EB] overflow-hidden max-h-[92vh] overflow-y-auto">
         <div className="px-6 py-5 border-b border-[#F3F4F6] flex items-center justify-between bg-[#FDFDFD]">
           <div>
             <h2 className="font-bold text-[#1F2937] text-xl">{initialEvent ? "Edit Schedule" : "Schedule Event"}</h2>
@@ -106,7 +106,7 @@ export function CalendarEventForm({ open, onClose, onSubmit, initialDate, initia
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-8 space-y-8">
+        <form onSubmit={handleSubmit} className="p-4 lg:p-8 space-y-5 lg:space-y-8">
           <div className="space-y-4">
             <label className="text-[10px] font-bold text-[#9CA3AF] uppercase tracking-widest block text-center">Event Category</label>
             <div className="grid grid-cols-3 gap-3">

@@ -104,43 +104,43 @@ export default function CalendarPage() {
     <div className="max-w-6xl mx-auto space-y-6 pb-12">
       <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-[var(--color-primary)]">Calendar</h1>
+          <h1 className="text-xl lg:text-2xl font-bold text-[var(--color-primary)]">Calendar</h1>
           <p className="text-sm text-[var(--color-muted)] mt-0.5">Track appointments, screenings, and care activities.</p>
         </div>
         
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex items-center gap-2">
           <div className="flex items-center bg-white p-1 rounded-full border border-[#E5E7EB] shadow-sm">
-            <QuickAddButton 
-              onClick={() => openAddForm()} 
-              icon={<CalendarIcon size={14} />} 
-              label="Appointment" 
+            <QuickAddButton
+              onClick={() => openAddForm()}
+              icon={<CalendarIcon size={14} />}
+              label="Appointment"
               color="text-[#0D3B6E] hover:bg-[#0D3B6E]/5"
             />
-            <QuickAddButton 
-              onClick={() => openAddForm()} 
-              icon={<Pill size={14} />} 
-              label="Lab Test" 
+            <QuickAddButton
+              onClick={() => openAddForm()}
+              icon={<Pill size={14} />}
+              label="Lab Test"
               color="text-[#F59E0B] hover:bg-[#F59E0B]/5"
             />
-            <QuickAddButton 
-              onClick={() => openAddForm()} 
-              icon={<UserPlus size={14} />} 
-              label="Care Visit" 
+            <QuickAddButton
+              onClick={() => openAddForm()}
+              icon={<UserPlus size={14} />}
+              label="Care Visit"
               color="text-[#10B981] hover:bg-[#10B981]/5"
             />
           </div>
-          
-          <button 
+
+          <button
             onClick={() => setShowManager(!showManager)}
             className={cn(
-              "flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-bold shadow-sm transition-all active:scale-[0.98]",
-              showManager 
-                ? "bg-[#0D3B6E] text-white" 
+              "flex items-center gap-2 px-3 lg:px-6 py-2.5 rounded-full text-sm font-bold shadow-sm transition-all active:scale-[0.98] shrink-0",
+              showManager
+                ? "bg-[#0D3B6E] text-white"
                 : "bg-white border border-[#E5E7EB] text-[#374151] hover:bg-[#F9FAFB]"
             )}
           >
             <Edit3 size={16} />
-            <span>{showManager ? "Exit Edit Mode" : "Manage Events"}</span>
+            <span className="hidden lg:inline">{showManager ? "Exit Edit Mode" : "Manage Events"}</span>
           </button>
         </div>
       </div>
@@ -205,12 +205,13 @@ function QuickAddButton({ onClick, icon, label, color }: { onClick: () => void, 
     <button
       onClick={onClick}
       className={cn(
-        "flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold transition-all active:scale-[0.98] whitespace-nowrap",
+        "flex items-center gap-2 px-2.5 lg:px-4 py-2 rounded-full text-xs font-bold transition-all active:scale-[0.98] whitespace-nowrap",
         color
       )}
+      title={label}
     >
       {icon}
-      <span>{label}</span>
+      <span className="hidden lg:inline">{label}</span>
     </button>
   );
 }

@@ -21,6 +21,7 @@ export const authStorage = {
     store.setItem(KEYS.REFRESH, auth.refresh_token);
     store.setItem(KEYS.EXPIRES, String(expiresAt));
     store.setItem(KEYS.USER,    JSON.stringify(auth.user));
+    window.dispatchEvent(new CustomEvent("cc:auth:login"));
   },
 
   getAccessToken(): string | null {
