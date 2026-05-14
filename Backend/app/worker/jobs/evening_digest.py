@@ -61,7 +61,7 @@ async def _digest_for_patient(conn, patient_id: UUID) -> None:
 
     all_obs = await obs_repo.get_by_patient_id(patient_id, limit=5)
     caregiver_reported_today = any(
-        o.source_type == "caregiver_voice" and o.observation_date == today
+        o.source_type == "caregiver_note" and o.observation_date == today
         for o in all_obs
     )
 

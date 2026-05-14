@@ -29,15 +29,15 @@ def _parse_tz(tz_name: str | None) -> ZoneInfo:
 
 
 def _should_send_now(hhmm: str, tz: ZoneInfo) -> bool:
-    """Return True if the current local time precisely matches the scheduled hour AND minute."""
+    """Return True if the current local hour matches the scheduled hour.
+    Minute is ignored — cron fires hourly, idempotency check prevents double-send."""
     try:
-        h, m = map(int, hhmm.split(":"))
+        h, _ = map(int, hhmm.split(":"))
     except (ValueError, AttributeError):
         return False
     now_utc = datetime.now(timezone.utc)
     local_now = now_utc.astimezone(tz)
-    # Exact minute precision
-    return local_now.hour == h and local_now.minute == m
+    return local_now.hour == h
 
 
 # ── Morning dispatcher ────────────────────────────────────────────────────────
