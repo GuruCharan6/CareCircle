@@ -22,6 +22,14 @@ class DigestRefillAlert(BaseModel):
     urgency: str  # 'watch'|'alert'
 
 
+class DigestDrugInteraction(BaseModel):
+    drug_a: str
+    drug_b: str
+    severity: str | None = None
+    urgency: str  # 'alert'|'watch'|'inform'
+    note: str | None = None
+
+
 class DigestResponse(BaseModel):
     """Morning or evening digest — three-part structure from Layer 5 reasoning."""
     period: str            # 'morning'|'evening'
@@ -42,6 +50,7 @@ class DigestResponse(BaseModel):
 
     upcoming_events: list[CalendarEventListItem] = []  # next 3 events
     refill_alerts: list[DigestRefillAlert] = []
+    drug_interactions: list[DigestDrugInteraction] = []
     staleness_flags: list[str] = []  # e.g. 'No caregiver note 4 days'
 
     # Upload CTA included in WhatsApp version — deep link token generated server-side

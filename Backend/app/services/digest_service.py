@@ -9,13 +9,14 @@ from app.core.exceptions import NotFoundError
 from app.lib.upload_jwt import create_upload_jwt
 from app.repositories.calendar_event_repository import CalendarEventRepository
 from app.repositories.clinical_hypothesis_repository import ClinicalHypothesisRepository
+from app.repositories.drug_interaction_repository import DrugInteractionRepository
 from app.repositories.medication_refill_repository import MedicationRefillRepository
 from app.repositories.medication_repository import MedicationRepository
 from app.repositories.patient_repository import PatientRepository
 from app.repositories.patient_state_repository import PatientStateRepository
 from app.repositories.user_repository import UserRepository
 from app.schemas.calendar import CalendarEventListItem
-from app.schemas.digest import DigestPreferencesUpdate, DigestRefillAlert, DigestResponse
+from app.schemas.digest import DigestDrugInteraction, DigestPreferencesUpdate, DigestRefillAlert, DigestResponse
 
 
 class DigestService:
@@ -27,6 +28,7 @@ class DigestService:
         self._med_repo = MedicationRepository(conn)
         self._hyp_repo = ClinicalHypothesisRepository(conn)
         self._user_repo = UserRepository(conn)
+        self._drug_repo = DrugInteractionRepository(conn)
 
     async def build(
         self,
@@ -91,6 +93,23 @@ class DigestService:
                 )
             )
 
+        # Drug interactions — deduplicated by sorted pair, alert/watch only
+        raw_interactions = await self._drug_repo.get_by_patient_id(patient_id)
+        seen_pairs: set[tuple[str, str]] = set()
+        drug_interactions: list[DigestDrugInteraction] = []
+        for ix in sorted(raw_interactions, key=lambda x: {"alert": 0, "watch": 1}.get(x.final_urgency, 2)):
+            pair = tuple(sorted([ix.drug_a_generic, ix.drug_b_generic]))
+            if pair in seen_pairs:
+                continue
+            seen_pairs.add(pair)
+            drug_interactions.append(DigestDrugInteraction(
+                drug_a=ix.drug_a_generic,
+                drug_b=ix.drug_b_generic,
+                severity=ix.severity,
+                urgency=ix.final_urgency,
+                note=ix.gemini_note,
+            ))
+
         # Hypotheses → known_facts (high confidence) + hypotheses (other)
         hypotheses = await self._hyp_repo.get_active_by_patient(patient_id)
         known_facts = [h.hypothesis_text for h in hypotheses if h.confidence == "high"]
@@ -130,6 +149,7 @@ class DigestService:
             needs_action=needs_action,
             upcoming_events=upcoming,
             refill_alerts=refill_alerts,
+            drug_interactions=drug_interactions,
             staleness_flags=staleness_flags,
             upload_cta_token=upload_cta_token,
         )
