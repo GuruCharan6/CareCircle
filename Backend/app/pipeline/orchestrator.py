@@ -7,12 +7,14 @@ from app.core.logging import get_logger
 from app.pipeline.layer1_ingest import ingest
 from app.pipeline.layer2_normalize import normalize
 from app.pipeline.layer3_enrich import PatientContext, run_enrichment, write_hypotheses
+from app.pipeline.layer3_enrich.rules.rule4_llm_general import Rule4LLMGeneral
 from app.pipeline.layer4_reconcile import classify_conflicts
 from app.pipeline.layer4_reconcile.types import ClassifiedConflict
 from app.pipeline.layer5_reason import ReasoningInput, ThreePartOutput, format_three_part_output
 from app.providers.llm.base import LLMProvider
 from app.repositories.conflict_record_repository import ConflictRecordRepository
 from app.repositories.document_repository import DocumentRepository
+from app.repositories.drug_interaction_repository import DrugInteractionRepository
 from app.repositories.lab_result_repository import LabResultRepository
 from app.repositories.medication_repository import MedicationRepository
 from app.repositories.observation_repository import ObservationRepository
@@ -76,6 +78,14 @@ class PipelineOrchestrator:
 
         # --- Layer 3: Enrich (deterministic rules, no AI) ---
         hypotheses = run_enrichment(normalized, context)
+
+        # Rule 4: LLM general — async, runs after deterministic rules
+        rule4 = Rule4LLMGeneral()
+        llm_hypotheses = await rule4.evaluate(normalized, context, self._llm)
+        if llm_hypotheses:
+            logger.info("pipeline.layer3_rule4_fired", count=len(llm_hypotheses))
+        hypotheses = hypotheses + llm_hypotheses
+
         written_count = await write_hypotheses(hypotheses, self._conn)
         logger.info("pipeline.layer3_done", hypotheses_written=written_count)
 
@@ -122,6 +132,7 @@ class PipelineOrchestrator:
         med_repo = MedicationRepository(self._conn)
         lab_repo = LabResultRepository(self._conn)
         obs_repo = ObservationRepository(self._conn)
+        ix_repo = DrugInteractionRepository(self._conn)
 
         patient = await patient_repo.get_by_id(patient_id)
         if patient is None:
@@ -130,6 +141,7 @@ class PipelineOrchestrator:
         active_meds = await med_repo.get_active_by_patient(patient_id)
         recent_labs = await lab_repo.get_by_patient_id(patient_id, limit=100)
         recent_obs = await obs_repo.get_by_patient_id(patient_id, limit=50)
+        drug_interactions = await ix_repo.get_by_patient_id(patient_id)
 
         # Filter to time windows.
         lab_cutoff = date.today() - timedelta(days=_RECENT_LAB_DAYS)
@@ -138,11 +150,23 @@ class PipelineOrchestrator:
         recent_labs = [lr for lr in recent_labs if lr.test_date >= lab_cutoff]
         recent_obs = [o for o in recent_obs if o.observation_date >= obs_cutoff]
 
+        known_interactions = [
+            {
+                "drug_a": ix.drug_a_generic,
+                "drug_b": ix.drug_b_generic,
+                "severity": ix.severity,
+                "interaction": ix.interaction,
+                "mechanism": ix.mechanism or "",
+            }
+            for ix in drug_interactions
+        ]
+
         return PatientContext(
             patient=patient,
             active_medications=active_meds,
             recent_lab_results=recent_labs,
             recent_observations=recent_obs,
+            known_interactions=known_interactions,
         )
 
     async def _write_conflicts(self, conflicts: list[ClassifiedConflict]) -> None:

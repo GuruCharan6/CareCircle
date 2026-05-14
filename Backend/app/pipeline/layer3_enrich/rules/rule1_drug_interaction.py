@@ -7,20 +7,20 @@ from app.pipeline.layer3_enrich.types import (
     PatientContext,
 )
 
-# Rule 2: Drug Interaction (flag from known interaction data)
+# Rule 1: Drug Interaction (flag from known interaction data)
 #
 # Fire when: new prescription detected AND active medications include drugs
 # with pre-stored interaction results (high or moderate severity).
 #
-# NOTE: The actual Gemini interaction check (DrugInteractionManager, Phase 9)
-# runs in parallel after this pipeline. Rule 2 flags interactions already
+# NOTE: The actual Gemini interaction check (DrugInteractionManager)
+# runs in parallel after this pipeline. Rule 1 flags interactions already
 # discovered for this patient — it does NOT call Gemini.
 #
-# If no stored interactions yet (first prescription upload), Rule 2 does not fire.
+# If no stored interactions yet (first prescription upload), Rule 1 does not fire.
 # The DrugInteractionManager will check and store results, future pipeline runs pick them up.
 
 
-class Rule2DrugInteraction(BaseRule):
+class Rule1DrugInteraction(BaseRule):
     def evaluate(
         self,
         item: NormalizedItem,
@@ -32,11 +32,7 @@ class Rule2DrugInteraction(BaseRule):
         if not context.active_medications or len(context.active_medications) < 2:
             return []
 
-        # Check: are there any stored drug interaction results with high/moderate severity?
-        # interaction data is NOT in PatientContext (it's in drug_interaction_results table).
-        # The orchestrator pre-loads known interactions into context.known_interactions if present.
-        # This rule fires only when the orchestrator provides them.
-        known_interactions = getattr(context, "known_interactions", [])
+        known_interactions = context.known_interactions
         if not known_interactions:
             return []
 
@@ -56,7 +52,7 @@ class Rule2DrugInteraction(BaseRule):
             ) else URGENCY_WATCH
 
             hypotheses.append(Hypothesis(
-                rule_id="rule_2_drug_interaction",
+                rule_id="rule_1_drug_interaction",
                 patient_id=context.patient_id,
                 trigger_event_type=item.trigger_event_type,
                 trigger_event_id=item.ingest.source_document_id,

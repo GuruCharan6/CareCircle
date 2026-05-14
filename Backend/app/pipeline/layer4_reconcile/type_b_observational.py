@@ -46,7 +46,8 @@ def detect_observational_conflicts(
             s.lower() for s in (item.ingest.extracted_data.get("symptoms_reported") or [])
         )
         for obs in recent_observations:
-            if obs.source_type not in ("voice_note_meera",):
+            # obs.source_type is normalized on read: meera_call_log → voice_log
+            if obs.source_type not in ("voice_log", "meera_call_log", "voice_note_meera"):
                 continue
             if obs.observation_date < window_start:
                 continue

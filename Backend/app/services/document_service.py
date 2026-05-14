@@ -155,12 +155,8 @@ class DocumentService:
             ext = doc.extracted_data or {}
             mood = ext.get("mood")
             energy = ext.get("energy_level")
-            # Correctly categorize based on ingestion source
-            source_type = "voice_log"
-            if doc.ingestion_source == "crisis_follow_up":
-                source_type = "emergency_note"
-            elif doc.caregiver_id:
-                source_type = "caregiver_note"
+            # Store DB-valid values only ('caregiver_voice' | 'meera_call_log')
+            source_type = "caregiver_voice" if doc.caregiver_id else "meera_call_log"
 
             await obs_repo.create(
                 patient_id=doc.patient_id,

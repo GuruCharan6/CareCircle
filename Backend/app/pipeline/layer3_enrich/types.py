@@ -23,6 +23,7 @@ class PatientContext:
     active_medications: list[Medication]
     recent_lab_results: list[LabResult]      # last 90 days
     recent_observations: list[Observation]  # last 14 days
+    known_interactions: list[dict] = field(default_factory=list)  # from drug_interaction_results
 
     @property
     def patient_id(self) -> UUID:

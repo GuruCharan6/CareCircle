@@ -40,8 +40,13 @@ def detect_factual_conflicts(
         if obs.source_document_id == item.source_document_id:
             continue
 
-        # Only compare caregiver vs Meera (or vice versa) — not same source type.
-        if obs.source_type == item.source_type:
+        # Only compare caregiver vs Meera — not same source type.
+        # item.source_type = pipeline value (voice_note_caregiver/meera), obs.source_type = normalized
+        _CAREGIVER = {"voice_note_caregiver", "caregiver_note", "caregiver_voice"}
+        _MEERA = {"voice_note_meera", "voice_log", "meera_call_log"}
+        item_is_caregiver = item.source_type in _CAREGIVER
+        obs_is_caregiver = obs.source_type in _CAREGIVER
+        if item_is_caregiver == obs_is_caregiver:
             continue
 
         obs_meals = obs.meals_eaten or {}

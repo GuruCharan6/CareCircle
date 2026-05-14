@@ -9,7 +9,7 @@ from app.pipeline.layer3_enrich.types import (
     PatientContext,
 )
 
-# Rule 3: Lab Trend Deterioration
+# Rule 2: Lab Trend Deterioration
 #
 # Fire when: new lab report contains a result that has worsened significantly
 # compared to the previous reading for the same test.
@@ -38,7 +38,7 @@ def _exceeds_meaningful_threshold(test_name: str, delta: Decimal) -> bool:
     return delta >= threshold
 
 
-class Rule3LabTrend(BaseRule):
+class Rule2LabTrend(BaseRule):
     def evaluate(
         self,
         item: NormalizedItem,
@@ -85,14 +85,13 @@ class Rule3LabTrend(BaseRule):
             # Creatinine gets ALERT (renal function is time-sensitive).
             if "creatinine" in test_name.lower() and _exceeds_meaningful_threshold(test_name, delta):
                 hypotheses.append(Hypothesis(
-                    rule_id="rule_3_lab_trend",
+                    rule_id="rule_2_lab_trend",
                     patient_id=context.patient_id,
                     trigger_event_type=item.trigger_event_type,
                     trigger_event_id=item.ingest.source_document_id,
                     hypothesis_text=(
                         f"{test_display} has risen from {prior.value} to {new_val} {unit} "
-                        f"(+{delta}). Creatinine increase of this size can indicate declining "
-                        f"kidney function. Metformin dose may need review if creatinine stays elevated. "
+                        f"(+{delta}). This increase can indicate declining kidney function. "
                         f"Worth discussing with doctor before next appointment."
                     ),
                     confidence="high",
@@ -104,7 +103,7 @@ class Rule3LabTrend(BaseRule):
                 ))
             elif _exceeds_meaningful_threshold(test_name, delta) and is_abnormal:
                 hypotheses.append(Hypothesis(
-                    rule_id="rule_3_lab_trend",
+                    rule_id="rule_2_lab_trend",
                     patient_id=context.patient_id,
                     trigger_event_type=item.trigger_event_type,
                     trigger_event_id=item.ingest.source_document_id,
