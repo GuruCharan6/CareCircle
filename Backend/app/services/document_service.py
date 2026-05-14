@@ -25,6 +25,18 @@ class DocumentService:
     def __init__(self, conn: asyncpg.Connection) -> None:
         self._repo = DocumentRepository(conn)
 
+    async def _assert_doc_access(self, doc: SourceDocument, user_id: UUID) -> None:
+        """Raise ForbiddenError unless user uploaded the doc OR owns the patient.
+        Fixes: caregiver-uploaded docs were inaccessible to the patient's owner.
+        """
+        if doc.uploaded_by == user_id:
+            return
+        from app.repositories.patient_repository import PatientRepository
+        patient = await PatientRepository(self._repo.conn).get_by_id(doc.patient_id)
+        if patient and patient.user_id == user_id:
+            return
+        raise ForbiddenError("Access denied to this document")
+
     def _storage_path(self, patient_id: UUID, doc_id: UUID, mime_type: str) -> str:
         """Build storage path: {patient_id}/{doc_id}.{ext}"""
         ext_map = {
@@ -92,8 +104,7 @@ class DocumentService:
         doc = await self._repo.get_by_id(doc_id)
         if not doc:
             raise NotFoundError("Document", str(doc_id))
-        if doc.uploaded_by != user_id:
-            raise ForbiddenError("Access denied to this document")
+        await self._assert_doc_access(doc, user_id)
 
         # Call extraction synchronously
         from app.worker.tasks.extract_document import _async_extract
@@ -118,8 +129,7 @@ class DocumentService:
         doc = await self._repo.get_by_id(doc_id)
         if not doc:
             raise NotFoundError("Document", str(doc_id))
-        if doc.uploaded_by != user_id:
-            raise ForbiddenError("Access denied to this document")
+        await self._assert_doc_access(doc, user_id)
 
         # Merge user edits into extracted_data
         await self._repo.update_extraction(
@@ -192,8 +202,7 @@ class DocumentService:
         doc = await self._repo.get_by_id(doc_id)
         if not doc:
             raise NotFoundError("Document", str(doc_id))
-        if doc.uploaded_by != user_id:
-            raise ForbiddenError("Access denied")
+        await self._assert_doc_access(doc, user_id)
 
         # 1. Update document record (and transition status to approved if it was in review)
         new_status = "approved" if doc.extraction_status in ("pending", "extracting", "review_required") else doc.extraction_status
@@ -389,8 +398,7 @@ class DocumentService:
         doc = await self._repo.get_by_id(doc_id)
         if not doc:
             raise NotFoundError("Document", str(doc_id))
-        if doc.uploaded_by != user_id:
-            raise ForbiddenError("Access denied to this document")
+        await self._assert_doc_access(doc, user_id)
 
         rejected = await self._repo.reject(doc_id, reason)
         if not rejected:
@@ -404,8 +412,7 @@ class DocumentService:
         doc = await self._repo.get_by_id(doc_id)
         if not doc:
             raise NotFoundError("Document", str(doc_id))
-        if doc.uploaded_by != user_id:
-            raise ForbiddenError("Access denied to this document")
+        await self._assert_doc_access(doc, user_id)
 
         bucket = settings.supabase_storage_bucket_documents
         signed_url = create_signed_view_url(bucket, doc.file_url)
@@ -436,39 +443,37 @@ class DocumentService:
         doc = await self._repo.get_by_id(doc_id)
         if not doc:
             raise NotFoundError("Document", str(doc_id))
-        if doc.uploaded_by != user_id:
-            raise ForbiddenError("Access denied")
+        await self._assert_doc_access(doc, user_id)
 
-        # 1. Cascade delete all clinical data associated with this document
-        await self._repo.conn.execute(
-            "DELETE FROM public.medications WHERE source_document_id = $1",
-            doc_id
-        )
-        await self._repo.conn.execute(
-            "DELETE FROM public.lab_results WHERE source_document_id = $1",
-            doc_id
-        )
-        await self._repo.conn.execute(
-            "DELETE FROM public.observations WHERE source_document_id = $1",
-            doc_id
-        )
-        await self._repo.conn.execute(
-            "DELETE FROM public.whatsapp_messages WHERE linked_source_document_id = $1",
-            doc_id
-        )
+        # All DB deletes in one transaction — if source_documents delete fails,
+        # medications/labs/observations roll back (no partial data loss).
+        async with self._repo.conn.transaction():
+            await self._repo.conn.execute(
+                "DELETE FROM public.medications WHERE source_document_id = $1",
+                doc_id
+            )
+            await self._repo.conn.execute(
+                "DELETE FROM public.lab_results WHERE source_document_id = $1",
+                doc_id
+            )
+            await self._repo.conn.execute(
+                "DELETE FROM public.observations WHERE source_document_id = $1",
+                doc_id
+            )
+            await self._repo.conn.execute(
+                "DELETE FROM public.whatsapp_messages WHERE linked_source_document_id = $1",
+                doc_id
+            )
+            await self._repo.conn.execute(
+                "DELETE FROM public.document_chunks WHERE source_document_id = $1",
+                doc_id
+            )
+            success = await self._repo.delete(doc_id)
+            if not success:
+                raise NotFoundError("Document", str(doc_id))
 
-        # 2. Cleanup redundant search indices (chunks)
-        await self._repo.conn.execute(
-            "DELETE FROM public.document_chunks WHERE source_document_id = $1",
-            doc_id
-        )
-
-        # 3. Delete from DB
-        success = await self._repo.delete(doc_id)
-        if not success:
-            raise NotFoundError("Document", str(doc_id))
-
-        # 3. Delete from storage (fire and forget / soft-fail)
+        # Storage delete is outside the transaction — can't roll back cloud storage.
+        # Orphaned file is far better than rolled-back clinical data loss.
         try:
             bucket = settings.supabase_storage_bucket_documents
             delete_file(bucket, doc.file_url)

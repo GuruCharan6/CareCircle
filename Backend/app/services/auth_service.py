@@ -43,10 +43,10 @@ class AuthService:
 
     async def send_custom_phone_otp(self, user_id, phone_number: str) -> None:
         """Generate 6-digit OTP, store in Redis, send via SMS (or WhatsApp fallback)."""
-        import random
+        import secrets
         from app.cache.phone_otp_cache import set_phone_otp
 
-        otp = f"{random.randint(0, 999999):06d}"
+        otp = f"{secrets.randbelow(1_000_000):06d}"
         await set_phone_otp(user_id, phone_number, otp)
         message = f"Your CareCircle verification code is: {otp}\nValid for 10 minutes. Do not share this code."
 

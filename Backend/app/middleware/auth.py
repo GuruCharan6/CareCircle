@@ -3,7 +3,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 # Routes that don't require auth token extraction
 _SKIP_PATHS = {"/health", "/ready", "/docs", "/redoc", "/openapi.json"}
-_SKIP_PREFIXES = ("/api/v1/whatsapp/",)  # webhook — validated by Twilio signature
+_SKIP_PREFIXES = ("/api/v1/webhooks/whatsapp",)  # webhook — validated by Twilio signature
 
 
 class AuthExtractionMiddleware(BaseHTTPMiddleware):
