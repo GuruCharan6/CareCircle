@@ -72,7 +72,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
         </div>
 
         {/* Form section */}
-        <div className="flex-1 flex flex-col justify-center w-full bg-white rounded-t-3xl lg:rounded-2xl lg:border lg:border-[#D9D5CD] lg:shadow-sm lg:max-w-sm px-6 py-8 lg:p-8 overflow-y-auto">
+        <div className="flex-1 lg:flex-none flex flex-col justify-center w-full bg-white rounded-t-3xl lg:rounded-2xl lg:border lg:border-[#D9D5CD] lg:shadow-sm lg:max-w-sm px-6 py-8 lg:p-8 overflow-y-auto">
           {children}
         </div>
       </div>
