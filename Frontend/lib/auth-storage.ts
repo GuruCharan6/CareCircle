@@ -2,10 +2,15 @@ import type { AuthResponse, UserResponse } from "./types";
 
 const KEYS = {
   ACCESS:  "cc_access_token",
-  REFRESH: "cc_refresh_token",
   EXPIRES: "cc_expires_at",
   USER:    "cc_user",
 } as const;
+
+// Refresh token kept in memory only — never written to localStorage.
+// XSS can read localStorage; memory is not accessible to injected scripts.
+// Trade-off: refresh token lost on page reload. User re-authenticates after
+// access token expires (~1hr). Acceptable for a healthcare app.
+let _refreshToken: string | null = null;
 
 function ls(): Storage | null {
   if (typeof window === "undefined") return null;
@@ -18,9 +23,9 @@ export const authStorage = {
     if (!store) return;
     const expiresAt = Date.now() + auth.expires_in * 1000;
     store.setItem(KEYS.ACCESS,  auth.access_token);
-    store.setItem(KEYS.REFRESH, auth.refresh_token);
     store.setItem(KEYS.EXPIRES, String(expiresAt));
     store.setItem(KEYS.USER,    JSON.stringify(auth.user));
+    _refreshToken = auth.refresh_token;
     window.dispatchEvent(new CustomEvent("cc:auth:login"));
   },
 
@@ -29,7 +34,7 @@ export const authStorage = {
   },
 
   getRefreshToken(): string | null {
-    return ls()?.getItem(KEYS.REFRESH) ?? null;
+    return _refreshToken;
   },
 
   getUser(): UserResponse | null {
@@ -49,6 +54,7 @@ export const authStorage = {
     const store = ls();
     if (!store) return;
     Object.values(KEYS).forEach(k => store.removeItem(k));
+    _refreshToken = null;
   },
 
   isLoggedIn(): boolean {
