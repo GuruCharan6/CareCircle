@@ -66,7 +66,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           patientName={user?.name ?? undefined}
           unreadCount={unreadCount}
           onNotificationClick={() => router.push("/notifications")}
-          onCrisisClick={activePatientId ? () => setCrisisOpen(true) : undefined}
+          onCrisisClick={() => activePatientId ? setCrisisOpen(true) : router.push("/dashboard")}
         />
         {/* pb-16 on mobile for bottom nav clearance; safe area handled by BottomNav itself */}
         <main className="flex-1 overflow-y-auto p-6 pb-24 lg:pb-6 bg-[var(--color-bg)]">
@@ -77,7 +77,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       {/* Bottom nav — renders only on mobile (lg:hidden inside component) */}
       <BottomNav
         unreadCount={unreadCount}
-        onCrisisClick={activePatientId ? () => setCrisisOpen(true) : undefined}
+        onCrisisClick={() => activePatientId ? setCrisisOpen(true) : router.push("/dashboard")}
       />
 
       <InstallPrompt />
