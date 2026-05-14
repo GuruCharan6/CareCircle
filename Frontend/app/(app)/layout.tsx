@@ -10,19 +10,22 @@ import { CrisisModal } from "@/components/crisis/CrisisModal";
 import { authStorage } from "@/lib/auth-storage";
 import { notificationsApi } from "@/lib/api/notifications";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { usePatient } from "@/hooks/usePatient";
 
-const ACTIVE_PATIENT_KEY = "cc_active_patient_id";
 const POLL_INTERVAL_MS = 30_000;
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
   usePushNotifications();
+  const { activePatient } = usePatient();
   const [mounted, setMounted] = useState(false);
   const [user, setUser] = useState<ReturnType<typeof authStorage.getUser>>(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const [crisisOpen, setCrisisOpen] = useState(false);
-  const [activePatientId, setActivePatientId] = useState<string | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Derived — always in sync with PatientProvider, never stale
+  const activePatientId = activePatient?.id ?? null;
 
   useEffect(() => {
     if (!authStorage.isLoggedIn()) {
@@ -30,20 +33,18 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       return;
     }
     setUser(authStorage.getUser());
-    setActivePatientId(localStorage.getItem(ACTIVE_PATIENT_KEY));
     setMounted(true);
   }, [router]);
 
   const refreshBadge = useCallback(async () => {
-    const patientId = localStorage.getItem(ACTIVE_PATIENT_KEY);
-    if (!patientId) return;
+    if (!activePatientId) return;
     try {
-      const data = await notificationsApi.unreadCount(patientId);
+      const data = await notificationsApi.unreadCount(activePatientId);
       setUnreadCount(data.unread_count ?? 0);
     } catch {
       // Silent
     }
-  }, []);
+  }, [activePatientId]);
 
   useEffect(() => {
     if (!mounted) return;

@@ -367,6 +367,7 @@ export interface CalendarEventCreate {
   required_tests?: string[];
   is_recurring?: boolean;
   recurrence_pattern?: string;
+  caregiver_id?: string;
   notes?: string;
 }
 
@@ -388,6 +389,7 @@ export interface CalendarEventResponse {
   is_recurring: boolean;
   recurrence_pattern: string | null;
   parent_event_id: string | null;
+  caregiver_id: string | null;
   confirmed_by: string | null;
   notes: string | null;
   created_at: string;

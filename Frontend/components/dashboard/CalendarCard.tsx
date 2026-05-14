@@ -74,12 +74,13 @@ export function CalendarCard({ patientId }: { patientId: string }) {
         )}
       </div>
 
-      <CalendarEventForm 
+      <CalendarEventForm
         open={showAddForm}
         onClose={() => { setShowAddForm(false); setEditingEvent(null); }}
         onSubmit={handleFormSubmit}
         initialDate={preselectedDate}
         initialEvent={editingEvent}
+        patientId={patientId}
       />
     </Card>
   );

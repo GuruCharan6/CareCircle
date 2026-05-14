@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Pill, Calendar, UserPlus, X, FlaskConical } from "lucide-react";
 import { cn, formatDateLocal } from "@/lib/utils";
-import type { EventType, CalendarEventCreate, CalendarEventResponse } from "@/lib/types";
+import { caregiversApi } from "@/lib/api/caregivers";
+import type { EventType, CalendarEventCreate, CalendarEventResponse, CaregiverResponse } from "@/lib/types";
 
 interface CalendarEventFormProps {
   open: boolean;
@@ -11,6 +12,7 @@ interface CalendarEventFormProps {
   onSubmit: (data: any) => Promise<void>;
   initialDate?: Date;
   initialEvent?: CalendarEventResponse | null;
+  patientId?: string;
 }
 
 
@@ -49,38 +51,52 @@ function TypeButton({
   );
 }
 
-export function CalendarEventForm({ open, onClose, onSubmit, initialDate, initialEvent }: CalendarEventFormProps) {
+export function CalendarEventForm({ open, onClose, onSubmit, initialDate, initialEvent, patientId }: CalendarEventFormProps) {
   const [type, setType] = useState<EventType>("appointment");
   const [title, setTitle] = useState("");
   const [date, setDate] = useState("");
+  const [caregiverId, setCaregiverId] = useState<string>("");
+  const [caregivers, setCaregivers] = useState<CaregiverResponse[]>([]);
   const [loading, setLoading] = useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (initialEvent) {
       setType(initialEvent.event_type);
       setTitle(initialEvent.title);
       setDate(initialEvent.event_date);
+      setCaregiverId(initialEvent.caregiver_id ?? "");
     } else if (initialDate) {
       setDate(formatDateLocal(initialDate));
       setType("appointment");
       setTitle("");
+      setCaregiverId("");
     }
   }, [initialDate, initialEvent, open]);
+
+  // Fetch confirmed caregivers when caregiver_visit type is selected
+  useEffect(() => {
+    if (type !== "caregiver_visit" || !patientId) return;
+    caregiversApi.list(patientId, { active_only: true })
+      .then(data => setCaregivers(data.filter(c => c.invitation_status === "confirmed")))
+      .catch(() => setCaregivers([]));
+  }, [type, patientId]);
 
   if (!open) return null;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!title || !date) return;
-    
+
     setLoading(true);
     try {
       await onSubmit({
         event_type: type,
         title,
         event_date: date,
+        ...(type === "caregiver_visit" && caregiverId ? { caregiver_id: caregiverId } : {}),
       });
       setTitle("");
+      setCaregiverId("");
       onClose();
     } catch (err) {
       console.error(err);
@@ -147,11 +163,27 @@ export function CalendarEventForm({ open, onClose, onSubmit, initialDate, initia
               />
             </div>
 
+            {type === "caregiver_visit" && caregivers.length > 0 && (
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-[#9CA3AF] uppercase tracking-widest block px-1">Caregiver</label>
+                <select
+                  value={caregiverId}
+                  onChange={e => setCaregiverId(e.target.value)}
+                  className="w-full bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl px-4 py-3 text-sm font-medium text-[#1F2937] focus:outline-none focus:ring-2 focus:ring-[#0D3B6E]/10 focus:border-[#0D3B6E] transition-all"
+                >
+                  <option value="">All caregivers</option>
+                  {caregivers.map(c => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             {!initialDate && (
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-[#9CA3AF] uppercase tracking-widest block px-1">Event Date</label>
-                <input 
-                  type="date" 
+                <input
+                  type="date"
                   value={date}
                   onChange={e => setDate(e.target.value)}
                   className="w-full bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl px-4 py-3 text-sm font-medium text-[#1F2937] focus:outline-none focus:ring-2 focus:ring-[#0D3B6E]/10 focus:border-[#0D3B6E] transition-all"

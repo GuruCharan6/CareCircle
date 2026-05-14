@@ -180,12 +180,13 @@ export default function CalendarPage() {
         onDeleteEvent={(id) => activePatient && remove(activePatient.id, id)}
       />
 
-      <CalendarEventForm 
+      <CalendarEventForm
         open={showAddForm}
         onClose={() => { setShowAddForm(false); setEditingEvent(null); }}
         onSubmit={handleFormSubmit}
         initialDate={preselectedDate}
         initialEvent={editingEvent}
+        patientId={activePatient?.id}
       />
 
       <EventConfirmModal
