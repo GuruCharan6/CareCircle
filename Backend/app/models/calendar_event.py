@@ -22,6 +22,7 @@ class CalendarEvent(ORMBase):
     is_recurring: bool = False
     recurrence_pattern: str | None = None
     parent_event_id: UUID | None = None
+    caregiver_id: UUID | None = None
     confirmed_by: UUID | None = None
     notes: str | None = None
     created_at: datetime | None = None

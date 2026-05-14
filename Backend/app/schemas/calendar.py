@@ -17,6 +17,7 @@ class CalendarEventCreate(BaseModel):
     is_recurring: bool = False
     recurrence_pattern: str | None = None  # 'monday,wednesday,friday'
     parent_event_id: UUID | None = None
+    caregiver_id: UUID | None = None  # set when event_type='caregiver_visit' to target specific caregiver
     notes: str | None = None
 
 
@@ -53,6 +54,7 @@ class CalendarEventResponse(BaseModel):
     is_recurring: bool
     recurrence_pattern: str | None = None
     parent_event_id: UUID | None = None
+    caregiver_id: UUID | None = None
     confirmed_by: UUID | None = None
     notes: str | None = None
     created_at: datetime | None = None

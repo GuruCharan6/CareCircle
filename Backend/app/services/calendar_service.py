@@ -37,6 +37,7 @@ class CalendarService:
             is_recurring=data.is_recurring,
             recurrence_pattern=data.recurrence_pattern,
             parent_event_id=data.parent_event_id,
+            caregiver_id=data.caregiver_id,
             notes=data.notes,
         )
 
