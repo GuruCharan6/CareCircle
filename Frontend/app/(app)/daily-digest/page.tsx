@@ -5,7 +5,7 @@ import { usePatient } from "@/hooks/usePatient";
 import { useDigest } from "@/hooks/useDigest";
 import { DigestCard } from "@/components/dashboard/DigestCard";
 import { Button } from "@/components/ui/Button";
-import { ChevronLeft, RefreshCw } from "lucide-react";
+import { ChevronLeft, RefreshCw, TriangleAlert, Lightbulb, AlertCircle } from "lucide-react";
 import Link from "next/link";
 
 function currentPeriod(): "morning" | "evening" {
@@ -68,9 +68,43 @@ export default function DailyDigestPage() {
         
         {digest && !digestLoading && (
           <div className="p-4 lg:p-8 space-y-8">
+
+            {/* Needs Action — urgent alert */}
+            {digest.needs_action && (
+              <div className="flex gap-3 p-4 rounded-xl bg-red-50 border border-red-200">
+                <AlertCircle size={18} className="text-red-500 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-xs font-bold text-red-500 uppercase tracking-widest mb-1">Action Required</p>
+                  <p className="text-red-900 font-medium leading-relaxed">{digest.needs_action}</p>
+                </div>
+              </div>
+            )}
+
+            {/* Drug Interactions */}
+            {digest.drug_interactions && digest.drug_interactions.length > 0 && (
+              <section>
+                <h2 className="text-sm font-bold text-[var(--color-muted)] uppercase tracking-widest mb-4">Drug Interactions</h2>
+                <div className="space-y-3">
+                  {digest.drug_interactions.map((ix, i) => (
+                    <div key={i} className={`flex gap-3 p-4 rounded-xl border ${ix.urgency === "alert" ? "bg-red-50 border-red-200" : "bg-amber-50 border-amber-100"}`}>
+                      <TriangleAlert size={16} className={`shrink-0 mt-0.5 ${ix.urgency === "alert" ? "text-red-500" : "text-amber-500"}`} />
+                      <div>
+                        <p className={`text-xs font-bold uppercase tracking-widest mb-1 ${ix.urgency === "alert" ? "text-red-500" : "text-amber-600"}`}>
+                          {ix.severity ?? ix.urgency}
+                        </p>
+                        <p className="font-semibold text-[var(--color-text)]">{ix.drug_a} + {ix.drug_b}</p>
+                        {ix.note && <p className="text-sm text-[var(--color-muted)] mt-1">{ix.note}</p>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* Known Facts */}
             {digest.known_facts && digest.known_facts.length > 0 && (
               <section>
-                <h2 className="text-sm font-bold text-[var(--color-muted)] uppercase tracking-widest mb-4">Tracking Today</h2>
+                <h2 className="text-sm font-bold text-[var(--color-muted)] uppercase tracking-widest mb-4">Confirmed Facts</h2>
                 <div className="space-y-3">
                   {digest.known_facts.map((fact, i) => (
                     <div key={i} className="flex gap-3 p-4 rounded-xl bg-slate-50 border border-slate-100">
@@ -82,6 +116,22 @@ export default function DailyDigestPage() {
               </section>
             )}
 
+            {/* Hypotheses */}
+            {digest.hypotheses && digest.hypotheses.length > 0 && (
+              <section>
+                <h2 className="text-sm font-bold text-[var(--color-muted)] uppercase tracking-widest mb-4">Clinical Observations</h2>
+                <div className="space-y-3">
+                  {digest.hypotheses.map((hyp, i) => (
+                    <div key={i} className="flex gap-3 p-4 rounded-xl bg-blue-50 border border-blue-100">
+                      <Lightbulb size={16} className="text-blue-400 shrink-0 mt-0.5" />
+                      <p className="text-[var(--color-text)] leading-relaxed">{hyp}</p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* Upcoming Events */}
             {digest.upcoming_events && digest.upcoming_events.length > 0 && (
               <section>
                 <h2 className="text-sm font-bold text-[var(--color-muted)] uppercase tracking-widest mb-4">Upcoming Events</h2>
@@ -98,6 +148,7 @@ export default function DailyDigestPage() {
               </section>
             )}
 
+            {/* Refill Reminders */}
             {digest.refill_alerts && digest.refill_alerts.length > 0 && (
               <section>
                 <h2 className="text-sm font-bold text-[var(--color-muted)] uppercase tracking-widest mb-4">Refill Reminders</h2>

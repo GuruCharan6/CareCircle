@@ -606,6 +606,14 @@ export interface DigestRefillAlert {
   urgency: string;
 }
 
+export interface DigestDrugInteraction {
+  drug_a: string;
+  drug_b: string;
+  severity: string | null;
+  urgency: string;
+  note: string | null;
+}
+
 export interface DigestResponse {
   period: DigestPeriod;
   generated_at: string;
@@ -617,6 +625,7 @@ export interface DigestResponse {
   needs_action: string | null;
   upcoming_events: DigestUpcomingEvent[];
   refill_alerts: DigestRefillAlert[];
+  drug_interactions: DigestDrugInteraction[];
   staleness_flags: string[];
   upload_cta_token: string | null;
 }
