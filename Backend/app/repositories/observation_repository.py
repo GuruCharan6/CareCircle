@@ -20,7 +20,9 @@ class ObservationRepository(BaseRepository):
             SELECT
                 o.id, o.patient_id,
                 CASE o.source_type
+                    WHEN 'caregiver_voice'      THEN 'caregiver_note'
                     WHEN 'voice_note_caregiver' THEN 'caregiver_note'
+                    WHEN 'meera_call_log'       THEN 'voice_log'
                     WHEN 'voice_note_meera'     THEN 'voice_log'
                     ELSE o.source_type
                 END as source_type,
@@ -39,14 +41,18 @@ class ObservationRepository(BaseRepository):
 
         if source_type:
             normalized = {
+                "caregiver_voice": "caregiver_note",
                 "voice_note_caregiver": "caregiver_note",
+                "meera_call_log": "voice_log",
                 "voice_note_meera": "voice_log",
             }.get(source_type, source_type)
             rows = await self.conn.fetch(
                 base_query + """
                 AND CASE o.source_type
+                    WHEN 'caregiver_voice'      THEN 'caregiver_note'
                     WHEN 'voice_note_caregiver' THEN 'caregiver_note'
-                    WHEN 'voice_note_meera' THEN 'voice_log'
+                    WHEN 'meera_call_log'       THEN 'voice_log'
+                    WHEN 'voice_note_meera'     THEN 'voice_log'
                     ELSE o.source_type
                 END = $2
                 ORDER BY o.observation_date DESC, o.created_at DESC LIMIT $3
@@ -95,7 +101,9 @@ class ObservationRepository(BaseRepository):
             SELECT * FROM public.observations
             WHERE patient_id = $1
               AND CASE source_type
+                    WHEN 'caregiver_voice'      THEN 'caregiver_note'
                     WHEN 'voice_note_caregiver' THEN 'caregiver_note'
+                    WHEN 'meera_call_log'       THEN 'voice_log'
                     WHEN 'voice_note_meera'     THEN 'voice_log'
                     ELSE source_type
                   END = $2

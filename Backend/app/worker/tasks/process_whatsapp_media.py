@@ -142,7 +142,7 @@ Return ONLY a JSON object with these fields:
 
             obs_data = {
                 "patient_id": msg.patient_id,
-                "source_type": "voice_note_caregiver",
+                "source_type": "caregiver_voice",
                 "caregiver_id": cg.id if cg else None,
                 "source_document_id": source_doc.id,
                 "observation_date": msg.created_at.date() if msg.created_at else date.today(),
