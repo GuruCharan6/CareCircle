@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 from uuid import UUID
 
@@ -317,7 +317,7 @@ class HistoryService:
         return {
             "patient_id": str(patient_id),
             "patient_name": patient_name,
-            "generated_at": datetime.now().isoformat(),
+            "generated_at": datetime.now(timezone.utc).isoformat(),
             "documents": processed_docs,
             "observations": processed_obs,
             "timeline": timeline,
@@ -350,10 +350,10 @@ class HistoryService:
         pdf_bytes = generate_patient_history_pdf(
             patient_name=history["patient_name"],
             timeline=history["timeline"],
-            generated_at=datetime.now(),
+            generated_at=datetime.now(timezone.utc),
         )
 
-        path = f"{patient_id}/history_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+        path = f"{patient_id}/history_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.pdf"
         bucket = settings.supabase_storage_bucket_documents
         supabase_admin.storage.from_(bucket).upload(
             path, pdf_bytes, {"content-type": "application/pdf", "upsert": "true"},

@@ -180,7 +180,7 @@ class CrisisService:
 
         now_ts = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
         path = f"{patient_id}/crisis_{now_ts}.pdf"
-        bucket = settings.supabase_storage_bucket_documents
+        bucket = settings.supabase_storage_bucket_crisis_pdfs
         supabase_admin.storage.from_(bucket).upload(
             path, pdf_bytes, {"content-type": "application/pdf", "upsert": "true"},
         )

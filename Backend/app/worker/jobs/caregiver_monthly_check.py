@@ -13,7 +13,7 @@ from app.repositories.caregiver_repository import CaregiverRepository
 from app.repositories.notification_repository import NotificationRepository
 from app.repositories.patient_repository import PatientRepository
 from app.worker._db import worker_conn
-from app.worker.jobs._helpers import get_all_patient_ids
+from app.worker.jobs._helpers import get_all_patient_ids, send_whatsapp_to_phone
 
 logger = get_logger(__name__)
 
@@ -56,13 +56,19 @@ async def _check_for_patient(conn, patient_id) -> int:
     sent = 0
 
     for caregiver in confirmed:
+        if not caregiver.phone_number:
+            logger.warning(
+                "caregiver_monthly_check.no_phone",
+                caregiver_id=str(caregiver.id),
+            )
+            continue
         body = (
             f"Namaste {caregiver.name}! Monthly check-in for {patient.name}. "
             f"How is he/she doing overall this month? "
             f"Any changes in health, behaviour, or concerns? "
             f"Reply to share an update with the family."
         )
-        await notif_repo.create(
+        notif = await notif_repo.create(
             patient_id=patient_id,
             recipient_caregiver_id=caregiver.id,
             type="caregiver_update_request",
@@ -70,6 +76,9 @@ async def _check_for_patient(conn, patient_id) -> int:
             title=f"Monthly check-in — {patient.name}",
             body=body,
         )
+        # Actually send the WhatsApp message to the caregiver
+        await send_whatsapp_to_phone(caregiver.phone_number, body)
+        await notif_repo.mark_sent(notif.id)
         sent += 1
         logger.info(
             "caregiver_monthly_check.queued",

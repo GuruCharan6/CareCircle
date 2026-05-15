@@ -24,7 +24,7 @@ class MedicationService:
     def __init__(self, conn: asyncpg.Connection) -> None:
         self._repo = MedicationRepository(conn)
 
-    async def create(self, patient_id: UUID, data: MedicationCreate) -> Medication:  # pyrefly: ignore[unsupported-operation]
+    async def create(self, patient_id: UUID, data: MedicationCreate) -> Medication:
         med = await self._repo.create(
             patient_id=patient_id,
             source_document_id=data.source_document_id,
@@ -61,7 +61,7 @@ class MedicationService:
         )
         return meds
 
-    async def update(self, patient_id: UUID, medication_id: UUID, data: MedicationUpdate) -> Medication:  # pyrefly: ignore[unsupported-operation]
+    async def update(self, patient_id: UUID, medication_id: UUID, data: MedicationUpdate) -> Medication:
         await self.get(patient_id, medication_id)  # ownership check
         updated = await self._repo.update(
             medication_id,
@@ -84,7 +84,7 @@ class MedicationService:
         await invalidate_active_medications(patient_id)
         return updated
 
-    async def get(self, patient_id: UUID, medication_id: UUID) -> Medication:  # pyrefly: ignore[unsupported-operation]
+    async def get(self, patient_id: UUID, medication_id: UUID) -> Medication: 
         med = await self._repo.get_by_id(medication_id)
         if not med:
             raise NotFoundError("Medication", str(medication_id))

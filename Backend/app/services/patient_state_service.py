@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from uuid import UUID
 
 import asyncpg
@@ -157,7 +157,7 @@ class PatientStateService:
         data["emergency_follow_ups"] = emergency_follow_ups
         data["suggested_appointments"] = suggested_appts
         data["freshness_score"] = freshness_score
-        data["computed_at"] = datetime.now()
+        data["computed_at"] = datetime.now(timezone.utc)
         return PatientStateResponse(**data)
 
 

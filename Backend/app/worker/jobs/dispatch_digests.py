@@ -63,19 +63,21 @@ async def async_dispatch_evening_digests() -> None:
 # ── Shared dispatcher logic ───────────────────────────────────────────────────
 
 async def _dispatch(period: str) -> None:
-    pref_key = f"{period}_time"
+    # Keys must match what DigestService and OnboardingService write:
+    #   morning_digest_time / evening_digest_time  (set via /onboarding/digest-times or PATCH /digest/preferences)
+    #   whatsapp_digest  (boolean, set by auth flow and WhatsApp connect)
+    pref_key = f"{period}_digest_time"
     default_time = "08:00" if period == "morning" else "20:00"
-    task_name = f"{period}_digest_for_patient"
 
     async with worker_conn(max_size=3, command_timeout=30) as conn:
         rows = await conn.fetch("""
             SELECT p.id AS patient_id,
                    COALESCE(u.preferences->>$1, $2) AS send_time,
                    COALESCE(u.preferences->>'timezone', $3)  AS timezone,
-                   COALESCE((u.preferences->>$4)::boolean, true) AS digest_enabled
+                   COALESCE((u.preferences->>'whatsapp_digest')::boolean, true) AS digest_enabled
             FROM public.patients p
             JOIN public.users u ON u.id = p.user_id
-        """, pref_key, default_time, _DEFAULT_TZ, f"{period}_digest")
+        """, pref_key, default_time, _DEFAULT_TZ)
 
         scheduled = 0
         skipped = 0

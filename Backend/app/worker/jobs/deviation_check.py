@@ -33,16 +33,16 @@ async def _async_run() -> None:
         logger.info("deviation_check.start", patient_count=len(patient_ids))
 
         # Dispatch state rebuilds first (they run as separate tasks in uvicorn)
-        for patient_id in patient_ids:
-            try:
-                httpx.post(
-                    f"{settings.internal_base_url}/internal/events/pipeline-complete",
-                    params={"patient_id": str(patient_id)},
-                    headers={"x-internal-secret": settings.internal_secret},
-                    timeout=10,
-                )
-            except Exception as exc:
-                logger.error("deviation_check.dispatch_failed", patient_id=str(patient_id), error=str(exc))
+        async with httpx.AsyncClient(timeout=10) as client:
+            for patient_id in patient_ids:
+                try:
+                    await client.post(
+                        f"{settings.internal_base_url}/internal/events/pipeline-complete",
+                        params={"patient_id": str(patient_id)},
+                        headers={"x-internal-secret": settings.internal_secret},
+                    )
+                except Exception as exc:
+                    logger.error("deviation_check.dispatch_failed", patient_id=str(patient_id), error=str(exc))
 
         # Then check for high alert accumulation in this connection
         flagged = 0
