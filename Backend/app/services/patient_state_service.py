@@ -112,10 +112,11 @@ class PatientStateService:
             for n in notifs if n.type == "watch_event_card" and n.status != "read"
         ]
 
-        # Fetch Suggested Appointments
+        # Fetch Suggested Appointments (wider window — follow-ups can be 6-12 weeks out)
+        upcoming_wide = await cal_repo.get_upcoming(patient_id, within_days=180)
         suggested_appts = [
             {**e.model_dump(mode="json"), "days_until": (e.event_date - today).days}
-            for e in upcoming if e.status == "suggested"
+            for e in upcoming_wide if e.status == "suggested"
         ]
 
         # Recalculate Counts for accurate Dashboard Summary
