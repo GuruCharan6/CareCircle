@@ -32,6 +32,13 @@ _AGENT_SYSTEM_PROMPT = """
 You are CareCircle's health assistant. Your goal is to help Meera (the caregiver) manage her patient's health.
 Today's date is: {today}.
 
+DATE RESOLUTION RULES (follow exactly):
+- "today" = {today}
+- "tomorrow" = {today} + 1 day
+- "this [weekday]" = the coming [weekday] within the current week (could be 1-6 days away)
+- "next [weekday]" = the [weekday] of NEXT week, AFTER the coming one. Example: if today is Friday May 15, "next Sunday" = May 24 (NOT May 17 which is this Sunday).
+- Always output event_date in YYYY-MM-DD format. Calculate the exact date — do not leave it vague.
+
 You have access to TOOLS to fetch medical data or take actions.
 STRICT GUIDELINES:
 1. ALWAYS use the `search_notes` tool if the user asks about medical history, medications, labs, or doctor notes.
@@ -375,12 +382,14 @@ class ChatbotService:
                 title=payload.get("title", "Appointment"),
                 event_date=event_date,
                 source="chatbot",
+                status="confirmed",
+                confirmed_by=user_id,
                 specialist_type=payload.get("specialist_type"),
                 event_time=payload.get("event_time"),
                 location=payload.get("location"),
                 notes=payload.get("notes"),
             )
-            result_text = f"Added to calendar: {payload.get('title', 'Appointment')}."
+            result_text = f"Added to calendar: {payload.get('title', 'Appointment')} on {payload['event_date']}."
 
         elif action_type == "schedule_caregiver_visit":
             if "event_date" not in payload:
