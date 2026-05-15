@@ -81,7 +81,7 @@ export function AlertList({
         </div>
       </CardHeader>
 
-      <div className="space-y-3 px-4 lg:px-6 pb-4 lg:pb-6 max-h-[480px] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent hover:scrollbar-thumb-slate-400">
+      <div className="space-y-3 px-4 lg:px-6 pb-4 lg:pb-6 max-h-[272px] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent hover:scrollbar-thumb-slate-400">
         {/* EMERGENCY FOLLOW-UPS */}
         {emergencyFollowUps.map((e) => (
           <div
