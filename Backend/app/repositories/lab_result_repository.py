@@ -57,7 +57,7 @@ class LabResultRepository(BaseRepository):
         self,
         *,
         patient_id: UUID,
-        source_document_id: UUID,
+        source_document_id: UUID | None,
         test_name: str,
         test_name_display: str,
         value: Decimal | None = None,

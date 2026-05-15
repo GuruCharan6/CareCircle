@@ -1,4 +1,5 @@
 from __future__ import annotations
+from typing import List
 
 from uuid import UUID
 
@@ -51,7 +52,7 @@ class CalendarService:
         patient_id: UUID,
         within_days: int = 30,
         status: str | None = None,
-    ) -> list[CalendarEvent]:
+    ) -> List[CalendarEvent]:
         return await self._repo.get_upcoming(
             patient_id, within_days=within_days, status=status
         )

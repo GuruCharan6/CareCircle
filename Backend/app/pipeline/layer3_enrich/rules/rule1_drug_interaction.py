@@ -38,6 +38,8 @@ class Rule1DrugInteraction(BaseRule):
 
         hypotheses = []
         for interaction in known_interactions:
+            if not isinstance(interaction, dict):
+                continue
             severity = interaction.get("severity")
             interaction_type = interaction.get("interaction")
             drug_a = interaction.get("drug_a", "")

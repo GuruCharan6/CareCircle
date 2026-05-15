@@ -38,6 +38,8 @@ def detect_observational_conflicts(
     patient_report_ids: dict[str, Observation] = {}
 
     event_date = item.ingest.event_time
+    if event_date is None:
+        return []
     window_start = event_date - timedelta(days=_OBSERVATIONAL_WINDOW_DAYS)
 
     # Current item is caregiver note — look for patient-side denial in recent observations.
@@ -69,10 +71,10 @@ def detect_observational_conflicts(
             patient_id=item.patient_id,
             conflict_type=CONFLICT_TYPE_B,
             source_a_type="voice_note_caregiver",
-            source_a_id=item.source_document_id,
+            source_a_id=item.ingest.source_document_id,
             source_a_dimension=DIM_BEHAVIORAL_OBSERVABLE,
             source_b_type="voice_note_meera",
-            source_b_id=patient_obs.source_document_id if patient_obs else item.source_document_id,
+            source_b_id=patient_obs.id if patient_obs else item.ingest.source_document_id,
             source_b_dimension=DIM_SUBJECTIVE_EXPERIENCE,
             conflict_description=(
                 f"Caregiver reported {symptom} (behavioral, observed). "

@@ -98,7 +98,10 @@ class DigestService:
         seen_pairs: set[tuple[str, str]] = set()
         drug_interactions: list[DigestDrugInteraction] = []
         for ix in sorted(raw_interactions, key=lambda x: {"alert": 0, "watch": 1}.get(x.final_urgency, 2)):
-            pair = tuple(sorted([ix.drug_a_generic, ix.drug_b_generic]))
+            pair: tuple[str, str] = (
+                min(ix.drug_a_generic, ix.drug_b_generic),
+                max(ix.drug_a_generic, ix.drug_b_generic),
+            )
             if pair in seen_pairs:
                 continue
             seen_pairs.add(pair)

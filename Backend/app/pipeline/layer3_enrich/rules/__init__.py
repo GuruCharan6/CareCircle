@@ -2,6 +2,8 @@ from app.pipeline.layer3_enrich.rules.rule1_drug_interaction import Rule1DrugInt
 from app.pipeline.layer3_enrich.rules.rule2_lab_trend import Rule2LabTrend
 from app.pipeline.layer3_enrich.rules.rule3_caregiver_discrepancy import Rule3CaregiverDiscrepancy
 
+# Rule4LLMGeneral is async and requires an LLMProvider — called separately by
+# PipelineOrchestrator after the sync rules complete. Not in ALL_RULES.
 ALL_RULES = [
     Rule1DrugInteraction(),
     Rule2LabTrend(),

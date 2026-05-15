@@ -29,15 +29,18 @@ def detect_factual_conflicts(
 
     conflicts: list[ClassifiedConflict] = []
     event_date = item.ingest.event_time
+    if event_date is None:
+        return []
     window_start = event_date - timedelta(days=_FACTUAL_WINDOW_DAYS)
 
-    item_meals = item.ingest.extracted_data.get("meals_eaten") or {}
-    item_meds_taken = item.ingest.extracted_data.get("medications_taken")
+    extracted = item.ingest.extracted_data or {}
+    item_meals = extracted.get("meals_eaten") or {}
+    item_meds_taken = extracted.get("medications_taken")
 
     for obs in recent_observations:
         if obs.observation_date < window_start:
             continue
-        if obs.source_document_id == item.source_document_id:
+        if obs.id == item.ingest.source_document_id:
             continue
 
         # Only compare caregiver vs Meera — not same source type.
@@ -63,10 +66,10 @@ def detect_factual_conflicts(
                     patient_id=item.patient_id,
                     conflict_type=CONFLICT_TYPE_D,
                     source_a_type=item.source_type,
-                    source_a_id=item.source_document_id,
+                    source_a_id=item.ingest.source_document_id,
                     source_a_dimension=item.profile.dimension,
                     source_b_type=obs.source_type,
-                    source_b_id=obs.source_document_id,
+                    source_b_id=obs.id,
                     source_b_dimension="behavioral_observable",
                     conflict_description=(
                         f"Direct factual conflict on {meal}: "
@@ -92,10 +95,10 @@ def detect_factual_conflicts(
                 patient_id=item.patient_id,
                 conflict_type=CONFLICT_TYPE_D,
                 source_a_type=item.source_type,
-                source_a_id=item.source_document_id,
+                source_a_id=item.ingest.source_document_id,
                 source_a_dimension=item.profile.dimension,
                 source_b_type=obs.source_type,
-                source_b_id=obs.source_document_id,
+                source_b_id=obs.id,
                 source_b_dimension="behavioral_observable",
                 conflict_description=(
                     f"Direct factual conflict on medication: "

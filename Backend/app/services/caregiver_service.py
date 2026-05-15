@@ -1,4 +1,5 @@
 from __future__ import annotations
+from typing import List
 
 from uuid import UUID
 
@@ -48,7 +49,7 @@ class CaregiverService:
                 error=str(exc),
             )
 
-    async def list(self, patient_id: UUID, active_only: bool = True) -> list[Caregiver]:
+    async def list(self, patient_id: UUID, active_only: bool = True) -> List[Caregiver]:
         return await self._repo.get_by_patient_id(patient_id, active_only=active_only)
 
     async def get(self, patient_id: UUID, caregiver_id: UUID) -> Caregiver:

@@ -32,7 +32,7 @@ async def get_history_pdf(
     patient_id: UUID,
     current_patient: CurrentPatient,
     conn: DBConn,
-) -> dict[str, str]:
+) -> dict[str, Any]:
     """
     Generate patient medical history PDF.
     Returns signed URL (1 hour) — download before it expires.

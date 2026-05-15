@@ -64,7 +64,7 @@ class MedicationRepository(BaseRepository):
         self,
         *,
         patient_id: UUID,
-        source_document_id: UUID,
+        source_document_id: UUID | None,
         generic_name: str,
         dose: str,
         frequency: str,

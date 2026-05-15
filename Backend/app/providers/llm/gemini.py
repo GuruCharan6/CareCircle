@@ -1,4 +1,5 @@
 from __future__ import annotations
+import asyncio
 import json
 from typing import Any, List, Dict, Union
 
@@ -183,17 +184,8 @@ class GeminiProvider(LLMProvider):
         if not texts:
             return []
         try:
-            result = await self._embed_client.aio.models.embed_content(
-                model=self._embedding_model,
-                contents=texts,
-                config=types.EmbedContentConfig(task_type="RETRIEVAL_DOCUMENT"),
-            )
-            embeddings = getattr(result, "embeddings", None) or []
-            if len(embeddings) == len(texts):
-                return [e.values for e in embeddings]
-            # Fallback: individual calls if batch response count mismatches
-            logger.warning("gemini.embed_batch_count_mismatch", expected=len(texts), got=len(embeddings))
-            return [await self.embed(t) for t in texts]
+            results = await asyncio.gather(*[self.embed(t) for t in texts])
+            return list(results)
         except Exception as exc:
             logger.error("gemini.embedding_batch_failed", error=str(exc))
             return [[0.0] * 768 for _ in texts]

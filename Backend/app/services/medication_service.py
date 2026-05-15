@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, List
 from uuid import UUID
 
 import asyncpg
@@ -15,12 +16,15 @@ from app.repositories.medication_repository import MedicationRepository
 from app.schemas.medication import MedicationCreate
 from app.worker.events import on_medication_added
 
+if TYPE_CHECKING:
+    from app.schemas.medication import MedicationUpdate
+
 
 class MedicationService:
     def __init__(self, conn: asyncpg.Connection) -> None:
         self._repo = MedicationRepository(conn)
 
-    async def create(self, patient_id: UUID, data: MedicationCreate) -> Medication:
+    async def create(self, patient_id: UUID, data: MedicationCreate) -> Medication:  # pyrefly: ignore[unsupported-operation]
         med = await self._repo.create(
             patient_id=patient_id,
             source_document_id=data.source_document_id,
@@ -41,12 +45,12 @@ class MedicationService:
         on_medication_added(str(patient_id))
         return med
 
-    async def list(self, patient_id: UUID, active_only: bool = False) -> list[Medication]:
+    async def list(self, patient_id: UUID, active_only: bool = False) -> List[Medication]:
         if active_only:
             return await self.list_active(patient_id)
         return await self._repo.get_by_patient_id(patient_id)
 
-    async def list_active(self, patient_id: UUID) -> list[Medication]:
+    async def list_active(self, patient_id: UUID) -> List[Medication]:
         """Cache-aside: Redis (10-min TTL) → miss → asyncpg → set cache."""
         cached = await get_active_medications(patient_id)
         if cached is not None:
@@ -57,8 +61,7 @@ class MedicationService:
         )
         return meds
 
-    async def update(self, patient_id: UUID, medication_id: UUID, data: "MedicationUpdate") -> Medication:
-        from app.schemas.medication import MedicationUpdate  # local import avoids circular
+    async def update(self, patient_id: UUID, medication_id: UUID, data: MedicationUpdate) -> Medication:  # pyrefly: ignore[unsupported-operation]
         await self.get(patient_id, medication_id)  # ownership check
         updated = await self._repo.update(
             medication_id,
@@ -81,7 +84,7 @@ class MedicationService:
         await invalidate_active_medications(patient_id)
         return updated
 
-    async def get(self, patient_id: UUID, medication_id: UUID) -> Medication:
+    async def get(self, patient_id: UUID, medication_id: UUID) -> Medication:  # pyrefly: ignore[unsupported-operation]
         med = await self._repo.get_by_id(medication_id)
         if not med:
             raise NotFoundError("Medication", str(medication_id))
@@ -94,5 +97,5 @@ class MedicationService:
         await self._repo.discontinue(med.id)
         await invalidate_active_medications(patient_id)  # stale after discontinue
 
-    async def list_by_document(self, document_id: UUID) -> list[Medication]:
+    async def list_by_document(self, document_id: UUID) -> List[Medication]:
         return await self._repo.get_by_document(document_id)

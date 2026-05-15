@@ -1,4 +1,5 @@
 from __future__ import annotations
+from typing import List
 
 from uuid import UUID
 
@@ -24,7 +25,7 @@ class PrescriberService:
             notes=data.notes,
         )
 
-    async def list(self, patient_id: UUID, active_only: bool = False) -> list[Prescriber]:
+    async def list(self, patient_id: UUID, active_only: bool = False) -> List[Prescriber]:
         return await self._repo.get_by_patient(patient_id, active_only=active_only)
 
     async def get(self, patient_id: UUID, prescriber_id: UUID) -> Prescriber:

@@ -1,4 +1,5 @@
 from __future__ import annotations
+from typing import List
 
 from uuid import UUID
 
@@ -17,14 +18,14 @@ class NotificationService:
         patient_id: UUID,
         status: str | None = None,
         limit: int = 50,
-    ) -> list[Notification]:
+    ) -> List[Notification]:
         # Map frontend "unread" filter to backend NOT IN ('read','failed')
         if status == "unread":
             rows = await self._repo.get_by_patient_id(patient_id, status=None, limit=limit)
             return [n for n in rows if n.status not in ("read", "failed")]
         return await self._repo.get_by_patient_id(patient_id, status=status, limit=limit)
 
-    async def mark_read(self, patient_id: UUID, notification_ids: list[UUID]) -> int:
+    async def mark_read(self, patient_id: UUID, notification_ids: List[UUID]) -> int:
         count = 0
         for nid in notification_ids:
             notif = await self._repo.get_by_id(nid)

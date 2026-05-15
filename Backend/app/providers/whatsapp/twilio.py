@@ -1,3 +1,4 @@
+import asyncio
 from typing import Any
 
 from twilio.rest import Client
@@ -18,7 +19,8 @@ class TwilioProvider(WhatsAppProvider):
         return f"whatsapp:{phone}" if not phone.startswith("whatsapp:") else phone
 
     async def send_text(self, to: str, body: str) -> str:
-        msg = self._client.messages.create(
+        msg: Any = await asyncio.to_thread(
+            self._client.messages.create,
             from_=self._from,
             to=self._to_wa(to),
             body=body,

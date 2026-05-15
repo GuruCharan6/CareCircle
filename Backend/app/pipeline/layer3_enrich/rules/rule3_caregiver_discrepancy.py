@@ -28,13 +28,16 @@ class Rule3CaregiverDiscrepancy(BaseRule):
         if item.ingest.source_type != "voice_note_caregiver":
             return []
 
+        extracted = item.ingest.extracted_data or {}
         caregiver_symptoms = set(
-            s.lower() for s in (item.ingest.extracted_data.get("symptoms_reported") or [])
+            s.lower() for s in (extracted.get("symptoms_reported") or [])
         )
         if not caregiver_symptoms:
             return []
 
         event_date = item.ingest.event_time
+        if event_date is None:
+            return []
         window_start = event_date - timedelta(days=_SAME_SYMPTOM_WINDOW_DAYS)
 
         meera_symptoms: set[str] = set()

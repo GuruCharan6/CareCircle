@@ -122,6 +122,9 @@ async def _remind_for_patient(conn, patient_id: UUID, today_name: str, today: da
     if not to_notify:
         return 0
 
+    # calendar_visit_today: True if a calendar event triggered (None = all notified, set = some)
+    calendar_visit_today = calendar_ids is None or len(calendar_ids) > 0
+
     notif_repo = NotificationRepository(conn)
     sent = 0
 
