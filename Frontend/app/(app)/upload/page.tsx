@@ -21,7 +21,7 @@ export default function UploadPage() {
   const {
     phase, duration, voiceState,
     startRecording, stopRecording, approve: approveVoice, reject: rejectVoice, reset: resetVoice,
-    updateExtractedText,
+    updateExtractedText, updateExtractedField,
   } = useVoiceLog();
 
   async function handleUpload(file: File, docType: DocumentType, contentHash?: string) {
@@ -122,6 +122,7 @@ export default function UploadPage() {
           onApprove={approveVoice}
           onReject={rejectVoice}
           onTextChange={updateExtractedText}
+          onFieldChange={updateExtractedField}
         />
       )}
     </div>

@@ -201,6 +201,13 @@ export function useVoiceLog() {
     setVoiceState(prev => prev ? { ...prev, extractedText: text } : null);
   }, []);
 
+  const updateExtractedField = useCallback((key: string, value: unknown) => {
+    setVoiceState(prev => prev ? {
+      ...prev,
+      extractedData: { ...(prev.extractedData ?? {}), [key]: value },
+    } : null);
+  }, []);
+
   return {
     phase,
     duration,
@@ -212,5 +219,6 @@ export function useVoiceLog() {
     reject,
     reset,
     updateExtractedText,
+    updateExtractedField,
   };
 }

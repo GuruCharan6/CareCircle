@@ -14,6 +14,7 @@ interface VoiceApprovalModalProps {
   onApprove: () => Promise<void>;
   onReject: (reason?: string) => Promise<void>;
   onTextChange: (text: string) => void;
+  onFieldChange: (key: string, value: unknown) => void;
 }
 
 export function VoiceApprovalModal({
@@ -23,6 +24,7 @@ export function VoiceApprovalModal({
   onApprove,
   onReject,
   onTextChange,
+  onFieldChange,
 }: VoiceApprovalModalProps) {
   const [approving, setApproving] = useState(false);
   const [rejecting, setRejecting] = useState(false);
@@ -100,34 +102,80 @@ export function VoiceApprovalModal({
           />
         </div>
 
-        {/* Extracted observation fields */}
+        {/* Extracted observation fields — editable */}
         {hasObservationFields && (
           <div>
             <p className="text-xs font-semibold text-[var(--color-muted)] uppercase tracking-wide mb-2">
-              Extracted observations
+              Extracted observations <span className="normal-case font-normal">(tap to edit)</span>
             </p>
-            <div className="space-y-1.5 max-h-40 overflow-y-auto">
+            <div className="space-y-2 max-h-52 overflow-y-auto">
               {Object.entries(data).map(([key, val]) => {
                 const conf = voiceState.fieldConfidence?.[key];
-                const display = Array.isArray(val)
-                  ? (val as unknown[]).join(", ") || "—"
-                  : val != null ? String(val) : "—";
+                const label = key.replace(/_/g, " ");
+
+                // Boolean field → toggle
+                if (typeof val === "boolean") {
+                  return (
+                    <div key={key} className="flex items-center justify-between text-xs py-1 border-b border-[var(--color-border)] last:border-0">
+                      <span className="font-medium text-[var(--color-text)] capitalize">{label}</span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => onFieldChange(key, !val)}
+                          className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${val ? "bg-[var(--color-action)]" : "bg-slate-200"}`}
+                        >
+                          <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${val ? "translate-x-4" : "translate-x-0"}`} />
+                        </button>
+                        {conf !== undefined && (
+                          <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${conf >= 0.8 ? "bg-[var(--color-ok)]/15 text-[var(--color-ok)]" : "bg-[var(--color-watch)]/15 text-[var(--color-watch)]"}`}>
+                            {Math.round(conf * 100)}%
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                }
+
+                // Array field → comma-separated text input
+                if (Array.isArray(val)) {
+                  return (
+                    <div key={key} className="text-xs border-b border-[var(--color-border)] last:border-0 pb-1.5">
+                      <div className="flex items-center justify-between mb-0.5">
+                        <span className="font-medium text-[var(--color-text)] capitalize">{label}</span>
+                        {conf !== undefined && (
+                          <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${conf >= 0.8 ? "bg-[var(--color-ok)]/15 text-[var(--color-ok)]" : "bg-[var(--color-watch)]/15 text-[var(--color-watch)]"}`}>
+                            {Math.round(conf * 100)}%
+                          </span>
+                        )}
+                      </div>
+                      <input
+                        type="text"
+                        className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-2 py-1 text-xs text-[var(--color-text)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)]"
+                        value={(val as unknown[]).join(", ")}
+                        onChange={e => onFieldChange(key, e.target.value.split(",").map(s => s.trim()).filter(Boolean))}
+                        placeholder={`e.g. item1, item2`}
+                      />
+                    </div>
+                  );
+                }
+
+                // String / number field → text input
                 return (
-                  <div key={key} className="flex items-center justify-between gap-4 text-xs py-1 border-b border-[var(--color-border)] last:border-0">
-                    <span className="font-medium text-[var(--color-text)] capitalize">
-                      {key.replace(/_/g, " ")}
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[var(--color-muted)]">{display}</span>
+                  <div key={key} className="text-xs border-b border-[var(--color-border)] last:border-0 pb-1.5">
+                    <div className="flex items-center justify-between mb-0.5">
+                      <span className="font-medium text-[var(--color-text)] capitalize">{label}</span>
                       {conf !== undefined && (
-                        <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
-                          conf >= 0.8 ? "bg-[var(--color-ok)]/15 text-[var(--color-ok)]"
-                          : "bg-[var(--color-watch)]/15 text-[var(--color-watch)]"
-                        }`}>
+                        <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${conf >= 0.8 ? "bg-[var(--color-ok)]/15 text-[var(--color-ok)]" : "bg-[var(--color-watch)]/15 text-[var(--color-watch)]"}`}>
                           {Math.round(conf * 100)}%
                         </span>
                       )}
                     </div>
+                    <input
+                      type="text"
+                      className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-2 py-1 text-xs text-[var(--color-text)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)]"
+                      value={val != null ? String(val) : ""}
+                      onChange={e => onFieldChange(key, e.target.value)}
+                    />
                   </div>
                 );
               })}
