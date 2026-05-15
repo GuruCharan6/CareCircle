@@ -11,7 +11,7 @@ import { useLabResults } from "@/hooks/useLabResults";
 import { formatDateLocal } from "@/lib/utils";
 import {
   LayoutDashboard, Pill, BarChart2, FileText, CalendarDays,
-  RefreshCw, Users, Bell, Sparkles, HeartPulse, Eye, Settings, Plus,
+  RefreshCw, Users, Bell, Sparkles, Stethoscope, Eye, Settings, Plus,
   ChevronLeft, ChevronRight, Menu, TriangleAlert, Coffee,
   FileClock, Search, LogOut, UserCircle, Files
 } from "lucide-react";
@@ -47,7 +47,7 @@ const SECTIONS = [
     title: "CARE TEAM",
     items: [
       { href: "/caregivers", label: "Caregivers", icon: Users },
-      { href: "/prescribers", label: "Prescribers", icon: HeartPulse },
+      { href: "/prescribers", label: "Prescribers", icon: Stethoscope },
     ],
   },
   {

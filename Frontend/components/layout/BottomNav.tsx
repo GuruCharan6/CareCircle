@@ -6,7 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard, Upload, Coffee, Sparkles, MoreHorizontal,
   Pill, BarChart2, FileText, CalendarDays, RefreshCw, Users,
-  Bell, HeartPulse, Eye, TriangleAlert, FileClock, Search,
+  Bell, Stethoscope, Settings, Eye, TriangleAlert, FileClock, Search,
   Files, X, LogOut, ShieldAlert,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -41,7 +41,7 @@ const MORE_SECTIONS = [
     title: "CARE TEAM",
     items: [
       { href: "/caregivers",  label: "Caregivers",  icon: Users },
-      { href: "/prescribers", label: "Prescribers", icon: HeartPulse },
+      { href: "/prescribers", label: "Prescribers", icon: Stethoscope },
     ],
   },
   {
@@ -56,7 +56,7 @@ const MORE_SECTIONS = [
     title: "OTHER",
     items: [
       { href: "/notifications", label: "Notifications", icon: Bell },
-      { href: "/settings",      label: "Settings",       icon: HeartPulse },
+      { href: "/settings",      label: "Settings",       icon: Settings },
     ],
   },
 ] as const;

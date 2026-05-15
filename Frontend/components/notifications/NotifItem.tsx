@@ -90,15 +90,9 @@ export function NotifItem({ notification, patientId, onAcknowledge, onCrisisFoll
         isUnread ? "bg-[var(--color-surface)] cursor-pointer hover:bg-slate-50" : "bg-white"
       )}
     >
-      {/* Unread dot — left side, aligned with icon */}
-      <div className="flex flex-col items-center gap-1 shrink-0 pt-1">
-        {showUnreadDot && (
-          <div className={cn("w-2 h-2 rounded-full mb-1", dot)} />
-        )}
-        {/* Type icon — 36px circle */}
-        <div className={cn("w-9 h-9 rounded-full flex items-center justify-center shrink-0", bg)}>
-          <Icon size={15} className={text} />
-        </div>
+      {/* Type icon — 36px circle */}
+      <div className={cn("w-9 h-9 rounded-full flex items-center justify-center shrink-0 mt-1", bg)}>
+        <Icon size={15} className={text} />
       </div>
 
       {/* Content */}
@@ -110,9 +104,15 @@ export function NotifItem({ notification, patientId, onAcknowledge, onCrisisFoll
           )}>
             {notification.title}
           </p>
-          <span className="text-xs text-[var(--color-muted)] shrink-0 mt-0.5">
-            {timeAgo(notification.created_at)}
-          </span>
+          {/* Timestamp + unread dot stacked on the right */}
+          <div className="flex flex-col items-end shrink-0 gap-1">
+            <span className="text-xs text-[var(--color-muted)] mt-0.5">
+              {timeAgo(notification.created_at)}
+            </span>
+            {showUnreadDot && (
+              <div className={cn("w-2 h-2 rounded-full", dot)} />
+            )}
+          </div>
         </div>
 
         <p className="text-xs text-[var(--color-muted)] mt-0.5 leading-relaxed">
