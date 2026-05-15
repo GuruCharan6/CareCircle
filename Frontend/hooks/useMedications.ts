@@ -56,7 +56,7 @@ export function useMedications() {
   const discontinue = useCallback(async (patientId: string, medId: string) => {
     await medicationsApi.discontinue(patientId, medId);
     setMedications(prev => {
-      const next = prev.filter(m => m.id !== medId);
+      const next = prev.map(m => m.id === medId ? { ...m, status: "discontinued" } : m);
       cache[patientId] = next;
       return next;
     });

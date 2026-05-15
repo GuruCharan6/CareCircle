@@ -600,6 +600,19 @@ export interface DigestUpcomingEvent {
   tests_pending: string[];
 }
 
+export interface DigestRecentObservation {
+  source_type: string;
+  caregiver_name: string | null;
+  observation_date: string;
+  created_at: string | null;
+  mood: string | null;
+  energy_level: string | null;
+  medications_taken: boolean | null;
+  symptoms_reported: string[];
+  concerns_flagged: string[];
+  summary: string | null;
+}
+
 export interface DigestRefillAlert {
   medication_id: string;
   generic_name: string;
@@ -629,6 +642,7 @@ export interface DigestResponse {
   refill_alerts: DigestRefillAlert[];
   drug_interactions: DigestDrugInteraction[];
   staleness_flags: string[];
+  recent_observations: DigestRecentObservation[];
   upload_cta_token: string | null;
 }
 

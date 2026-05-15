@@ -132,7 +132,10 @@ export default function MedicationsPage() {
           medications={filtered}
           interactions={interactions}
           onEdit={m => { setEditing(m); setModalOpen(true); }}
-          onDiscontinue={m => discontinue(activePatient.id, m.id)}
+          onDiscontinue={async m => {
+            await discontinue(activePatient.id, m.id);
+            fetchInteractions(activePatient.id);
+          }}
         />
       )}
 

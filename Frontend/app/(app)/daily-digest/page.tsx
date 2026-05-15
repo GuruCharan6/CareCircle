@@ -5,7 +5,8 @@ import { usePatient } from "@/hooks/usePatient";
 import { useDigest } from "@/hooks/useDigest";
 import { DigestCard } from "@/components/dashboard/DigestCard";
 import { Button } from "@/components/ui/Button";
-import { ChevronLeft, RefreshCw, TriangleAlert, Lightbulb, AlertCircle } from "lucide-react";
+import { ChevronLeft, RefreshCw, TriangleAlert, Lightbulb, AlertCircle, MessageCircle } from "lucide-react";
+import type { DigestRecentObservation } from "@/lib/types";
 import Link from "next/link";
 
 function currentPeriod(): "morning" | "evening" {
@@ -127,6 +128,34 @@ export default function DailyDigestPage() {
                       <p className="text-[var(--color-text)] leading-relaxed">{hyp}</p>
                     </div>
                   ))}
+                </div>
+              </section>
+            )}
+
+            {/* Caregiver Updates */}
+            {digest.recent_observations && digest.recent_observations.length > 0 && (
+              <section>
+                <h2 className="text-sm font-bold text-[var(--color-muted)] uppercase tracking-widest mb-4">Caregiver Updates</h2>
+                <div className="space-y-3">
+                  {digest.recent_observations.map((obs: DigestRecentObservation, i: number) => {
+                    const hasConcern = obs.concerns_flagged.length > 0 || obs.symptoms_reported.length > 0;
+                    const who = obs.caregiver_name ?? (obs.source_type === "voice_log" ? "Meera" : "Caregiver");
+                    const when = obs.created_at
+                      ? new Date(obs.created_at).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })
+                      : obs.observation_date;
+                    return (
+                      <div
+                        key={i}
+                        className={`flex gap-3 p-4 rounded-xl border ${hasConcern ? "bg-amber-50 border-amber-100" : "bg-slate-50 border-slate-100"}`}
+                      >
+                        <MessageCircle size={16} className={`shrink-0 mt-0.5 ${hasConcern ? "text-amber-500" : "text-slate-400"}`} />
+                        <div className="space-y-0.5">
+                          <p className="text-xs font-bold text-[var(--color-muted)]">{who} · {when}</p>
+                          <p className="text-[var(--color-text)] leading-relaxed">{obs.summary ?? "Checked in"}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </section>
             )}

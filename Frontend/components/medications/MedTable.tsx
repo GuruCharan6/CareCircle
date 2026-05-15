@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import type { MedicationResponse, DrugInteractionResponse } from "@/lib/types";
 import { TriangleAlert, Edit2, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -51,6 +52,8 @@ function StatusBadge({ med, interactionFlag }: { med: MedicationResponse; intera
 }
 
 export function MedTable({ medications, interactions, onEdit, onDiscontinue }: MedTableProps) {
+  const [pendingDiscontinue, setPendingDiscontinue] = useState<MedicationResponse | null>(null);
+
   if (!medications.length) {
     return (
       <div className="text-center py-16 text-[var(--color-muted)] text-sm">
@@ -61,6 +64,32 @@ export function MedTable({ medications, interactions, onEdit, onDiscontinue }: M
 
   return (
     <>
+      {/* ── Discontinue confirm dialog ────────────────────── */}
+      {pendingDiscontinue && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="bg-white rounded-2xl shadow-xl p-6 max-w-sm w-full space-y-4">
+            <h2 className="text-base font-bold text-[var(--color-text)]">Stop this medication?</h2>
+            <p className="text-sm text-[var(--color-muted)]">
+              <span className="font-semibold text-[var(--color-text)]">{pendingDiscontinue.generic_name}</span> will be marked as discontinued. This cannot be undone from this screen.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setPendingDiscontinue(null)}
+                className="px-4 py-2 rounded-lg border border-[var(--color-border)] text-sm font-semibold text-[var(--color-muted)] hover:bg-[var(--color-bg)] transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => { onDiscontinue(pendingDiscontinue); setPendingDiscontinue(null); }}
+                className="px-4 py-2 rounded-lg bg-[var(--color-alert)] hover:bg-[var(--color-alert)]/90 text-white text-sm font-semibold transition-colors"
+              >
+                Yes, discontinue
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Mobile card list ─────────────────────────────── */}
       <div className="lg:hidden space-y-2">
         {medications.map(med => {
@@ -105,7 +134,7 @@ export function MedTable({ medications, interactions, onEdit, onDiscontinue }: M
                   </button>
                   {isActive && (
                     <button
-                      onClick={() => onDiscontinue(med)}
+                      onClick={() => setPendingDiscontinue(med)}
                       className="w-9 h-9 flex items-center justify-center rounded-lg bg-[var(--color-alert)]/10 text-[var(--color-alert)] hover:bg-[var(--color-alert)]/20 active:scale-95 transition-all"
                     >
                       <XCircle size={14} />
@@ -183,7 +212,7 @@ export function MedTable({ medications, interactions, onEdit, onDiscontinue }: M
                       </button>
                       {isActive && (
                         <button
-                          onClick={() => onDiscontinue(med)}
+                          onClick={() => setPendingDiscontinue(med)}
                           className="px-3 py-1.5 rounded-lg bg-[var(--color-alert)] hover:bg-[var(--color-alert)]/90 text-white text-xs font-semibold transition-colors"
                         >
                           Discontinue
