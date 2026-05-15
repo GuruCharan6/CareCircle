@@ -217,9 +217,9 @@ class DigestService:
             raise NotFoundError("User", str(user_id))
         prefs = dict(user.preferences)
         if data.morning_time is not None:
-            prefs["morning_digest_time"] = data.morning_time
+            prefs["morning_time"] = data.morning_time
         if data.evening_time is not None:
-            prefs["evening_digest_time"] = data.evening_time
+            prefs["evening_time"] = data.evening_time
         if data.timezone is not None:
             prefs["timezone"] = data.timezone
         await self._user_repo.update_preferences(user_id, prefs)

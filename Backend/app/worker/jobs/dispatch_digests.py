@@ -59,7 +59,7 @@ async def _dispatch(period: str) -> None:
     # Keys must match what DigestService and OnboardingService write:
     #   morning_digest_time / evening_digest_time  (set via /onboarding/digest-times or PATCH /digest/preferences)
     #   whatsapp_digest  (boolean, set by auth flow and WhatsApp connect)
-    pref_key = f"{period}_digest_time"
+    pref_key = f"{period}_time"
     default_time = "08:00" if period == "morning" else "20:00"
 
     # Import here to avoid circular imports at module load time
