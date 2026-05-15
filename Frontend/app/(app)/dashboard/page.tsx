@@ -224,7 +224,7 @@ export default function DashboardPage() {
               emergencyFollowUps={(patientState as any).emergency_follow_ups}
               suggestedAppointments={(patientState as any).suggested_appointments}
               gapActions={patientState.gap_actions}
-              onActionComplete={() => fetchState(activePatient.id)}
+              onActionComplete={() => { setTimeout(() => fetchState(activePatient.id), 1500); }}
               onEmergencyFollowUp={(id) => setFollowUpNotifId(id)}
             />
           </div>

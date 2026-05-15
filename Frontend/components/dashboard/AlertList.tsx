@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
-import { AlertTriangle, ArrowRight, Pill, Siren, CalendarClock, Info, ChevronRight, Check } from "lucide-react";
-import Link from "next/link";
+import { AlertTriangle, Pill, Siren, CalendarClock, Info, ChevronRight, Check, FlaskConical } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { calendarApi } from "@/lib/api/calendar";
 import { Button } from "@/components/ui/Button";
@@ -34,24 +33,27 @@ const URGENCY_STYLE: Record<string, { badge: string; border: string }> = {
   ok:       { badge: "bg-green-100 text-green-700", border: "border-l-green-400" },
 };
 
-export function AlertList({ 
+export function AlertList({
   patientId,
-  interactions, 
-  refills, 
-  emergencyFollowUps = [], 
+  interactions,
+  refills,
+  emergencyFollowUps = [],
   suggestedAppointments = [],
   gapActions = [],
   onActionComplete,
   onEmergencyFollowUp
 }: AlertListProps) {
   const router = useRouter();
+  const [confirmedIds, setConfirmedIds] = useState<Set<string>>(new Set());
   const [actioningId, setActioningId] = useState<string | null>(null);
+
+  const pendingSuggested = suggestedAppointments.filter(a => !confirmedIds.has(a.id));
 
   const totalItems =
     interactions.length +
     refills.length +
     emergencyFollowUps.length +
-    suggestedAppointments.length +
+    pendingSuggested.length +
     gapActions.length;
 
   if (totalItems === 0) return null;
@@ -59,10 +61,19 @@ export function AlertList({
   const handleConfirmAppointment = async (eventId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     setActioningId(eventId);
+    // Optimistic: mark confirmed immediately, remove from list
+    setConfirmedIds(prev => new Set(prev).add(eventId));
     try {
       await calendarApi.confirm(patientId, eventId);
+      // Fire background refresh without blocking UI
       onActionComplete?.();
     } catch (err) {
+      // Rollback optimistic update on failure
+      setConfirmedIds(prev => {
+        const next = new Set(prev);
+        next.delete(eventId);
+        return next;
+      });
       console.error("Failed to confirm appointment:", err);
     } finally {
       setActioningId(null);
@@ -82,7 +93,8 @@ export function AlertList({
       </CardHeader>
 
       <div className="space-y-3 px-4 lg:px-6 pb-4 lg:pb-6 max-h-[272px] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent hover:scrollbar-thumb-slate-400">
-        {/* EMERGENCY FOLLOW-UPS */}
+
+        {/* 1. EMERGENCY FOLLOW-UPS — highest priority */}
         {emergencyFollowUps.map((e) => (
           <div
             key={e.id}
@@ -97,9 +109,7 @@ export function AlertList({
                 <h4 className="text-[14px] font-bold text-rose-900">Emergency Follow-up</h4>
                 <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-rose-500 text-white uppercase tracking-wider">Urgent</span>
               </div>
-              <p className="text-[12px] text-rose-700 leading-relaxed font-medium">
-                {e.body}
-              </p>
+              <p className="text-[12px] text-rose-700 leading-relaxed font-medium">{e.body}</p>
               <div className="flex items-center gap-1.5 text-[11px] font-bold text-rose-600 mt-2">
                 Click to add note <ChevronRight size={14} />
               </div>
@@ -107,7 +117,52 @@ export function AlertList({
           </div>
         ))}
 
-        {/* DRUG INTERACTIONS */}
+        {/* 2. SUGGESTED APPOINTMENTS & LAB TESTS — need user action, show before passive alerts */}
+        {pendingSuggested.map((a) => {
+          const isLabTest = a.event_type === "lab_test";
+          return (
+            <div
+              key={a.id}
+              className="group flex items-start gap-4 rounded-2xl bg-white border border-slate-100 border-l-4 border-l-blue-500 p-4 shadow-sm"
+            >
+              <div className="p-2.5 rounded-xl bg-blue-50 text-blue-500 shadow-sm group-hover:scale-110 transition-transform">
+                {isLabTest ? <FlaskConical size={20} /> : <CalendarClock size={20} />}
+              </div>
+              <div className="flex-1 min-w-0 space-y-1">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-[13px] font-bold text-[#0D3B6E]">{a.title}</h4>
+                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-blue-100 text-blue-600 uppercase tracking-wider">
+                    {isLabTest ? "Lab Test" : "Suggested"}
+                  </span>
+                </div>
+                <p className="text-[12px] text-slate-500 leading-relaxed font-medium">
+                  {isLabTest
+                    ? `Suggested for ${new Date(a.event_date).toLocaleDateString()}`
+                    : `Follow-up suggested for ${new Date(a.event_date).toLocaleDateString()}`}
+                </p>
+                <div className="flex items-center gap-3 mt-3">
+                  <Button
+                    size="sm"
+                    className="h-8 bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-4 gap-1.5 shadow-sm transition-all active:scale-95"
+                    onClick={(e) => handleConfirmAppointment(a.id, e)}
+                    loading={actioningId === a.id}
+                  >
+                    <Check size={14} />
+                    Confirm
+                  </Button>
+                  <button
+                    onClick={() => router.push('/calendar')}
+                    className="text-[11px] font-bold text-slate-400 hover:text-slate-600 transition-colors"
+                  >
+                    View Details
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+
+        {/* 3. DRUG INTERACTIONS */}
         {interactions.map((i) => {
           const sev = (i.severity || i.final_urgency || "low").toLowerCase();
           const style = SEVERITY_STYLE[sev] ?? SEVERITY_STYLE.low;
@@ -117,7 +172,7 @@ export function AlertList({
               onClick={() => router.push('/drug-interactions')}
               className={`group flex items-start gap-4 rounded-2xl bg-white border border-slate-100 border-l-4 ${style.border} p-4 shadow-sm cursor-pointer hover:border-slate-200 transition-all`}
             >
-              <div className={`p-2.5 rounded-xl bg-slate-50 shrink-0 group-hover:bg-white transition-colors`}>
+              <div className="p-2.5 rounded-xl bg-slate-50 shrink-0 group-hover:bg-white transition-colors">
                 <AlertTriangle size={20} className={style.icon} />
               </div>
               <div className="flex-1 min-w-0 space-y-1">
@@ -132,7 +187,7 @@ export function AlertList({
           );
         })}
 
-        {/* REFILL ALERTS */}
+        {/* 4. REFILL ALERTS */}
         {refills.map((r) => {
           const urg = (r.urgency || "ok").toLowerCase();
           const style = URGENCY_STYLE[urg] ?? URGENCY_STYLE.ok;
@@ -162,45 +217,7 @@ export function AlertList({
           );
         })}
 
-        {/* SUGGESTED APPOINTMENTS */}
-        {suggestedAppointments.map((a) => (
-          <div
-            key={a.id}
-            className="group flex items-start gap-4 rounded-2xl bg-white border border-slate-100 border-l-4 border-l-blue-500 p-4 shadow-sm"
-          >
-            <div className="p-2.5 rounded-xl bg-blue-50 text-blue-500 shadow-sm group-hover:scale-110 transition-transform">
-              <CalendarClock size={20} />
-            </div>
-            <div className="flex-1 min-w-0 space-y-1">
-              <div className="flex items-center justify-between">
-                <h4 className="text-[13px] font-bold text-[#0D3B6E]">{a.title}</h4>
-                <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-blue-100 text-blue-600 uppercase tracking-wider">Suggested</span>
-              </div>
-              <p className="text-[12px] text-slate-500 leading-relaxed font-medium">
-                Appointment suggested for {new Date(a.event_date).toLocaleDateString()}.
-              </p>
-              <div className="flex items-center gap-3 mt-3">
-                <Button 
-                  size="sm" 
-                  className="h-8 bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-4 gap-1.5 shadow-sm transition-all active:scale-95"
-                  onClick={(e) => handleConfirmAppointment(a.id, e)}
-                  loading={actioningId === a.id}
-                >
-                  <Check size={14} />
-                  Confirm Schedule
-                </Button>
-                <button 
-                  onClick={() => router.push('/calendar')}
-                  className="text-[11px] font-bold text-slate-400 hover:text-slate-600 transition-colors"
-                >
-                  View Details
-                </button>
-              </div>
-            </div>
-          </div>
-        ))}
-
-        {/* CARE GAPS */}
+        {/* 5. CARE GAPS */}
         {gapActions.map((g, idx) => (
           <div
             key={`gap-${idx}`}
@@ -212,9 +229,7 @@ export function AlertList({
             </div>
             <div className="flex-1 min-w-0 space-y-1">
               <h4 className="text-[13px] font-bold text-slate-700">Preventive Care Gap</h4>
-              <p className="text-[12px] text-slate-500 leading-relaxed">
-                {g}
-              </p>
+              <p className="text-[12px] text-slate-500 leading-relaxed">{g}</p>
               <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-400 mt-1.5">
                 View in Calendar <ChevronRight size={14} />
               </div>
