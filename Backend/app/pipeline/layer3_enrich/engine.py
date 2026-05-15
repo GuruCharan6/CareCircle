@@ -28,7 +28,7 @@ def run_enrichment(
                     patient_id=str(context.patient_id),
                     hypothesis_count=len(results),
                 )
-            all_hypotheses.extend(results)
+                all_hypotheses.extend(results)
         except Exception as exc:
             # Rule failure must not stop other rules or the pipeline.
             logger.error(

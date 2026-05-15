@@ -1,4 +1,4 @@
-from datetime import datetime, date
+from datetime import datetime, date, timezone
 from app.pipeline.layer1_ingest.base import BaseExtractor
 from app.pipeline.layer1_ingest.types import IngestedItem
 from app.pipeline.layer1_ingest.prescription import PrescriptionExtractor
@@ -50,7 +50,7 @@ class OtherExtractor(BaseExtractor):
                 source_document_id=document.id,
                 patient_id=document.patient_id,
                 event_time=event_time,
-                ingestion_time=datetime.utcnow(),
+                ingestion_time=datetime.now(timezone.utc),
                 extracted_data=data,
                 confidence_per_field=field_confidence,
                 raw_text=data.get("raw_text") or document.extracted_text,

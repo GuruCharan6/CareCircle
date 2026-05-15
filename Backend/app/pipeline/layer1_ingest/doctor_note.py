@@ -1,4 +1,4 @@
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 
 from app.config import settings
 from app.lib.signed_url import create_signed_view_url
@@ -69,7 +69,7 @@ class DoctorNoteExtractor(BaseExtractor):
             source_document_id=document.id,
             patient_id=document.patient_id,
             event_time=event_time,
-            ingestion_time=datetime.utcnow(),
+            ingestion_time=datetime.now(timezone.utc),
             extracted_data={
                 "medication_changes": data.get("medication_changes") or [],
                 "follow_up_instructions": data.get("follow_up_instructions"),
