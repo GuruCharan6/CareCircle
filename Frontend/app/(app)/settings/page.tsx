@@ -121,15 +121,15 @@ export default function SettingsPage() {
   useEffect(() => {
     if (!user) return;
     setName(user.name ?? "");
-    const p = (user.preferences ?? {}) as Partial<NotifPrefs>;
+    const p = (user.preferences ?? {}) as Partial<NotifPrefs> & Record<string, unknown>;
     setPrefs({
       sms_alerts:      p.sms_alerts      ?? true,
       in_app_alerts:   p.in_app_alerts   ?? true,
       morning_digest:  p.morning_digest  ?? true,
       evening_digest:  p.evening_digest  ?? true,
       whatsapp_digest: p.whatsapp_digest ?? false,
-      morning_time:    p.morning_time    ?? "08:00",
-      evening_time:    p.evening_time    ?? "20:00",
+      morning_time:    (p.morning_digest_time as string) ?? p.morning_time ?? "08:00",
+      evening_time:    (p.evening_digest_time as string) ?? p.evening_time ?? "20:00",
       whatsapp_connected: p.whatsapp_connected ?? false,
       whatsapp_number: p.whatsapp_number ?? null,
     });
@@ -163,7 +163,15 @@ export default function SettingsPage() {
     setSaving(true);
     setError(null);
     try {
-      await updateProfile({ name: name.trim(), preferences: prefs as unknown as Record<string, unknown> });
+      const { morning_time, evening_time, ...rest } = prefs;
+      await updateProfile({
+        name: name.trim(),
+        preferences: {
+          ...rest,
+          morning_digest_time: morning_time,
+          evening_digest_time: evening_time,
+        } as Record<string, unknown>,
+      });
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } catch (e: unknown) {
