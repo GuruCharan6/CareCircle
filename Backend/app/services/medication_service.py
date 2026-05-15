@@ -12,6 +12,7 @@ from app.cache.medication_cache import (
 )
 from app.core.exceptions import ForbiddenError, NotFoundError
 from app.models.medication import Medication
+from app.repositories.drug_interaction_repository import DrugInteractionRepository
 from app.repositories.medication_repository import MedicationRepository
 from app.schemas.medication import MedicationCreate
 from app.worker.events import on_medication_added
@@ -95,6 +96,8 @@ class MedicationService:
     async def discontinue(self, patient_id: UUID, medication_id: UUID) -> None:
         med = await self.get(patient_id, medication_id)
         await self._repo.discontinue(med.id)
+        ix_repo = DrugInteractionRepository(self._repo.conn)
+        await ix_repo.delete_by_medication_id(med.id)
         await invalidate_active_medications(patient_id)  # stale after discontinue
 
     async def list_by_document(self, document_id: UUID) -> List[Medication]:

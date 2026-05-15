@@ -12,11 +12,43 @@ from app.repositories.clinical_hypothesis_repository import ClinicalHypothesisRe
 from app.repositories.drug_interaction_repository import DrugInteractionRepository
 from app.repositories.medication_refill_repository import MedicationRefillRepository
 from app.repositories.medication_repository import MedicationRepository
+from app.repositories.observation_repository import ObservationRepository
 from app.repositories.patient_repository import PatientRepository
 from app.repositories.patient_state_repository import PatientStateRepository
 from app.repositories.user_repository import UserRepository
+from app.models.observation import Observation
 from app.schemas.calendar import CalendarEventListItem
-from app.schemas.digest import DigestDrugInteraction, DigestPreferencesUpdate, DigestRefillAlert, DigestResponse
+from app.schemas.digest import DigestDrugInteraction, DigestPreferencesUpdate, DigestRecentObservation, DigestRefillAlert, DigestResponse
+
+
+def _build_observation_summary(obs: Observation) -> str:
+    parts: list[str] = []
+
+    if obs.concerns_flagged:
+        parts.append(obs.concerns_flagged[0])
+
+    if obs.symptoms_reported:
+        parts.append(f"symptoms: {', '.join(obs.symptoms_reported[:2])}")
+
+    if obs.medications_taken is True:
+        timing = f" ({obs.medication_timing_notes})" if obs.medication_timing_notes else ""
+        parts.append(f"medication taken{timing}")
+    elif obs.medications_taken is False:
+        parts.append("medication missed")
+
+    if obs.mood and obs.mood not in ("normal", "good"):
+        parts.append(f"mood: {obs.mood}")
+
+    if obs.energy_level and obs.energy_level != "normal":
+        parts.append(f"energy: {obs.energy_level}")
+
+    if obs.meal_notes:
+        parts.append(obs.meal_notes[:60])
+
+    if not parts:
+        parts.append("checked in")
+
+    return " · ".join(parts)
 
 
 class DigestService:
@@ -29,6 +61,7 @@ class DigestService:
         self._hyp_repo = ClinicalHypothesisRepository(conn)
         self._user_repo = UserRepository(conn)
         self._drug_repo = DrugInteractionRepository(conn)
+        self._obs_repo = ObservationRepository(conn)
 
     async def build(
         self,
@@ -138,6 +171,24 @@ class DigestService:
         alert_hyps = [h for h in hypotheses if h.urgency == "alert"]
         needs_action = alert_hyps[0].hypothesis_text if alert_hyps else None
 
+        # Recent caregiver/meera observations (last 2 days)
+        raw_obs = await self._obs_repo.get_recent_caregiver(patient_id, within_days=2, limit=5)
+        recent_observations = [
+            DigestRecentObservation(
+                source_type=o.source_type,
+                caregiver_name=o.caregiver_name,
+                observation_date=o.observation_date,
+                created_at=o.created_at,
+                mood=o.mood,
+                energy_level=o.energy_level,
+                medications_taken=o.medications_taken,
+                symptoms_reported=o.symptoms_reported or [],
+                concerns_flagged=o.concerns_flagged or [],
+                summary=_build_observation_summary(o),
+            )
+            for o in raw_obs
+        ]
+
         # 15-min upload CTA token for WhatsApp digest
         upload_cta_token = create_upload_jwt(user_id, patient_id)
 
@@ -154,6 +205,7 @@ class DigestService:
             refill_alerts=refill_alerts,
             drug_interactions=drug_interactions,
             staleness_flags=staleness_flags,
+            recent_observations=recent_observations,
             upload_cta_token=upload_cta_token,
         )
 

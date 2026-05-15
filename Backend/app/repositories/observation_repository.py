@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, timedelta
 from typing import Any
 from uuid import UUID
 
@@ -81,6 +81,47 @@ class ObservationRepository(BaseRepository):
                 logger.error("observation_repo.audio_link_failed", error=str(e), path=row["source_document_url"])
                 obs.source_document_url = None
         return obs
+
+    async def get_recent_caregiver(
+        self,
+        patient_id: UUID,
+        within_days: int = 2,
+        limit: int = 5,
+    ) -> list[Observation]:
+        cutoff = date.today() - timedelta(days=within_days)
+        rows = await self.conn.fetch(
+            """
+            SELECT
+                o.id, o.patient_id,
+                CASE o.source_type
+                    WHEN 'caregiver_voice'      THEN 'caregiver_note'
+                    WHEN 'voice_note_caregiver' THEN 'caregiver_note'
+                    WHEN 'meera_call_log'       THEN 'voice_log'
+                    WHEN 'voice_note_meera'     THEN 'voice_log'
+                    ELSE o.source_type
+                END as source_type,
+                o.caregiver_id, o.source_document_id,
+                o.observation_date, o.raw_transcript, o.created_at,
+                o.symptoms_reported, o.symptoms_denied, o.symptoms_absent,
+                o.meals_eaten, o.meal_notes, o.medications_taken, o.medication_timing_notes,
+                o.mobility_notes, o.mood, o.energy_level, o.meera_mood_read, o.concerns_flagged,
+                d.file_url as source_document_url,
+                c.name as caregiver_name
+            FROM public.observations o
+            LEFT JOIN public.source_documents d ON o.source_document_id = d.id
+            LEFT JOIN public.caregivers c ON o.caregiver_id = c.id
+            WHERE o.patient_id = $1
+              AND o.observation_date >= $2
+              AND o.source_type IN (
+                'caregiver_voice', 'voice_note_caregiver', 'caregiver_note',
+                'meera_call_log', 'voice_note_meera', 'voice_log'
+              )
+            ORDER BY o.created_at DESC
+            LIMIT $3
+            """,
+            patient_id, cutoff, limit,
+        )
+        return [Observation.from_record(r) for r in rows]
 
     async def get_by_id(self, obs_id: UUID) -> Observation | None:
         row = await self.conn.fetchrow(

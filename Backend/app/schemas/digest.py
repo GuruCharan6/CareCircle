@@ -6,6 +6,19 @@ from pydantic import BaseModel
 from app.schemas.calendar import CalendarEventListItem
 
 
+class DigestRecentObservation(BaseModel):
+    source_type: str          # 'caregiver_note' | 'voice_log'
+    caregiver_name: str | None = None
+    observation_date: date
+    created_at: datetime | None = None
+    mood: str | None = None
+    energy_level: str | None = None
+    medications_taken: bool | None = None
+    symptoms_reported: list[str] = []
+    concerns_flagged: list[str] = []
+    summary: str | None = None   # first concern or meal/medication note
+
+
 class DigestUpcomingEvent(BaseModel):
     event_id: UUID
     title: str
@@ -52,6 +65,8 @@ class DigestResponse(BaseModel):
     refill_alerts: list[DigestRefillAlert] = []
     drug_interactions: list[DigestDrugInteraction] = []
     staleness_flags: list[str] = []  # e.g. 'No caregiver note 4 days'
+
+    recent_observations: list[DigestRecentObservation] = []  # today's caregiver/meera notes
 
     # Upload CTA included in WhatsApp version — deep link token generated server-side
     upload_cta_token: str | None = None  # 15-min pre-auth JWT for WhatsApp CTA button

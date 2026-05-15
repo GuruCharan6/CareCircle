@@ -84,6 +84,16 @@ class DrugInteractionRepository(BaseRepository):
         )
         return DrugInteractionResult.from_record(row)
 
+    async def delete_by_medication_id(self, medication_id: UUID) -> int:
+        result = await self.conn.execute(
+            """
+            DELETE FROM public.drug_interaction_results
+            WHERE medication_a_id = $1 OR medication_b_id = $1
+            """,
+            medication_id,
+        )
+        return int(result.split()[-1])
+
     async def mark_notification_sent(self, result_id: UUID) -> None:
         await self.conn.execute(
             "UPDATE public.drug_interaction_results SET notification_sent = true WHERE id = $1",
