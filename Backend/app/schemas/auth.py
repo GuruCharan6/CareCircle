@@ -23,7 +23,7 @@ class GoogleAuthRequest(BaseModel):
 
 
 class RefreshTokenRequest(BaseModel):
-    refresh_token: str
+    refresh_token: str | None = None  # optional: accepted from httpOnly cookie
 
 
 class UserResponse(BaseModel):

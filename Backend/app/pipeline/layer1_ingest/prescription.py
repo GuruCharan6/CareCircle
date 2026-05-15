@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 
 from app.config import settings
 from app.lib.signed_url import create_signed_view_url
@@ -57,7 +57,7 @@ class PrescriptionExtractor(BaseExtractor):
             source_document_id=document.id,
             patient_id=document.patient_id,
             event_time=event_time,
-            ingestion_time=datetime.utcnow(),
+            ingestion_time=datetime.now(timezone.utc),
             extracted_data={
                 "medications": medications,
                 "prescriber_name": data.get("prescriber_name"),

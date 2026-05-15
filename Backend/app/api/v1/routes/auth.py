@@ -1,8 +1,7 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Cookie, Depends, HTTPException, Response
 from uuid import UUID
 from typing import Any
 
-from fastapi import HTTPException
 from app.api.deps import DBConn, get_current_user
 from app.core.logging import get_logger
 from app.models.user import User
@@ -31,6 +30,22 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 # Backend verifies via SUPABASE_JWT_SECRET (HS256) in core/security.py.
 # Session expires 30 days (health app — don't force frequent re-login).
 
+_COOKIE_MAX_AGE = 30 * 24 * 3600  # 30 days — matches Supabase session lifetime
+
+
+def _set_refresh_cookie(response: Response, refresh_token: str) -> None:
+    from app.config import settings
+    is_prod = not settings.debug
+    response.set_cookie(
+        key="cc_refresh_token",
+        value=refresh_token,
+        httponly=True,
+        secure=is_prod,
+        samesite="none" if is_prod else "lax",
+        max_age=_COOKIE_MAX_AGE,
+        path="/api/v1/auth",
+    )
+
 
 def _build_user_response(supabase_user) -> UserResponse:
     return UserResponse(
@@ -56,13 +71,11 @@ async def send_otp(body: OTPSendRequest) -> OTPSendResponse:
 
 
 @router.post("/otp/verify", response_model=AuthResponse)
-async def verify_otp(body: OTPVerifyRequest, conn: DBConn) -> AuthResponse:
-    """Verify OTP → returns access_token + refresh_token.
-    Supabase trigger auto-creates public.users row on first login.
-    """
+async def verify_otp(body: OTPVerifyRequest, conn: DBConn, response: Response) -> AuthResponse:
+    """Verify OTP → returns access_token. Refresh token set as httpOnly cookie."""
     svc = AuthService()
     session_data = await svc.verify_otp(body.phone_number, body.token)
-
+    _set_refresh_cookie(response, session_data["refresh_token"])
     return AuthResponse(
         access_token=session_data["access_token"],
         refresh_token=session_data["refresh_token"],
@@ -72,11 +85,11 @@ async def verify_otp(body: OTPVerifyRequest, conn: DBConn) -> AuthResponse:
 
 
 @router.post("/google", response_model=AuthResponse)
-async def sign_in_google(body: GoogleAuthRequest) -> AuthResponse:
+async def sign_in_google(body: GoogleAuthRequest, response: Response) -> AuthResponse:
     """Google OAuth sign-in. Secondary option — some urban professionals prefer it."""
     svc = AuthService()
     session_data = await svc.sign_in_google(body.id_token)
-
+    _set_refresh_cookie(response, session_data["refresh_token"])
     return AuthResponse(
         access_token=session_data["access_token"],
         refresh_token=session_data["refresh_token"],
@@ -86,11 +99,18 @@ async def sign_in_google(body: GoogleAuthRequest) -> AuthResponse:
 
 
 @router.post("/refresh", response_model=AuthResponse)
-async def refresh_token(body: RefreshTokenRequest) -> AuthResponse:
-    """Refresh expired access token. Refresh token stored in Keychain/Keystore — never localStorage."""
+async def refresh_token(
+    response: Response,
+    body: RefreshTokenRequest | None = None,
+    cc_refresh_token: str | None = Cookie(default=None),
+) -> AuthResponse:
+    """Refresh expired access token. Reads from httpOnly cookie (preferred) or request body."""
+    token = cc_refresh_token or (body.refresh_token if body else None)
+    if not token:
+        raise HTTPException(status_code=401, detail="No refresh token provided")
     svc = AuthService()
-    session_data = await svc.refresh_session(body.refresh_token)
-
+    session_data = await svc.refresh_session(token)
+    _set_refresh_cookie(response, session_data["refresh_token"])
     return AuthResponse(
         access_token=session_data["access_token"],
         refresh_token=session_data["refresh_token"],
