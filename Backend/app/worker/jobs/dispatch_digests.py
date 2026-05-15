@@ -1,7 +1,6 @@
 """
 Digest dispatcher — called by cron, directly invokes per-patient digest jobs.
 """
-import asyncio
 from datetime import datetime, timezone
 from uuid import UUID
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
@@ -82,7 +81,7 @@ async def _dispatch(period: str) -> None:
 
     # Close the DB connection before running per-patient jobs so we don't
     # hold the pool open while each job opens its own connection.
-    patient_ids: list[tuple[UUID, bool]] = []
+    patient_ids: list[UUID] = []
     for row in rows:
         tz = _parse_tz(row["timezone"])
         if row["digest_enabled"] and _should_send_now(row["send_time"], tz):
