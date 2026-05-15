@@ -99,21 +99,16 @@ class DocumentService:
 
     async def trigger_extraction(self, doc_id: UUID, user_id: UUID) -> None:
         """Trigger AI extraction for a newly uploaded document.
-        Synchronous execution ensures the user sees results immediately.
+        Queues Celery task — returns immediately. Frontend polls /documents/{id} every 3s.
         """
         doc = await self._repo.get_by_id(doc_id)
         if not doc:
             raise NotFoundError("Document", str(doc_id))
         await self._assert_doc_access(doc, user_id)
 
-        # Call extraction synchronously
-        from app.worker.tasks.extract_document import _async_extract
-        try:
-            await _async_extract(str(doc_id))
-            logger.info("document.extraction_completed_sync", doc_id=str(doc_id))
-        except Exception as e:
-            logger.error("document.extraction_failed_sync", doc_id=str(doc_id), error=str(e))
-            # Status will remain 'pending' or 'failed' based on _async_extract internal logic
+        from app.worker.tasks.extract_document import extract_document
+        extract_document.delay(str(doc_id))
+        logger.info("document.extraction_queued", doc_id=str(doc_id))
 
     async def approve(
         self,
