@@ -73,6 +73,8 @@ async def _check_for_patient(conn, patient_id) -> int:
     is_alert = silence_days >= _ALERT_SILENCE_DAYS
     caregiver_names = ", ".join(c.name for c in confirmed[:2])
     user_id = await get_user_id_for_patient(conn, patient_id)
+    if not user_id:
+        return 0
 
     title = f"{'Alert' if is_alert else 'Note'}: No caregiver update — {patient.name}"
     body = (

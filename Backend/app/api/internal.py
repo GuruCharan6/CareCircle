@@ -91,8 +91,8 @@ async def cron_every_minute(background_tasks: BackgroundTasks):
     background_tasks.add_task(async_dispatch_morning_digests)
     background_tasks.add_task(async_dispatch_evening_digests)
 
-    # 2. Hourly Tasks: ONLY run when minute == 0 (top of the hour)
-    if minute == 0:
+    # 2. Hourly Tasks: run when minute == 30 (cron fires every hour at :30)
+    if minute == 30:
         if hour == 2:
             background_tasks.add_task(_async_nightly_crisis_rebuild)
         elif hour == 6:

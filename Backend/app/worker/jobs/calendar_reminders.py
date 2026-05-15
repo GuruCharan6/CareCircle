@@ -72,7 +72,7 @@ async def _remind_for_patient(conn, patient_id) -> int:
             WHERE patient_id = $1
               AND event_date = $2
               AND status = 'confirmed'
-              AND NOT ($3 = ANY(reminder_sent_at))
+              AND NOT ($3 = ANY(COALESCE(reminder_sent_at, ARRAY[]::text[])))
             """,
             patient_id, target_date, label
         )

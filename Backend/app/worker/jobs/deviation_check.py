@@ -77,6 +77,8 @@ async def _check_alert_accumulation(conn, patient_id) -> int:
         "SELECT name FROM public.patients WHERE id = $1", patient_id
     )
     user_id = await get_user_id_for_patient(conn, patient_id)
+    if not user_id or not patient_name:
+        return 0
 
     title = f"Multiple alerts active — {patient_name}"
     body = (
