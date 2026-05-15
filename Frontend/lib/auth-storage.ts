@@ -6,11 +6,9 @@ const KEYS = {
   USER:    "cc_user",
 } as const;
 
-// Refresh token kept in memory only — never written to localStorage.
-// XSS can read localStorage; memory is not accessible to injected scripts.
-// Trade-off: refresh token lost on page reload. User re-authenticates after
-// access token expires (~1hr). Acceptable for a healthcare app.
-let _refreshToken: string | null = null;
+// Refresh token stored as httpOnly cookie by the backend — never in JS memory or localStorage.
+// Cookie is automatically sent on /auth/refresh requests (credentials: "include").
+// This survives PWA close/reopen while remaining inaccessible to XSS.
 
 function ls(): Storage | null {
   if (typeof window === "undefined") return null;
@@ -25,16 +23,11 @@ export const authStorage = {
     store.setItem(KEYS.ACCESS,  auth.access_token);
     store.setItem(KEYS.EXPIRES, String(expiresAt));
     store.setItem(KEYS.USER,    JSON.stringify(auth.user));
-    _refreshToken = auth.refresh_token;
     window.dispatchEvent(new CustomEvent("cc:auth:login"));
   },
 
   getAccessToken(): string | null {
     return ls()?.getItem(KEYS.ACCESS) ?? null;
-  },
-
-  getRefreshToken(): string | null {
-    return _refreshToken;
   },
 
   getUser(): UserResponse | null {
@@ -54,7 +47,6 @@ export const authStorage = {
     const store = ls();
     if (!store) return;
     Object.values(KEYS).forEach(k => store.removeItem(k));
-    _refreshToken = null;
   },
 
   isLoggedIn(): boolean {

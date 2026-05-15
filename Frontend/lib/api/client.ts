@@ -9,14 +9,12 @@ type RequestOptions = Omit<RequestInit, "body"> & {
 };
 
 async function refreshTokens(): Promise<boolean> {
-  const refreshToken = authStorage.getRefreshToken();
-  if (!refreshToken) return false;
-
   try {
+    // No body needed — refresh token arrives as httpOnly cookie automatically.
     const res = await fetch(`${BASE_URL}/auth/refresh`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ refresh_token: refreshToken }),
+      credentials: "include",
     });
     if (!res.ok) return false;
     const data = await res.json();
@@ -56,6 +54,7 @@ async function request<T>(
   const res = await fetch(url, {
     ...rest,
     headers,
+    credentials: "include",
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
 
