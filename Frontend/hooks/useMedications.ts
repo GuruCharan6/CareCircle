@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { medicationsApi } from "@/lib/api/medications";
-import type { MedicationCreate, MedicationUpdate, MedicationResponse } from "@/lib/types";
+import type { MedicationCreate, MedicationStatus, MedicationUpdate, MedicationResponse } from "@/lib/types";
 
 const cache: Record<string, MedicationResponse[]> = {};
 
@@ -56,7 +56,7 @@ export function useMedications() {
   const discontinue = useCallback(async (patientId: string, medId: string) => {
     await medicationsApi.discontinue(patientId, medId);
     setMedications(prev => {
-      const next = prev.map(m => m.id === medId ? { ...m, status: "discontinued" } : m);
+      const next = prev.map(m => m.id === medId ? { ...m, status: "discontinued" as MedicationStatus } : m);
       cache[patientId] = next;
       return next;
     });
