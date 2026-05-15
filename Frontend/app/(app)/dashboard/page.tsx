@@ -205,8 +205,8 @@ export default function DashboardPage() {
             const sb = SEVERITY_ORDER[(b.severity || b.final_urgency || "low").toLowerCase()] ?? 4;
             return sa - sb;
           });
-        const topInteractions = allDeduped.slice(0, 3);
-        const sortedRefills = [...patientState.refill_alerts].sort((a: any, b: any) => a.days_remaining - b.days_remaining).slice(0, 3);
+        const topInteractions = allDeduped;
+        const sortedRefills = [...patientState.refill_alerts].sort((a: any, b: any) => a.days_remaining - b.days_remaining);
 
         const hasAnyAlert =
           topInteractions.length > 0 ||
@@ -224,8 +224,6 @@ export default function DashboardPage() {
               emergencyFollowUps={(patientState as any).emergency_follow_ups}
               suggestedAppointments={(patientState as any).suggested_appointments}
               gapActions={patientState.gap_actions}
-              totalInteractions={allDeduped.length}
-              totalRefills={patientState.refill_alerts.length}
               onActionComplete={() => fetchState(activePatient.id)}
               onEmergencyFollowUp={(id) => setFollowUpNotifId(id)}
             />

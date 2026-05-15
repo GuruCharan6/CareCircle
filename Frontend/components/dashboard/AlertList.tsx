@@ -13,8 +13,6 @@ interface AlertListProps {
   emergencyFollowUps?: any[];
   suggestedAppointments?: any[];
   gapActions?: string[];
-  totalInteractions?: number;
-  totalRefills?: number;
   onActionComplete?: () => void;
   onEmergencyFollowUp?: (notifId: string) => void;
 }
@@ -43,18 +41,16 @@ export function AlertList({
   emergencyFollowUps = [], 
   suggestedAppointments = [],
   gapActions = [],
-  totalInteractions, 
-  totalRefills,
   onActionComplete,
   onEmergencyFollowUp
 }: AlertListProps) {
   const router = useRouter();
   const [actioningId, setActioningId] = useState<string | null>(null);
 
-  const totalItems = 
-    (totalInteractions ?? interactions.length) + 
-    (totalRefills ?? refills.length) + 
-    emergencyFollowUps.length + 
+  const totalItems =
+    interactions.length +
+    refills.length +
+    emergencyFollowUps.length +
     suggestedAppointments.length +
     gapActions.length;
 
