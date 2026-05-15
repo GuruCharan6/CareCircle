@@ -16,10 +16,15 @@ class DrugInteractionRepository(BaseRepository):
     async def get_by_patient_id(self, patient_id: UUID) -> list[DrugInteractionResult]:
         rows = await self.conn.fetch(
             """
-            SELECT * FROM public.drug_interaction_results
-            WHERE patient_id = $1
-              AND interaction IN ('confirmed', 'possible')
-            ORDER BY checked_at DESC
+            SELECT dir.*
+            FROM public.drug_interaction_results dir
+            JOIN public.medications ma ON dir.medication_a_id = ma.id
+            JOIN public.medications mb ON dir.medication_b_id = mb.id
+            WHERE dir.patient_id = $1
+              AND dir.interaction IN ('confirmed', 'possible')
+              AND ma.status = 'active'
+              AND mb.status = 'active'
+            ORDER BY dir.checked_at DESC
             """,
             patient_id,
         )
@@ -83,6 +88,21 @@ class DrugInteractionRepository(BaseRepository):
             gemini_raw_response, lab_modifier_applied, final_urgency,
         )
         return DrugInteractionResult.from_record(row)
+
+    async def delete_discontinued_for_patient(self, patient_id: UUID) -> int:
+        """Delete interaction records where either medication is no longer active."""
+        result = await self.conn.execute(
+            """
+            DELETE FROM public.drug_interaction_results dir
+            USING public.medications ma, public.medications mb
+            WHERE dir.medication_a_id = ma.id
+              AND dir.medication_b_id = mb.id
+              AND dir.patient_id = $1
+              AND (ma.status != 'active' OR mb.status != 'active')
+            """,
+            patient_id,
+        )
+        return int(result.split()[-1])
 
     async def delete_by_medication_id(self, medication_id: UUID) -> int:
         result = await self.conn.execute(
