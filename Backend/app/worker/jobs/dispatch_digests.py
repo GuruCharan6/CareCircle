@@ -1,20 +1,14 @@
 """
-Digest dispatcher — runs once daily, schedules per-user sends via Celery ETA.
-
-Morning dispatcher: 5:00 AM IST  → schedules morning_digest_for_patient tasks
-Evening dispatcher: 12:00 PM IST → schedules evening_digest_for_patient tasks
-
-Each task fires at exactly the user's preferred time in their timezone.
+Digest dispatcher — called by cron, directly invokes per-patient digest jobs.
 """
 import asyncio
 from datetime import datetime, timezone
+from uuid import UUID
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from app.core.celery import celery_app
 from app.core.logging import get_logger
 from app.worker._db import worker_conn
-from app.config import settings
-import httpx
 
 logger = get_logger(__name__)
 
@@ -69,6 +63,13 @@ async def _dispatch(period: str) -> None:
     pref_key = f"{period}_digest_time"
     default_time = "08:00" if period == "morning" else "20:00"
 
+    # Import here to avoid circular imports at module load time
+    if period == "morning":
+        from app.worker.jobs.morning_digest import _async_run as _run_digest
+    else:
+        from app.worker.jobs.evening_digest import _async_run as _run_digest
+
+    # Fetch candidate patients with their preferences
     async with worker_conn(max_size=3, command_timeout=30) as conn:
         rows = await conn.fetch("""
             SELECT p.id AS patient_id,
@@ -79,42 +80,31 @@ async def _dispatch(period: str) -> None:
             JOIN public.users u ON u.id = p.user_id
         """, pref_key, default_time, _DEFAULT_TZ)
 
-        scheduled = 0
-        skipped = 0
+    # Close the DB connection before running per-patient jobs so we don't
+    # hold the pool open while each job opens its own connection.
+    patient_ids: list[tuple[UUID, bool]] = []
+    for row in rows:
+        tz = _parse_tz(row["timezone"])
+        if row["digest_enabled"] and _should_send_now(row["send_time"], tz):
+            patient_ids.append(row["patient_id"])
 
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            for row in rows:
-                if not row["digest_enabled"]:
-                    skipped += 1
-                    continue
+    scheduled = 0
+    skipped = len(rows) - len(patient_ids)
 
-                tz = _parse_tz(row["timezone"])
-                should_send = _should_send_now(row["send_time"], tz)
+    for patient_id in patient_ids:
+        try:
+            await _run_digest(patient_id)
+            scheduled += 1
+        except Exception as exc:
+            logger.error(
+                f"dispatch_{period}_digests.patient_failed",
+                patient_id=str(patient_id),
+                error=str(exc),
+            )
+            skipped += 1
 
-                if not should_send:
-                    skipped += 1
-                    continue
-
-                url = f"{settings.internal_base_url}/internal/jobs/{period}-digest"
-                headers = {"x-internal-secret": settings.internal_secret}
-                try:
-                    resp = await client.post(
-                        url, 
-                        params={"patient_id": str(row["patient_id"])},
-                        headers=headers
-                    )
-                    resp.raise_for_status()
-                    scheduled += 1
-                except Exception as exc:
-                    logger.error(
-                        f"dispatch_{period}_digests.post_failed",
-                        patient_id=str(row["patient_id"]),
-                        error=str(exc)
-                    )
-                    skipped += 1
-
-        logger.info(
-            f"dispatch_{period}_digests.done",
-            scheduled=scheduled,
-            skipped=skipped,
-        )
+    logger.info(
+        f"dispatch_{period}_digests.done",
+        scheduled=scheduled,
+        skipped=skipped,
+    )

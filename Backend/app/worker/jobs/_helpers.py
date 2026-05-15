@@ -142,9 +142,12 @@ async def try_whatsapp_digest_cta(
 
     token = create_upload_jwt(user_id=user_id, patient_id=patient_id)
     redis = make_redis()
+    cta_url = f"{settings.backend_base_url}/upload"
     try:
         code = await create_short_link(redis, token)
         cta_url = f"{settings.backend_base_url}/api/v1/r/{code}"
+    except Exception as exc:
+        logger.warning("try_whatsapp_digest_cta.shortlink_failed", user_id=str(user_id), error=str(exc))
     finally:
         await redis.aclose()
 
