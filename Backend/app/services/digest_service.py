@@ -75,18 +75,6 @@ class DigestService:
 
         state = await self._state_repo.get_by_patient_id(patient_id)
         overall_status = state.overall_status if state else "unknown"
-        if state and state.last_digest_summary:
-            today_summary = state.last_digest_summary
-        else:
-            # Fallback for new patients or before first digest/pipeline run
-            if overall_status == "ok":
-                today_summary = "System monitoring active. No urgent concerns at this time."
-            elif overall_status == "alert":
-                today_summary = "Health alert detected. Review the details below for necessary actions."
-            elif overall_status == "watch":
-                today_summary = "New health observations recorded. Monitoring for any changes."
-            else:
-                today_summary = "Gathering patient data..."
 
         # Upcoming events: 30-day window for system-wide consistency
         days_window = 30
@@ -171,8 +159,9 @@ class DigestService:
         alert_hyps = [h for h in hypotheses if h.urgency == "alert"]
         needs_action = alert_hyps[0].hypothesis_text if alert_hyps else None
 
-        # Recent caregiver/meera observations (last 2 days)
-        raw_obs = await self._obs_repo.get_recent_caregiver(patient_id, within_days=2, limit=5)
+        # Morning: last 24 h (overnight notes). Evening: today only.
+        obs_within_days = 1 if period == "morning" else 0
+        raw_obs = await self._obs_repo.get_recent_caregiver(patient_id, within_days=obs_within_days, limit=5)
         recent_observations = [
             DigestRecentObservation(
                 source_type=o.source_type,
@@ -188,6 +177,23 @@ class DigestService:
             )
             for o in raw_obs
         ]
+
+        # Generate fresh today_summary from current data
+        summary_parts: list[str] = []
+        if alert_hyps:
+            summary_parts.append(f"{len(alert_hyps)} alert(s) need immediate attention.")
+        if drug_interactions:
+            summary_parts.append(f"{len(drug_interactions)} drug interaction(s) detected.")
+        if raw_obs:
+            summary_parts.append("Caregiver update received." if period == "evening" else "Recent caregiver notes available.")
+        if not summary_parts:
+            if overall_status == "alert":
+                summary_parts.append("Health alert detected. Review details below.")
+            elif overall_status == "watch":
+                summary_parts.append("Monitoring active. Some items need attention.")
+            else:
+                summary_parts.append("All monitored parameters look stable.")
+        today_summary = " ".join(summary_parts)
 
         # 15-min upload CTA token for WhatsApp digest
         upload_cta_token = create_upload_jwt(user_id, patient_id)
