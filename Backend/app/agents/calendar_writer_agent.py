@@ -188,13 +188,14 @@ class CalendarWriterAgent:
             if e.event_type == "lab_test" and e.status in ("suggested", "confirmed")
         }
 
-        # Compute test_date once — all tests on same date (7 days before follow-up or 7 from today)
+        # Default test_date — 7 days before follow-up or 7 from today.
+        # Individual tests may override this with their own due_date.
         today = date.today()
         if follow_up_date and follow_up_date > today:
-            test_date = follow_up_date - timedelta(days=7)
+            default_test_date = follow_up_date - timedelta(days=7)
         else:
-            test_date = today + timedelta(days=7)
-        test_date = max(test_date, today + timedelta(days=1))
+            default_test_date = today + timedelta(days=7)
+        default_test_date = max(default_test_date, today + timedelta(days=1))
 
         new_test_events: list = []
         for res in results:
@@ -210,6 +211,19 @@ class CalendarWriterAgent:
             if test_name.lower() in already_scheduled_tests:
                 logger.info("calendar_writer_agent.skip_test", test_name=test_name, reason="duplicate")
                 continue
+
+            # Use per-test due_date if Gemini extracted one, else default
+            from app.lib.dates import parse_date_robust
+            raw_due = res.get("due_date")
+            if raw_due:
+                parsed_due = parse_date_robust(raw_due)
+                if parsed_due and parsed_due > today:
+                    # Schedule 7 days before the stated deadline so patient has time
+                    test_date = max(parsed_due - timedelta(days=7), today + timedelta(days=1))
+                else:
+                    test_date = default_test_date
+            else:
+                test_date = default_test_date
 
             test_event = await self._calendar_repo.create(
                 patient_id=patient_id,
@@ -237,7 +251,7 @@ class CalendarWriterAgent:
                 title=f"{count} lab test{'s' if count > 1 else ''} suggested",
                 body=(
                     f"Doctor ordered: {names}. "
-                    f"Suggested for {test_date}. Tap to confirm or dismiss."
+                    f"Suggested for {new_test_events[0].event_date}. Tap to confirm or dismiss."
                 ),
                 linked_entity_type="calendar_event",
                 linked_entity_id=new_test_events[0].id,

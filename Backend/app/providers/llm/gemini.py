@@ -160,7 +160,10 @@ class GeminiProvider(LLMProvider):
             result = await self._embed_client.aio.models.embed_content(
                 model=self._embedding_model,
                 contents=text,
-                config=types.EmbedContentConfig(task_type="RETRIEVAL_DOCUMENT"),
+                config=types.EmbedContentConfig(
+                    task_type="RETRIEVAL_DOCUMENT",
+                    output_dimensionality=768,
+                ),
             )
             # Defensive access to handle different SDK versions
             embeddings = getattr(result, "embeddings", None)
@@ -191,7 +194,10 @@ class GeminiProvider(LLMProvider):
             result = await self._embed_client.aio.models.embed_content(
                 model=self._embedding_model,
                 contents=query,
-                config=types.EmbedContentConfig(task_type="RETRIEVAL_QUERY"),
+                config=types.EmbedContentConfig(
+                    task_type="RETRIEVAL_QUERY",
+                    output_dimensionality=768,
+                ),
             )
             embeddings = getattr(result, "embeddings", None)
             if embeddings and len(embeddings) > 0:

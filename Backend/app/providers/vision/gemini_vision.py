@@ -40,7 +40,8 @@ Return a JSON object with this exact structure:
   "results": [
     {
       "test_name": "<canonical test name e.g. hba1c>",
-      "test_name_display": "<human readable name e.g. HbA1c Test>"
+      "test_name_display": "<human readable name e.g. HbA1c Test>",
+      "due_date": "<YYYY-MM-DD or null — date by which test must be completed, if explicitly stated>"
     }
   ],
   "notes": "<any other important instructions>",
@@ -49,8 +50,9 @@ Return a JSON object with this exact structure:
     "<field_name>": <0.0-1.0>
   }
 }
-IMPORTANT for "results": Only include tests/investigations that the doctor is ORDERING the patient to get done in the FUTURE (e.g. "Investigations advised: Lipid Profile", "Get CBC done", "HbA1c after 3 months").
+IMPORTANT for "results": Only include tests/investigations that the doctor is ORDERING the patient to get done in the FUTURE (e.g. "Investigations advised: Lipid Profile", "Get CBC done", "HbA1c after 3 months", "Bring HbA1c result to next visit").
 Do NOT include: vitals measured at this visit (BP, HR, SpO2, weight, temperature), recent/past lab results shown in the document header or summary, or any values that have already been measured.
+If the prescription says "get X done and bring result to next visit on [date]", include X in results with due_date = [date], AND set follow_up_date = [date] for the appointment.
 If any field is unclear or unreadable, set it to null and record confidence < 0.7 in field_confidence.
 Return ONLY valid JSON. No prose.
 """
@@ -144,7 +146,8 @@ Return a JSON object with this exact structure:
       "unit": "<e.g. mg/dL or null>",
       "reference_range_low": <numeric or null>,
       "reference_range_high": <numeric or null>,
-      "is_abnormal": <true|false|null>
+      "is_abnormal": <true|false|null>,
+      "due_date": "<YYYY-MM-DD or null — date by which test must be completed, if explicitly stated>"
     }
   ],
   "prescriber_name": "<doctor name or null>",
@@ -172,7 +175,7 @@ Classification rules for document_type_guess:
 - "handwritten_note": Informal handwritten personal notes not fitting the above categories.
 
 Extraction rules:
-- For "results" in a prescription or doctor_note: only include tests/investigations the doctor is ORDERING for the patient to do in the FUTURE. Do NOT include vitals recorded at this visit (BP, HR, SpO2, weight, temperature).
+- For "results" in a prescription or doctor_note: only include tests/investigations the doctor is ORDERING for the patient to do in the FUTURE. Do NOT include vitals recorded at this visit (BP, HR, SpO2, weight, temperature). If the prescription says "bring X result to next visit on [date]", include X in results with due_date = [date] AND set follow_up_date = [date].
 - Extract ALL medications listed, even if only mentioned in passing.
 - If a field is not present, set it to null.
 - Return ONLY valid JSON. No prose, no markdown.

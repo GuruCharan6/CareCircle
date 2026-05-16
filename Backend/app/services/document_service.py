@@ -291,20 +291,21 @@ class DocumentService:
                     except Exception as e:
                         logger.error("document.persist_med_failed", doc_id=str(doc.id), error=str(e))
 
-        # 3. Handle Lab Results (from lab report OR ordered tests in prescription)
+        # 3. Handle Lab Results — only store results that have actual measured values.
+        #    Results without values are ordered tests (future lab work) handled by CalendarWriterAgent.
         results = doc.extracted_data.get("results") or []
-        if results:
+        actual_results = [r for r in results if r.get("value") is not None]
+        if actual_results:
             lab_svc = LabResultService(self._repo.conn)
-            # Check if we already have results for this document
             existing_labs = await lab_svc.list_by_document(doc.id)
             if not existing_labs:
-                for r in results:
+                for r in actual_results:
                     try:
                         await lab_svc.create(doc.patient_id, LabResultCreate(
                             source_document_id=doc.id,
                             test_name=r.get("test_name"),
                             test_name_display=r.get("test_name_display"),
-                            value=r.get("value"), # Might be null for ordered tests
+                            value=r.get("value"),
                             unit=r.get("unit"),
                             test_date=doc.event_date or date.today(),
                             reference_range_low=r.get("reference_range_low"),
