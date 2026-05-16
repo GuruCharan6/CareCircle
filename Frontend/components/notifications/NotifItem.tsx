@@ -16,7 +16,6 @@ import {
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import type { NotificationResponse } from "@/lib/types";
-import { calendarApi } from "@/lib/api/calendar";
 
 interface Props {
   notification: NotificationResponse;
@@ -141,24 +140,19 @@ export function NotifItem({ notification, patientId, onAcknowledge, onCrisisFoll
           </button>
         )}
 
-        {canAddToCalendar && onAcknowledge && (
+        {canAddToCalendar && (
           <button
-            onClick={async e => {
+            onClick={e => {
               e.stopPropagation();
-              if (notification.linked_entity_id) {
-                try {
-                  await calendarApi.confirm(patientId, notification.linked_entity_id);
-                } catch {
-                  // already confirmed or not found — proceed anyway
-                }
-              }
-              onAcknowledge(notification.id, "handled");
-              router.push("/calendar");
+              const dest = notification.linked_entity_id
+                ? `/calendar?id=${notification.linked_entity_id}`
+                : "/calendar";
+              router.push(dest);
             }}
             className="mt-2 flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100 transition-colors"
           >
             <Calendar size={11} />
-            Add to Calendar →
+            Review →
           </button>
         )}
 
