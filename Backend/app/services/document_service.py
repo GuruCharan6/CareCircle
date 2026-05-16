@@ -130,12 +130,15 @@ class DocumentService:
             raise NotFoundError("Document", str(doc_id))
         await self._assert_doc_access(doc, user_id)
 
-        # Merge user edits into extracted_data
+        # Merge user edits into extracted_data.
+        # If user corrected document_type in review modal, persist it now.
+        corrected_type = request.document_type or None
         await self._repo.update_extraction(
             doc_id,
             extraction_status="approved",
             extracted_data=request.extracted_data,
             extracted_text=request.extracted_text,
+            document_type=corrected_type,
         )
 
         approved = await self._repo.approve(doc_id)

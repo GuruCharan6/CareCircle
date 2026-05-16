@@ -33,3 +33,15 @@ async def trigger_interaction_check(
     svc = DrugInteractionService(conn)
     results = await svc.trigger_check(patient_id)
     return [DrugInteractionResponse(**r.model_dump()) for r in results]
+
+
+@router.delete("/{interaction_id}", status_code=204)
+async def dismiss_interaction(
+    patient_id: UUID,
+    interaction_id: UUID,
+    current_patient: CurrentPatient,
+    conn: DBConn,
+) -> None:
+    """Dismiss a false-positive interaction. Clears Redis + DB so next check re-queries Gemini fresh."""
+    svc = DrugInteractionService(conn)
+    await svc.dismiss(patient_id, interaction_id)

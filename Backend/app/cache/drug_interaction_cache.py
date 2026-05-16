@@ -29,6 +29,19 @@ async def get_interaction(drug_a: str, drug_b: str) -> dict | None:
     return None
 
 
+async def clear_interaction(drug_a: str, drug_b: str) -> None:
+    """Delete cached result for a pair (used when dismissing a false-positive interaction)."""
+    try:
+        async with make_redis() as redis:
+            await redis.delete(drug_interaction_key(drug_a, drug_b))
+            logger.debug("drug_interaction_cache.cleared", drug_a=drug_a, drug_b=drug_b)
+    except Exception as exc:
+        logger.warning(
+            "drug_interaction_cache.clear_error",
+            drug_a=drug_a, drug_b=drug_b, error=str(exc),
+        )
+
+
 async def set_interaction(drug_a: str, drug_b: str, result: dict) -> None:
     """Cache drug pair interaction result after Gemini returns. TTL = 30 days."""
     try:

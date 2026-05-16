@@ -21,7 +21,6 @@ _THRESHOLDS = {
     "lab": 30,
     "caregiver_note": 7,
     "meera_log": 3,
-    "prescription": 90,
 }
 
 
@@ -44,10 +43,13 @@ class PatientStateService:
         today = date.today()
         indicators = _build_staleness_indicators(state, today)
         
-        # Calculate freshness score (0-100)
-        # Each of the 4 indicators contributes 25 points max
-        score_map = {"fresh": 25, "aging": 15, "stale": 5, "critical": 0}
-        freshness_score = sum(score_map.get(ind.status, 0) for ind in indicators)
+        # Calculate freshness score (0-100), normalized across however many indicators exist
+        _weights = {"fresh": 100, "aging": 60, "stale": 20, "critical": 0}
+        if indicators:
+            raw = sum(_weights.get(ind.status, 0) for ind in indicators)
+            freshness_score = round(raw / len(indicators))
+        else:
+            freshness_score = 0
 
         # Fetch appointments scheduled for the soonest upcoming date (up to 30 days)
         cal_repo = CalendarEventRepository(self._conn)
@@ -169,7 +171,6 @@ def _build_staleness_indicators(
         ("lab", state.last_lab_date, _THRESHOLDS["lab"]),
         ("caregiver_note", state.last_caregiver_note_date, _THRESHOLDS["caregiver_note"]),
         ("meera_log", state.last_meera_log_date, _THRESHOLDS["meera_log"]),
-        ("prescription", state.last_prescription_date, _THRESHOLDS["prescription"]),
     ]
     result = []
     for source, last_date, threshold in sources:

@@ -181,3 +181,30 @@ class CalendarEventRepository(BaseRepository):
             "DELETE FROM public.calendar_events WHERE id = $1", event_id
         )
         return result == "DELETE 1"
+
+    async def delete_future_caregiver_visits(self, caregiver_id: UUID) -> None:
+        """Delete all upcoming caregiver_visit events for a caregiver (used before regenerating schedule)."""
+        await self.conn.execute(
+            """
+            DELETE FROM public.calendar_events
+            WHERE caregiver_id = $1
+              AND event_type = 'caregiver_visit'
+              AND event_date >= CURRENT_DATE
+              AND status != 'completed'
+            """,
+            caregiver_id,
+        )
+
+    async def cancel_future_caregiver_visits(self, caregiver_id: UUID) -> None:
+        """Cancel upcoming caregiver_visit events when caregiver is removed."""
+        await self.conn.execute(
+            """
+            UPDATE public.calendar_events
+            SET status = 'cancelled', updated_at = now()
+            WHERE caregiver_id = $1
+              AND event_type = 'caregiver_visit'
+              AND event_date >= CURRENT_DATE
+              AND status != 'completed'
+            """,
+            caregiver_id,
+        )

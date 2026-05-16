@@ -22,6 +22,7 @@ class DocumentApproveRequest(BaseModel):
     extracted_data: dict[str, Any]  # user-confirmed (possibly edited) structured fields
     extracted_text: str | None = None
     event_date: date | None = None  # actual date of medical event
+    document_type: str | None = None  # override if user corrected doc type in review modal
 
 
 class DocumentRejectRequest(BaseModel):
