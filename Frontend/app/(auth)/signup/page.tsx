@@ -12,6 +12,8 @@ import { useAuth } from "@/hooks/useAuth";
 export default function SignupPage() {
   const router = useRouter();
   const { sendOtp, googleSignInWithRedirect, loading, error } = useAuth();
+  const [name, setName] = useState("");
+  const [nameError, setNameError] = useState("");
   const [phone, setPhone] = useState("");
   const [phoneError, setPhoneError] = useState("");
 
@@ -22,6 +24,9 @@ export default function SignupPage() {
   }
 
   async function handleSendOtp() {
+    const trimmedName = name.trim();
+    if (!trimmedName) { setNameError("Name is required"); return; }
+    setNameError("");
     const err = validatePhone(phone);
     if (err) { setPhoneError(err); return; }
     setPhoneError("");
@@ -29,6 +34,7 @@ export default function SignupPage() {
     if (ok) {
       sessionStorage.setItem("cc_otp_phone", phone);
       sessionStorage.setItem("cc_auth_type", "signup");
+      sessionStorage.setItem("cc_signup_name", trimmedName);
       router.push("/otp");
     }
   }
@@ -44,6 +50,25 @@ export default function SignupPage() {
       <div>
         <h2 className="text-2xl font-bold text-[#0D3B6E] tracking-tight">Get started free</h2>
         <p className="text-sm text-[#6B7280] mt-1">Enter your mobile number to receive an OTP</p>
+      </div>
+
+      {/* Name input */}
+      <div className="space-y-1.5">
+        <label htmlFor="name" className="text-[10px] font-bold text-[#9CA3AF] uppercase tracking-widest">
+          Full Name
+        </label>
+        <input
+          id="name"
+          type="text"
+          placeholder="Your name"
+          value={name}
+          onChange={(e) => { setName(e.target.value); setNameError(""); }}
+          onKeyDown={(e) => e.key === "Enter" && handleSendOtp()}
+          className={`w-full px-4 py-3 rounded-xl border text-sm font-medium outline-none transition-colors focus:ring-2 focus:ring-[#1D9E75]/30 ${nameError ? "border-red-400" : "border-[#E5E7EB]"}`}
+        />
+        {nameError && (
+          <p className="text-xs text-red-500 font-medium">{nameError}</p>
+        )}
       </div>
 
       {/* Phone input */}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { Search, ShieldCheck, AlertTriangle, CheckCircle2, X } from "lucide-react";
+import { Search, ShieldCheck, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { usePatient } from "@/hooks/usePatient";
 import { useDrugInteractions } from "@/hooks/useDrugInteractions";
 import { Card } from "@/components/ui/Card";
@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 
 export default function DrugInteractionsPage() {
   const { activePatient } = usePatient();
-  const { interactions, loading, checking, fetch, triggerCheck, dismiss } = useDrugInteractions();
+  const { interactions, loading, checking, fetch, triggerCheck } = useDrugInteractions();
 
   useEffect(() => {
     if (activePatient) fetch(activePatient.id);
@@ -60,7 +60,6 @@ export default function DrugInteractionsPage() {
             <InteractionCard
               key={ix.id}
               interaction={ix}
-              onDismiss={() => dismiss(activePatient.id, ix.id)}
             />
           ))
         )}
@@ -69,7 +68,7 @@ export default function DrugInteractionsPage() {
   );
 }
 
-function InteractionCard({ interaction, onDismiss }: { interaction: DrugInteractionResponse; onDismiss: () => void }) {
+function InteractionCard({ interaction }: { interaction: DrugInteractionResponse }) {
   const severity = (interaction.severity || interaction.final_urgency || 'low').toLowerCase();
   const isHigh = ['high', 'major', 'alert', 'contraindicated'].includes(severity);
   const isModerate = ['moderate', 'watch'].includes(severity);
@@ -109,18 +108,9 @@ function InteractionCard({ interaction, onDismiss }: { interaction: DrugInteract
               </span>
             </div>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <div className="flex flex-col items-center gap-0.5">
-              <Icon size={32} className={iconColor} strokeWidth={1.5} />
-              <span className={cn("text-[10px] font-black", iconColor)}>{label}</span>
-            </div>
-            <button
-              onClick={onDismiss}
-              title="Dismiss false positive — clears cache and re-checks on next run"
-              className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
-            >
-              <X size={16} />
-            </button>
+          <div className="flex flex-col items-center gap-0.5 shrink-0">
+            <Icon size={32} className={iconColor} strokeWidth={1.5} />
+            <span className={cn("text-[10px] font-black", iconColor)}>{label}</span>
           </div>
         </div>
 

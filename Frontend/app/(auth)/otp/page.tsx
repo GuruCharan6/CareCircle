@@ -7,7 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 
 export default function OtpPage() {
   const router = useRouter();
-  const { verifyOtp, sendOtp, loading, error } = useAuth();
+  const { verifyOtp, sendOtp, updateProfile, loading, error } = useAuth();
   const [phone, setPhone] = useState("");
 
   useEffect(() => {
@@ -21,6 +21,13 @@ export default function OtpPage() {
     const auth = await verifyOtp(phone, token);
     if (auth) {
       const type = sessionStorage.getItem("cc_auth_type");
+      if (type === "signup") {
+        const savedName = sessionStorage.getItem("cc_signup_name");
+        if (savedName) {
+          await updateProfile({ name: savedName });
+          sessionStorage.removeItem("cc_signup_name");
+        }
+      }
       sessionStorage.removeItem("cc_otp_phone");
       sessionStorage.removeItem("cc_auth_type");
       router.replace(type === "signup" ? "/onboarding" : "/dashboard");
