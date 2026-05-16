@@ -39,7 +39,14 @@ class CaregiverService:
             notes=data.notes,
         )
         await self._send_invitation(caregiver)
-        await self._generate_visit_events(caregiver)
+        try:
+            await self._generate_visit_events(caregiver)
+        except Exception as exc:
+            logger.error(
+                "caregiver_service.visit_events_failed_on_add",
+                caregiver_id=str(caregiver.id),
+                error=str(exc),
+            )
         return caregiver
 
     async def _send_invitation(self, caregiver: Caregiver) -> None:
@@ -72,7 +79,14 @@ class CaregiverService:
     async def remove(self, patient_id: UUID, caregiver_id: UUID) -> None:
         caregiver = await self.get(patient_id, caregiver_id)
         await self._repo.update_invitation_status(caregiver.id, "inactive")
-        await self._cal_repo.cancel_future_caregiver_visits(caregiver.id)
+        try:
+            await self._cal_repo.cancel_future_caregiver_visits(caregiver.id)
+        except Exception as exc:
+            logger.error(
+                "caregiver_service.cancel_visits_failed",
+                caregiver_id=str(caregiver.id),
+                error=str(exc),
+            )
 
     async def reinvite(self, patient_id: UUID, caregiver_id: UUID) -> None:
         caregiver = await self.get(patient_id, caregiver_id)
@@ -90,8 +104,15 @@ class CaregiverService:
             notes=data.notes,
         )
         # Regenerate visit events when schedule changes
-        await self._cal_repo.delete_future_caregiver_visits(caregiver_id)
-        await self._generate_visit_events(updated)
+        try:
+            await self._cal_repo.delete_future_caregiver_visits(caregiver_id)
+            await self._generate_visit_events(updated)
+        except Exception as exc:
+            logger.error(
+                "caregiver_service.visit_events_failed_on_update",
+                caregiver_id=str(caregiver_id),
+                error=str(exc),
+            )
         return updated
 
     async def _generate_visit_events(self, caregiver: Caregiver) -> None:
