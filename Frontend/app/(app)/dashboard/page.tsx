@@ -12,7 +12,6 @@ import { AlertList } from "@/components/dashboard/AlertList";
 import { DigestCard } from "@/components/dashboard/DigestCard";
 import { MedicationQuickList } from "@/components/dashboard/MedicationQuickList";
 import { LabSummaryRow } from "@/components/dashboard/LabSummaryRow";
-import { UpcomingEventsCard } from "@/components/dashboard/UpcomingEventsCard";
 import { Button } from "@/components/ui/Button";
 import { CrisisModal } from "@/components/crisis/CrisisModal";
 import { CrisisFollowUpModal } from "@/components/crisis/CrisisFollowUpModal";
@@ -241,11 +240,7 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <MedicationQuickList medications={medications} loading={medsLoading} />
-        <LabSummaryRow />
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <UpcomingEventsCard patientId={activePatient.id} />
+        <LabSummaryRow patientId={activePatient.id} />
       </div>
 
     </div>

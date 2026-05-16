@@ -41,7 +41,7 @@ export function ExtractionReview({ docType, data, confidence, onChange }: Extrac
               {val.map((med: any, idx: number) => (
                 <div key={idx} className="space-y-3 p-3 border border-[var(--color-border)]/50 rounded-lg bg-white mb-4 last:mb-0">
                   <div className="grid grid-cols-2 gap-4">
-                    <Field label="Brand Name" value={med.brand_name} onChange={(v: string) => handleMedicationChange(idx, "brand_name", v)} />
+                    <Field label="Brand Name" value={med.brand_name || med.generic_name} onChange={(v: string) => handleMedicationChange(idx, "brand_name", v)} />
                     <Field label="Dosage" value={med.dose} onChange={(v: string) => handleMedicationChange(idx, "dose", v)} required />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
