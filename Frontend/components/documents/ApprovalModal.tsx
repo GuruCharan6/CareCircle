@@ -8,20 +8,12 @@ import { FileView } from "@/components/documents/FileView";
 import { ExtractionReview } from "@/components/documents/ExtractionReview";
 import { RefreshCw, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { DocumentType } from "@/lib/types";
-
-const DOC_TYPE_OPTIONS: { value: DocumentType; label: string }[] = [
-  { value: "prescription", label: "Prescription" },
-  { value: "lab_report", label: "Lab Report" },
-  { value: "doctor_note", label: "Doctor Note" },
-  { value: "other", label: "Other" },
-];
 
 interface ApprovalModalProps {
   open: boolean;
   onClose: () => void;
   uploadState: UploadState;
-  onApprove: (docId: string, data: any, documentType?: string) => Promise<void>;
+  onApprove: (docId: string, data: any) => Promise<void>;
   onReject: (docId: string, reason: string) => Promise<void>;
   onUpdate: (data: Record<string, any>) => void;
   onReprocess?: (docId: string) => Promise<void>;
@@ -33,8 +25,6 @@ export function ApprovalModal({ open, onClose, uploadState, onApprove, onReject,
   const [reprocessing, setReprocessing] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
   const [showReject, setShowReject] = useState(false);
-  const [docType, setDocType] = useState<DocumentType>(uploadState.docType as DocumentType);
-
   // Check if any field has low confidence (< 0.5)
   const hasLowConfidence = uploadState.fieldConfidence
     ? Object.values(uploadState.fieldConfidence).some(v => v < 0.5)
@@ -53,7 +43,7 @@ export function ApprovalModal({ open, onClose, uploadState, onApprove, onReject,
   async function handleApprove() {
     setApproving(true);
     try {
-      await onApprove(uploadState.docId, editedData, docType);
+      await onApprove(uploadState.docId, editedData);
       onClose();
     } finally {
       setApproving(false);
@@ -121,28 +111,6 @@ export function ApprovalModal({ open, onClose, uploadState, onApprove, onReject,
               </div>
             </div>
           )}
-          {/* Doc type override */}
-          <div className="px-4 pt-3 pb-0">
-            <p className="text-[10px] font-bold text-[var(--color-muted)] uppercase tracking-widest mb-1.5">Document Type</p>
-            <div className="flex gap-1.5 flex-wrap">
-              {DOC_TYPE_OPTIONS.map(opt => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => setDocType(opt.value)}
-                  className={cn(
-                    "px-3 py-1 rounded-full text-[11px] font-bold border transition-all",
-                    docType === opt.value
-                      ? "bg-[var(--color-primary)] text-white border-[var(--color-primary)]"
-                      : "bg-white text-[var(--color-muted)] border-[var(--color-border)] hover:border-[var(--color-primary)]/50"
-                  )}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
           <div className="flex-1 overflow-y-auto p-6">
             <ExtractionReview
               docType={uploadState.docType}
