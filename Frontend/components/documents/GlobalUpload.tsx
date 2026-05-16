@@ -11,7 +11,7 @@ export function GlobalUpload() {
   const [open, setOpen] = useState(false);
   const { activePatient } = usePatient();
   const {
-    uploadState, uploadLoading, upload, approve, reject, updateExtractedData, clearUpload
+    uploadState, uploadLoading, upload, approve, reject, updateExtractedData, clearUpload, reprocess
   } = useDocuments();
 
   useEffect(() => {
@@ -53,6 +53,7 @@ export function GlobalUpload() {
             setOpen(false);
           }}
           onUpdate={updateExtractedData}
+          onReprocess={reprocess}
         />
       )}
     </>

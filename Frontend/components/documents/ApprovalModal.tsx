@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import type { UploadState } from "@/hooks/useDocuments";
 import { FileView } from "@/components/documents/FileView";
 import { ExtractionReview } from "@/components/documents/ExtractionReview";
+import { RefreshCw, AlertTriangle } from "lucide-react";
 
 interface ApprovalModalProps {
   open: boolean;
@@ -14,13 +15,20 @@ interface ApprovalModalProps {
   onApprove: (docId: string, data: any) => Promise<void>;
   onReject: (docId: string, reason: string) => Promise<void>;
   onUpdate: (data: Record<string, any>) => void;
+  onReprocess?: (docId: string) => Promise<void>;
 }
 
-export function ApprovalModal({ open, onClose, uploadState, onApprove, onReject, onUpdate }: ApprovalModalProps) {
+export function ApprovalModal({ open, onClose, uploadState, onApprove, onReject, onUpdate, onReprocess }: ApprovalModalProps) {
   const [approving, setApproving] = useState(false);
   const [rejecting, setRejecting] = useState(false);
+  const [reprocessing, setReprocessing] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
   const [showReject, setShowReject] = useState(false);
+
+  // Check if any field has low confidence (< 0.5)
+  const hasLowConfidence = uploadState.fieldConfidence
+    ? Object.values(uploadState.fieldConfidence).some(v => v < 0.5)
+    : false;
   
   // Local state for editable data
   const [editedData, setEditedData] = useState<Record<string, any>>(uploadState.extractedData ?? {});
@@ -39,6 +47,16 @@ export function ApprovalModal({ open, onClose, uploadState, onApprove, onReject,
       onClose();
     } finally {
       setApproving(false);
+    }
+  }
+
+  async function handleReprocess() {
+    if (!onReprocess) return;
+    setReprocessing(true);
+    try {
+      await onReprocess(uploadState.docId);
+    } finally {
+      setReprocessing(false);
     }
   }
 
@@ -73,6 +91,26 @@ export function ApprovalModal({ open, onClose, uploadState, onApprove, onReject,
 
         {/* Right: Review */}
         <div className="w-1/2 flex flex-col">
+          {hasLowConfidence && onReprocess && (
+            <div className="px-4 pt-4 pb-0">
+              <div className="flex items-center justify-between gap-3 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <AlertTriangle size={13} className="text-amber-500 shrink-0" />
+                  <span className="text-[11px] font-semibold text-amber-700 truncate">
+                    Low confidence fields detected. Image may be blurry.
+                  </span>
+                </div>
+                <button
+                  onClick={handleReprocess}
+                  disabled={reprocessing}
+                  className="flex items-center gap-1 text-[11px] font-bold text-amber-700 hover:text-amber-900 shrink-0 disabled:opacity-50 transition-colors"
+                >
+                  <RefreshCw size={11} className={reprocessing ? "animate-spin" : ""} />
+                  {reprocessing ? "Re-extracting…" : "Re-extract"}
+                </button>
+              </div>
+            </div>
+          )}
           <div className="flex-1 overflow-y-auto p-6">
             <ExtractionReview
               docType={uploadState.docType}

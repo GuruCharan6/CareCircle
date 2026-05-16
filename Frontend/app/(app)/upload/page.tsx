@@ -16,7 +16,7 @@ import type { DocumentType } from "@/lib/types";
 export default function UploadPage() {
   const { activePatient } = usePatient();
   const {
-    uploadState, uploadLoading, upload, approve, reject, updateExtractedData, clearUpload,
+    uploadState, uploadLoading, upload, approve, reject, updateExtractedData, clearUpload, reprocess,
   } = useDocuments();
   const {
     phase, duration, voiceState,
@@ -111,6 +111,7 @@ export default function UploadPage() {
           onApprove={approve}
           onReject={reject}
           onUpdate={updateExtractedData}
+          onReprocess={reprocess}
         />
       )}
 

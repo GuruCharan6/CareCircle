@@ -189,6 +189,29 @@ export function useDocuments() {
     }
   }, []);
 
+  const reprocess = useCallback(async (docId: string) => {
+    if (!docId) return;
+    setUploadLoading(true);
+    setUploadState(prev => prev ? { ...prev, status: "extracting", extractedData: null, fieldConfidence: null } : null);
+    try {
+      const result: DocumentResponse = await documentsApi.triggerExtraction(docId);
+      setUploadState(prev => prev ? {
+        ...prev,
+        status: result.extraction_status,
+        extractedData: result.extracted_data,
+        fieldConfidence: result.field_confidence,
+        extractedText: result.extracted_text,
+        eventDate: result.event_date,
+        error: null,
+      } : null);
+      startPolling(docId);
+    } catch (e: unknown) {
+      setUploadState(prev => prev ? { ...prev, status: "failed", error: e instanceof Error ? e.message : "Re-extraction failed" } : null);
+    } finally {
+      setUploadLoading(false);
+    }
+  }, []);
+
   const updateDocumentData = useCallback(async (docId: string, data: any) => {
     try {
       const updated = await documentsApi.update(docId, { extracted_data: data });
@@ -216,6 +239,7 @@ export function useDocuments() {
     upload,
     approve,
     reject,
+    reprocess,
     updateExtractedData,
     clearUpload,
     selectDocument,

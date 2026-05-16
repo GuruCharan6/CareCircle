@@ -187,6 +187,14 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {patientState && !stateLoading && (
+        <FreshnessBar
+          score={patientState.freshness_score}
+          computedAt={patientState.computed_at}
+          indicators={patientState.staleness_indicators}
+        />
+      )}
+
       {patientState && !stateLoading && (() => {
         const SEVERITY_ORDER: Record<string, number> = {
           contraindicated: 0, major: 1, moderate: 2, minor: 3, low: 4,
@@ -237,13 +245,6 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        {patientState && !stateLoading && (
-          <FreshnessBar
-            score={patientState.freshness_score}
-            computedAt={patientState.computed_at}
-            indicators={patientState.staleness_indicators}
-          />
-        )}
         <UpcomingEventsCard patientId={activePatient.id} />
       </div>
 

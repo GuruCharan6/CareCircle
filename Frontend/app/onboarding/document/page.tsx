@@ -18,7 +18,7 @@ export default function OnboardingDocumentPage() {
   const isEdit = mode === "edit";
 
   const { activePatient } = usePatient();
-  const { uploadState, uploadLoading, upload, approve, reject, updateExtractedData, clearUpload } = useDocuments();
+  const { uploadState, uploadLoading, upload, approve, reject, updateExtractedData, clearUpload, reprocess } = useDocuments();
   const [skipping, setSkipping] = useState(false);
   const [showReview, setShowReview] = useState(false);
 
@@ -86,6 +86,7 @@ export default function OnboardingDocumentPage() {
           onApprove={approve}
           onReject={reject}
           onUpdate={updateExtractedData}
+          onReprocess={reprocess}
         />
       )}
 
