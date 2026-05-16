@@ -1,39 +1,12 @@
 "use client";
 
 import { useState, useRef, type DragEvent, type ChangeEvent } from "react";
-import { Upload, Camera, FileText, FlaskConical, Stethoscope, File } from "lucide-react";
+import { Upload, Camera } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { DocumentType } from "@/lib/types";
 
 const ACCEPTED = ".pdf,.jpg,.jpeg,.png,.webp,.heic";
 const MAX_BYTES = 20 * 1024 * 1024; // 20 MB
-
-const DOC_TYPES: { value: DocumentType; label: string; icon: React.ReactNode; color: string }[] = [
-  {
-    value: "prescription",
-    label: "Prescription",
-    icon: <FileText size={14} />,
-    color: "border-[#1D9E75] bg-[#1D9E75]/10 text-[#1D9E75]",
-  },
-  {
-    value: "lab_report",
-    label: "Lab Report",
-    icon: <FlaskConical size={14} />,
-    color: "border-[#F59E0B] bg-[#F59E0B]/10 text-[#F59E0B]",
-  },
-  {
-    value: "doctor_note",
-    label: "Doctor Note",
-    icon: <Stethoscope size={14} />,
-    color: "border-[#0D3B6E] bg-[#0D3B6E]/10 text-[#0D3B6E]",
-  },
-  {
-    value: "other",
-    label: "Other",
-    icon: <File size={14} />,
-    color: "border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-muted)]",
-  },
-];
 
 interface UploadZoneProps {
   onUpload: (file: File, docType: DocumentType, contentHash?: string) => Promise<void>;
@@ -43,7 +16,6 @@ interface UploadZoneProps {
 export function UploadZone({ onUpload, loading }: UploadZoneProps) {
   const [dragging, setDragging] = useState(false);
   const [fileError, setFileError] = useState("");
-  const [selectedType, setSelectedType] = useState<DocumentType>("prescription");
   const inputRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
 
@@ -62,10 +34,10 @@ export function UploadZone({ onUpload, loading }: UploadZoneProps) {
     setFileError("");
     try {
       const hash = await calculateHash(file);
-      await onUpload(file, selectedType, hash);
+      await onUpload(file, "other", hash);
     } catch (err) {
       console.error("Hash calculation failed", err);
-      await onUpload(file, selectedType);
+      await onUpload(file, "other");
     }
   }
 
@@ -84,31 +56,6 @@ export function UploadZone({ onUpload, loading }: UploadZoneProps) {
 
   return (
     <div className="space-y-3">
-      {/* Document type selector */}
-      <div>
-        <p className="text-[10px] font-bold text-[var(--color-muted)] uppercase tracking-widest mb-2 px-1">
-          Document Type
-        </p>
-        <div className="grid grid-cols-4 gap-2">
-          {DOC_TYPES.map(dt => (
-            <button
-              key={dt.value}
-              type="button"
-              onClick={() => setSelectedType(dt.value)}
-              className={cn(
-                "flex flex-col items-center gap-1.5 py-2.5 px-2 rounded-xl border-2 text-[11px] font-bold transition-all",
-                selectedType === dt.value
-                  ? dt.color + " shadow-sm"
-                  : "border-[var(--color-border)] bg-white text-[var(--color-muted)] hover:border-[var(--color-border)]/80"
-              )}
-            >
-              {dt.icon}
-              <span className="leading-tight text-center">{dt.label}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-
       {/* Drop zone — tap anywhere to pick file */}
       <div
         onDragOver={e => { e.preventDefault(); setDragging(true); }}
@@ -139,7 +86,7 @@ export function UploadZone({ onUpload, loading }: UploadZoneProps) {
             {loading ? "Uploading…" : "Upload a document"}
           </p>
           <p className="text-sm text-[var(--color-muted)]">
-            {loading ? "Extracting data with AI…" : `Selected: ${DOC_TYPES.find(d => d.value === selectedType)?.label}`}
+            {loading ? "Extracting data with AI…" : "Drag & drop or tap to browse"}
           </p>
           <p className="text-xs text-[var(--color-muted)] font-medium opacity-70 mt-1">
             PDF&nbsp;·&nbsp;JPG&nbsp;·&nbsp;PNG&nbsp;·&nbsp;Voice Note
