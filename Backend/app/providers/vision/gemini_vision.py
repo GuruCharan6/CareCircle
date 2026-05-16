@@ -65,7 +65,13 @@ Return a JSON object with this exact structure:
 }
 
 Rules:
-- "recent_lab_values": Lab test results already measured and shown in the document (e.g. "Recent Investigations: FBS 186 mg/dL"). Must have a numeric value. Do NOT include vitals (BP, HR, SpO2, weight, temperature).
+- "recent_lab_values": Include BOTH lab test results (e.g. "Recent Investigations: FBS 186 mg/dL") AND vitals recorded at this visit (BP, HR, SpO2, weight, temperature). All must have a numeric value.
+  - Blood Pressure: add TWO separate entries — {test_name: "blood_pressure_systolic", test_name_display: "BP Systolic", value: <systolic e.g. 148>, unit: "mmHg"} and {test_name: "blood_pressure_diastolic", test_name_display: "BP Diastolic", value: <diastolic e.g. 92>, unit: "mmHg"}. test_date = prescription/visit date.
+  - SpO2: {test_name: "spo2", test_name_display: "SpO2", value: <numeric e.g. 97>, unit: "%", test_date: visit date}
+  - Heart Rate / Pulse: {test_name: "heart_rate", test_name_display: "Heart Rate", value: <numeric e.g. 70>, unit: "bpm", test_date: visit date}
+  - Weight: {test_name: "weight", test_name_display: "Weight", value: <numeric>, unit: "kg" (convert if needed), test_date: visit date}
+  - Temperature: {test_name: "temperature", test_name_display: "Temperature", value: <numeric>, unit: "°F" or "°C" as written, test_date: visit date}
+  - For vitals, test_date = prescription date (visit date). is_abnormal = null unless obviously out of range.
 - "ordered_tests": Tests the doctor is ordering the patient to get done in the FUTURE (e.g. "Get HbA1c done", "Bring HbA1c report to next visit"). No value — just test name and optional due_date.
 - If prescription says "get X done and bring result to next visit on [date]": put X in ordered_tests with due_date=[date] AND set follow_up_date=[date].
 - If a field is unclear or unreadable: set to null and record confidence < 0.7 in field_confidence.
