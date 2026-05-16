@@ -42,7 +42,7 @@ export function CalendarMonthGrid({
 
   const firstDayOfMonth  = new Date(year, month, 1);
   const lastDayOfMonth   = new Date(year, month + 1, 0);
-  const startDay         = firstDayOfMonth.getDay();
+  const startDay         = (firstDayOfMonth.getDay() + 6) % 7; // 0=Mon … 6=Sun
   const totalDays        = lastDayOfMonth.getDate();
   const prevMonthLastDay = new Date(year, month, 0).getDate();
 
@@ -108,7 +108,7 @@ export function CalendarMonthGrid({
 
       {/* Weekday headers — 2-letter */}
       <div className="grid grid-cols-7 mb-1">
-        {["SU", "MO", "TU", "WE", "TH", "FR", "SA"].map((d, i) => (
+        {["MO", "TU", "WE", "TH", "FR", "SA", "SU"].map((d, i) => (
           <div
             key={d}
             className={cn(
@@ -127,7 +127,7 @@ export function CalendarMonthGrid({
           const dayEvents  = getEventsForDay(date);
           const isToday    = formatDateLocal(date) === todayStr;
           const isSelected = selectedDate && formatDateLocal(date) === formatDateLocal(selectedDate);
-          const isSaturday = date.getDay() === 6;
+          const isSunday = date.getDay() === 0;
           const uniqueTypes = [...new Set(dayEvents.map(e => e.event_type))];
 
           return (
@@ -147,7 +147,7 @@ export function CalendarMonthGrid({
                   ? "bg-[#0D3B6E] text-white shadow-sm"
                   : !isCurrentMonth
                     ? "text-[#C5C5C5]"
-                    : isSaturday
+                    : isSunday
                       ? "text-[#E5534B]"
                       : "text-[#1F2937]"
               )}>
