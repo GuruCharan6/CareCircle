@@ -17,12 +17,12 @@ def _make_client() -> aioredis.Redis:
         # so ssl_cert_reqs=None is honoured (from_url doesn't forward it reliably)
         parsed = urlparse(url)
         return aioredis.Redis(
-            host=parsed.hostname,
-            port=parsed.port or 6380,
+            host=parsed.hostname or "localhost",
+            port=parsed.port or 6379,
             password=parsed.password,
             username=parsed.username or "default",
             ssl=True,
-            ssl_cert_reqs=None,
+            ssl_cert_reqs="none",
             socket_connect_timeout=5.0,
             socket_timeout=5.0,
             decode_responses=True,
