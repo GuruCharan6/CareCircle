@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { DM_Sans, DM_Mono } from "next/font/google";
 import { Providers } from "@/components/Providers";
 import { ServiceWorkerRegistrar } from "@/components/pwa/ServiceWorkerRegistrar";
+import { SplashScreen } from "@/components/pwa/SplashScreen";
 import Script from "next/script";
 import "./globals.css";
 
@@ -55,6 +56,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col bg-[var(--color-bg)] text-[var(--color-text)]">
         <Script src="https://accounts.google.com/gsi/client" strategy="afterInteractive" />
         <ServiceWorkerRegistrar />
+        <SplashScreen />
         <Providers>{children}</Providers>
       </body>
     </html>
