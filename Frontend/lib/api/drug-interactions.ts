@@ -9,4 +9,8 @@ export const drugInteractionsApi = {
   check(patientId: string) {
     return api.post<DrugInteractionResponse[]>(`/patients/${patientId}/drug-interactions/check`);
   },
+
+  dismiss(patientId: string, interactionId: string) {
+    return api.delete(`/patients/${patientId}/drug-interactions/${interactionId}`);
+  },
 };

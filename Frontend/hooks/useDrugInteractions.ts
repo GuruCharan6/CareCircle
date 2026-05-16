@@ -51,5 +51,17 @@ export function useDrugInteractions() {
     }
   }, []);
 
-  return { interactions, loading, checking, error, fetch, triggerCheck };
+  const dismiss = useCallback(async (patientId: string, interactionId: string) => {
+    // Optimistic remove
+    setInteractions(prev => prev.filter(ix => ix.id !== interactionId));
+    try {
+      await drugInteractionsApi.dismiss(patientId, interactionId);
+    } catch (e: unknown) {
+      // Rollback on failure — refetch
+      const data = await drugInteractionsApi.list(patientId);
+      setInteractions(data);
+    }
+  }, []);
+
+  return { interactions, loading, checking, error, fetch, triggerCheck, dismiss };
 }

@@ -140,12 +140,13 @@ export function useDocuments() {
     }
   }, []);
 
-  const approve = useCallback(async (docId: string, data?: Record<string, any>) => {
+  const approve = useCallback(async (docId: string, data?: Record<string, any>, documentType?: string) => {
     const state = uploadState;
     await documentsApi.approve(docId, {
       extracted_data: data ?? state?.extractedData ?? {},
       extracted_text: state?.extractedText ?? undefined,
       event_date: state?.eventDate ?? undefined,
+      document_type: documentType ?? state?.docType ?? undefined,
     });
     setUploadState(prev => prev ? { ...prev, status: "approved" } : null);
   }, [uploadState]);

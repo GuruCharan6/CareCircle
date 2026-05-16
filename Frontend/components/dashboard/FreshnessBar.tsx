@@ -22,7 +22,6 @@ export function FreshnessBar({ score, computedAt, indicators }: FreshnessBarProp
     lab: "Labs",
     caregiver_note: "Caregiver",
     meera_log: "Observations",
-    prescription: "Medications"
   };
 
   return (
@@ -45,7 +44,7 @@ export function FreshnessBar({ score, computedAt, indicators }: FreshnessBarProp
 
       {indicators && indicators.length > 0 && (
         <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 mb-3">
-          {indicators.map((ind, i) => (
+          {indicators.filter(ind => ind.source !== "prescription").map((ind, i) => (
             <div key={i} className="flex items-center gap-1.5">
               <div className={cn("w-2 h-2 rounded-full shrink-0",
                 ind.status === "fresh" ? "bg-green-500" :

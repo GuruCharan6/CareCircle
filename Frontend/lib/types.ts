@@ -308,6 +308,7 @@ export interface DocumentApproveRequest {
   extracted_data: Record<string, unknown>;
   extracted_text?: string;
   event_date?: string;
+  document_type?: string;
 }
 
 export interface DocumentRejectRequest {
