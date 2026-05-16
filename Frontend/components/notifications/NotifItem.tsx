@@ -5,6 +5,7 @@ import {
   Bell,
   Calendar,
   CheckCircle2,
+  Clock,
   Pill,
   RefreshCw,
   Stethoscope,
