@@ -1,331 +1,415 @@
-# CareCircle
+<div align="center">
 
-> AI-powered health management platform for patients with complex medication regimens and their caregivers.
+# 🩺 CareCircle
 
-CareCircle solves a real problem: elderly or chronically ill patients in India often see multiple specialists, take 8–15 medications simultaneously, and have no single source of truth for their health data. Family members managing care remotely have no visibility. Doctors see incomplete histories at appointments.
+### AI-Powered Health Management for Families Managing Complex Care
 
-CareCircle centralizes everything — documents, medications, lab trends, appointments — and uses AI to surface what actually needs attention.
+**CareCircle helps families caring for elderly or chronically ill patients stay on top of medications, appointments, lab results, and emergencies — all in one place.**
+
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.136-009688?style=flat-square&logo=fastapi)](https://fastapi.tiangolo.com/)
+[![Next.js](https://img.shields.io/badge/Next.js-15-black?style=flat-square&logo=next.js)](https://nextjs.org/)
+[![Python](https://img.shields.io/badge/Python-3.11-3776AB?style=flat-square&logo=python)](https://python.org/)
+[![Gemini](https://img.shields.io/badge/AI-Gemini%20%2B%20Claude-4285F4?style=flat-square&logo=google)](https://ai.google.dev/)
+[![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
+
+</div>
 
 ---
 
-## The Problem It Solves
+## The Problem
 
-| Scenario | Without CareCircle | With CareCircle |
-|----------|-------------------|-----------------|
-| Patient sees 3 specialists, takes 12 meds | No one checks drug interactions across prescribers | Auto-detects all cross-prescriber interactions on upload |
-| Family member 500km away | Calls patient daily, guesses status | Gets morning WhatsApp digest with alerts and upcoming events |
-| Doctor appointment tomorrow | Patient arrives with paper chits | Doctor gets PDF briefing: meds from other doctors, lab trends, questions to ask |
-| Patient uploads prescription | Data sits in a photo album | AI extracts medications, follow-up dates, ordered tests; creates calendar events |
-| Lab report uploaded | Patient can't interpret values | Trends charted, abnormal values flagged, gaps detected (test overdue?) |
-| Emergency at 2 AM | Paramedic has no med list | One-tap emergency card: all meds, doses, allergies, blood type, contacts |
-| Refill due in 3 days | Patient forgets | WhatsApp alert with escalating urgency |
+In India, millions of families are managing care for elderly parents or chronically ill relatives — often from a different city. The reality looks like this:
+
+- A 68-year-old patient sees a cardiologist, an endocrinologist, and a general physician — **none of whom know what the others prescribed**
+- The family WhatsApp group is flooded with photos of prescription chits, lab reports, and discharge summaries — **all unorganized**
+- A refill is missed. A drug interaction goes unnoticed. An appointment is forgotten
+- In an emergency at 2 AM, no one can find the medication list
+
+**CareCircle solves all of this.**
+
+---
+
+## How It Works
+
+### The Core Loop
+
+```
+Upload Document → AI Extracts → You Confirm → System Acts
+```
+
+Every prescription, lab report, or doctor's note you upload is processed by AI, reviewed by you, and then automatically:
+- Saves medications to your medication list
+- Flags drug interactions across all your doctors
+- Creates calendar events for follow-up appointments and ordered lab tests
+- Alerts your caregiver on WhatsApp if something needs attention
+
+---
+
+## Real Scenarios, Real Solutions
+
+<table>
+<tr>
+<td width="50%">
+
+### 🔴 Drug Interactions Across Doctors
+
+**The Problem:**
+Your father sees a cardiologist who prescribes Glimepiride and an endocrinologist who adds Rosuvastatin. Neither doctor sees the full picture.
+
+**CareCircle:**
+The moment a new prescription is uploaded and approved, CareCircle checks it against every active medication — regardless of which doctor prescribed it. Interactions are flagged by severity (contraindicated → major → moderate → minor) with clinical context. If creatinine is elevated, renal-cleared drugs are escalated automatically.
+
+</td>
+<td width="50%">
+
+### 🟡 Missed Refills
+
+**The Problem:**
+Your mother takes 11 medications. Tracking refill dates mentally is impossible.
+
+**CareCircle:**
+Refill alerts appear in the dashboard and escalate via WhatsApp as the due date approaches — 10 days out, then 3 days, then overdue. Each medication tracks its own refill schedule independently.
+
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+### 🔵 Pre-Appointment Preparation
+
+**The Problem:**
+You arrive at the cardiologist's appointment without the ECG results he asked for last time. He has 8 minutes with you.
+
+**CareCircle:**
+When a cardiology appointment is confirmed, CareCircle checks: does the patient have an ECG, CBC, creatinine, and lipid panel within the last 30 days? If not, a care gap is created. Two days before the appointment, a doctor briefing PDF is auto-generated — medications from other doctors, recent lab trends, and suggested questions to ask.
+
+</td>
+<td width="50%">
+
+### 🟢 Remote Family Management
+
+**The Problem:**
+You live in Bengaluru. Your parents live in Hyderabad. You have no idea how they're actually doing today.
+
+**CareCircle:**
+Every morning, you get a WhatsApp digest: active alerts, today's medications, upcoming appointments, recent lab results. Your caregiver sends a voice update after each visit — it's automatically transcribed and added to the patient record.
+
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+### 🚨 Medical Emergency
+
+**The Problem:**
+Your father collapses. The paramedic asks what medications he takes. No one can find the list.
+
+**CareCircle:**
+One tap opens the emergency card — all active medications with doses, allergies, blood type, and emergency contacts. Pre-computed nightly so it loads instantly, even on slow connections. Exportable as a PDF for paramedics.
+
+</td>
+<td width="50%">
+
+### 📄 Document Chaos
+
+**The Problem:**
+Three years of prescriptions, lab reports, and discharge summaries live in WhatsApp photo albums and desk drawers.
+
+**CareCircle:**
+Upload any medical document. AI reads it, extracts structured data, and you confirm it in seconds. Everything becomes searchable. Ask: *"What was my HbA1c in March?"* or *"Which doctor prescribed Metformin?"*
+
+</td>
+</tr>
+</table>
 
 ---
 
 ## Features
 
-### Document Intelligence
+### 🤖 AI Document Extraction
 
-Upload any medical document — CareCircle extracts structured data automatically.
+Upload prescriptions, lab reports, doctor notes, or voice recordings. Google Gemini reads them and extracts:
 
-**Supported document types:**
-- Prescriptions (PDF, image) — extracts medications, doses, frequencies, prescriber, follow-up date
-- Lab reports — extracts test names, values, units, reference ranges, flags abnormals
-- Doctor notes — extracts observations, diagnoses, follow-up instructions
-- Voice notes — transcribed via Sarvam AI (Indian language support), extracted for observations
+- **Prescriptions** → medication name (generic + brand), dose, frequency, timing, prescriber, hospital, follow-up date
+- **Lab Reports** → test name, value, unit, reference range, abnormal flags, lab name
+- **Doctor Notes** → observations, diagnoses, follow-up instructions, ordered tests
+- **Voice Notes** → transcribed in Indian languages via Sarvam AI, structured into observations
 
-**Extraction flow:**
-1. Upload → direct to Supabase Storage (never touches backend)
-2. AI extraction via Google Gemini (vision + OCR)
-3. User reviews extracted data, edits if needed, approves or rejects
-4. On approval → medications/labs saved to domain tables
-5. Five-layer pipeline runs: normalize → enrich → reconcile → reason → surface
-
-Every ingestion requires human approval. AI never silently writes clinical data.
+**Human approval is mandatory.** AI extracts, you confirm. Nothing is saved to your medical record without your review.
 
 ---
 
-### Five-Layer AI Pipeline
+### 🧠 Five-Layer Clinical Pipeline
 
-Every approved document passes through a deterministic + AI reasoning pipeline:
+Every approved document passes through a reasoning pipeline before generating alerts:
 
-```
-Layer 1: Ingest       → Extract structured data from document
-Layer 2: Normalize    → Standardize units, dates, drug names, test names
-Layer 3: Enrich       → Compare against patient context (current meds, recent labs)
-                        Deterministic rules first, then LLM general reasoning
-Layer 4: Reconcile    → Classify conflicts (duplicate meds, abnormal trends, dosing concerns)
-Layer 5: Reason       → LLM translates hypotheses into human-readable summary
-                        Returns: known_facts, clinical_summary, action_items
-```
+| Layer | Name | What It Does |
+|-------|------|-------------|
+| 1 | **Ingest** | Converts document to normalized structure |
+| 2 | **Normalize** | Standardizes drug names, units, date formats |
+| 3 | **Enrich** | Compares against patient context — current meds, recent labs, known conditions |
+| 4 | **Reconcile** | Classifies conflicts — duplicate medications, abnormal trends, dosing concerns |
+| 5 | **Reason** | LLM translates findings into human-readable alerts with severity |
 
-Output routes via urgency:
-- `alert` → Push notification + in-app card
-- `watch` → In-app card only
-- `inform` → Silent (dashboard only)
+Output severity:
+- `ALERT` → Push notification + in-app card (requires action)
+- `WATCH` → In-app card (monitor)
+- `INFORM` → Dashboard only (context)
 
-Every alert includes: *"Flagged by AI — confirm with prescribing doctor."*
+*Every alert includes: "Flagged by AI — confirm with your prescribing doctor."*
 
 ---
 
-### Needs Attention Dashboard
+### 📋 Needs Attention Dashboard
 
-Real-time priority list, sorted by urgency:
+Priority-ordered list of everything requiring action or awareness:
 
-1. **Emergency Follow-ups** — crisis events requiring note
-2. **Suggested Appointments / Lab Tests** — AI-extracted, awaiting user confirmation
-3. **Drug Interactions** — cross-prescriber conflicts flagged
-4. **Refill Alerts** — medications due within 30 days
-5. **Care Gaps** — preventive tests overdue before upcoming appointment
+1. **🚨 Emergency Follow-ups** — Post-crisis events needing a note
+2. **📅 Suggested Appointments & Lab Tests** — AI-extracted, confirm with one tap
+3. **⚠️ Drug Interactions** — Cross-prescriber conflicts sorted by severity
+4. **💊 Refill Alerts** — Upcoming refills sorted by urgency
+5. **📌 Care Gaps** — Missing pre-visit tests for upcoming appointments
 
-Confirmation items surface first. One tap confirms an AI-suggested appointment directly to the calendar.
-
----
-
-### Drug Interaction Detection
-
-Every new medication triggers an interaction check against all active medications.
-
-- Checks all medication pairs via LLM
-- Severity levels: `contraindicated` / `major` / `moderate` / `minor`
-- Contextual escalation:
-  - Renal-cleared drug + elevated creatinine → severity bumped up
-  - Glycemic drug + rising glucose trend → severity bumped up
-- Results cached in Redis, invalidated on medication change
-- Full interaction list viewable in dedicated Drug Interactions page
+Scrollable, real-time, and sorted so the most actionable items are always at the top.
 
 ---
 
-### Smart Calendar
+### 📅 Smart Calendar
 
-Appointments don't just sit — they trigger work:
+The calendar is connected to everything:
 
-- **AI-suggested events**: Pipeline extracts follow-up dates from prescriptions/notes → creates `suggested` calendar event → shows in Needs Attention for confirmation
-- **Lab test scheduling**: Ordered tests (from prescription) auto-scheduled 7 days before follow-up appointment
-- **Gap detection**: Each confirmed appointment triggers a check — does patient have required pre-visit tests within 30 days?
-  - Cardiologist → ECG, CBC, creatinine, lipid panel, BP log
-  - Endocrinologist → fasting glucose, HbA1c, creatinine, urine microalbumin
-  - General physician → CBC, metabolic panel
-  - *(9 specialist profiles total)*
-- **Doctor Briefing PDF**: 2 days before appointment → auto-generated briefing: meds from other doctors, recent lab trends, suggested questions
+- **Auto-created events** — Pipeline extracts follow-up dates from prescriptions and creates `suggested` appointments
+- **Lab test scheduling** — Ordered tests auto-scheduled 7 days before the follow-up appointment
+- **Pre-visit gap detection** — Each confirmed appointment triggers a check for required tests by specialist type
+- **Doctor briefing** — PDF generated 2 days before any appointment: meds from other doctors, lab trends, questions to ask
+- **Caregiver visit tracking** — Recurring or one-off caregiver visits with WhatsApp reminders
+
+**Gap detection by specialist:**
+
+| Specialist | Required Pre-Visit Tests |
+|-----------|--------------------------|
+| Cardiologist | ECG, CBC, creatinine, lipid panel, BP log |
+| Endocrinologist | Fasting glucose, HbA1c, creatinine, urine microalbumin |
+| Nephrologist | Creatinine, eGFR, urine protein, electrolytes |
+| Neurologist | CBC, metabolic panel, MRI (if applicable) |
+| General Physician | CBC, metabolic panel |
+| *+ 5 more specialist profiles* | |
 
 ---
 
-### Crisis / Emergency Mode
+### 🚨 Crisis / Emergency Mode
 
-**Trigger methods:**
-- Manual: patient or caregiver taps "Emergency Card" button
-- Keyword detection: "chest pain", "not breathing", "collapsed", "unconscious", "heart attack", "stroke", "seizure", etc.
-- Unusual hour (11 PM–5 AM) + keyword → higher likelihood of trigger
+**How it triggers:**
+- Patient or caregiver taps "Emergency" button
+- Keyword detected in a voice note or observation: *chest pain, not breathing, collapsed, unconscious, heart attack, stroke, seizure, fainted*
+- Late-night keyword (11 PM–5 AM) triggers with higher sensitivity
 
-**Emergency Card contains:**
-- All active medications (brand, generic, dose, frequency, prescriber)
+**Emergency card shows:**
+- All active medications with doses and frequencies
+- Prescriber for each medication
 - Known allergies
 - Blood type
-- Emergency contacts (family + confirmed caregivers)
-- Active AI-flagged alerts
+- Emergency contacts (family + caregivers)
+- Active AI-flagged clinical alerts
 
-Pre-computed nightly at 2:00 AM so it's instant when needed — no DB queries during emergency.
+Pre-computed nightly at 2:00 AM so it loads in under a second during an emergency. Downloadable as a PDF for paramedics and emergency room doctors.
 
-**Post-crisis workflow:**
-- Caregiver submits follow-up via WhatsApp
-- Follow-up logged as observation + in-app notification
-- Morning digest flags for clinician review
-
----
-
-### Caregiver Network
-
-Family members and paid caregivers get dedicated workflows:
-
-- Invited via WhatsApp link
-- Get daily 8:00 AM visit reminders for scheduled visits
-- Send post-visit voice notes via WhatsApp → auto-ingested as observations
-- Silence detector flags caregivers inactive for N days
-- Monthly re-engagement check for inactive caregivers
+**Post-crisis:**
+- Caregiver submits a follow-up note via WhatsApp
+- Follow-up logged as an observation
+- Morning digest flags it for the primary caregiver to review
 
 ---
 
-### WhatsApp Integration
+### 💬 WhatsApp-First Communication
 
-WhatsApp is the primary communication channel (built for Indian families).
+WhatsApp is the primary notification channel — built for Indian families who live on it.
 
-- **Morning digest**: health summary + alerts + upcoming events → WhatsApp + push
-- **Evening digest**: end-of-day summary
-- **Refill alerts**: escalating reminders as due date approaches
-- **Caregiver reminders**: visit schedule, patient updates
-- **Doctor briefing CTA**: link to pre-appointment summary
-- **YES/NO confirmations**: caregivers respond to prompts directly in WhatsApp
-- **Inbound webhook**: Twilio HMAC-SHA1 signature validation on every message
+| Notification | Channel | Trigger |
+|-------------|---------|---------|
+| Morning health digest | WhatsApp + Push | Daily at user-configured time |
+| Evening summary | WhatsApp + Push | Daily at user-configured time |
+| Refill due in 10 days | WhatsApp | Automated |
+| Refill due in 3 days | WhatsApp (escalated) | Automated |
+| Refill overdue | WhatsApp (urgent) | Automated |
+| Caregiver visit reminder | WhatsApp | Day of visit, 8:00 AM |
+| Doctor appointment briefing | WhatsApp | T-2 days |
+| Crisis follow-up prompt | WhatsApp | After emergency card opened |
 
----
-
-### Medication Management
-
-- Full medication list with dose, frequency, timing, prescriber
-- Active/discontinued tracking
-- Source document linked (which prescription it came from)
-- Duplicate detection on upload (same generic name → skip)
-- Drug name normalization: removes "Tab.", "Cap.", "Inj." prefixes
-- Refill tracking with escalating WhatsApp alerts (10 days → 3 days → overdue)
-- Medication list PDF for doctor visits
+Caregivers can respond YES/NO to prompts directly in WhatsApp. Inbound messages are validated with Twilio HMAC-SHA1 signature verification.
 
 ---
 
-### Lab Results & Trends
+### 👨‍👩‍👧 Caregiver Network
 
-- Manual entry or auto-extracted from lab reports
-- Trend view: last 5 results per test
-- Abnormal flag: compares against reference range from the report
-- Lab auto-complete: when lab report uploaded, matching pending `lab_test` calendar events marked complete
-- Reference ranges stored per result (different labs use different ranges)
+Connect family members and paid caregivers to the patient's care:
 
----
-
-### Chatbot
-
-Context-aware query assistant:
-
-- Intent classification: SQL (factual lookups) / semantic (doc search) / hybrid
-- Can answer: "What did my last HbA1c show?", "Which doctor prescribed Metformin?", "Do I have any appointments next month?"
-- Suggests context-aware prompts based on patient state
-- Proposed actions require explicit user confirmation before executing
+- **Invite via WhatsApp** — link sent, one tap to confirm
+- **Visit scheduling** — recurring weekly schedule or one-off calendar events
+- **Pre-visit reminders** — WhatsApp reminder at 8:00 AM on visit days
+- **Post-visit updates** — caregiver sends voice note via WhatsApp → auto-transcribed → added to patient record
+- **Engagement monitoring** — silence detector flags caregivers with no activity; monthly re-engagement nudge
 
 ---
 
-### Digests
+### 💊 Medication Management
 
-**Morning digest** (user-configured time):
-- Active alerts and watches
-- Medications due today
+- Full medication list: generic name, brand name, dose, frequency, timing, prescriber
+- Source-linked: every medication traces back to the document it came from
+- Auto-extracted from prescriptions (no manual entry needed)
+- Brand name normalization: strips "Tab.", "Cap.", "Inj." prefixes from drug names
+- Duplicate detection: same generic on re-upload is skipped
+- Refill date tracking with escalating alerts
+- Discontinued medication history preserved
+
+---
+
+### 🧪 Lab Results & Trends
+
+- Auto-extracted from lab reports (all tests in one upload)
+- Manual entry supported
+- Trend view: last 5 results per test name
+- Abnormal flagging against the report's own reference range
+- Auto-complete: when a lab report is uploaded, matching pending `lab_test` calendar events are automatically marked done
+- Searchable: *"Show me HbA1c trend for the last 6 months"*
+
+---
+
+### 🤖 Chatbot
+
+Ask questions about the patient's health record in plain language:
+
+- *"What medications is my father currently on?"*
+- *"Who prescribed Metformin and when?"*
+- *"Are there any abnormal lab results from the last month?"*
+- *"Do I have any appointments next week?"*
+
+Intent classification routes queries to SQL (factual), semantic search (documents), or hybrid. Actions proposed by the chatbot require explicit confirmation before executing.
+
+---
+
+### 📊 Daily Digests
+
+**Morning Digest** (user-configured time):
+- All active `alert` and `watch` status items
+- Today's medications
 - Upcoming appointments (next 7 days)
-- Recent lab abnormals
-- Caregiver visit schedule
+- Lab results due for follow-up
+- Caregiver visits today
 
-**Evening digest** (user-configured time):
-- End-of-day summary
-- Reminder for pending confirmations
+**Evening Digest** (user-configured time):
+- End-of-day health summary
+- Pending confirmations (suggested appointments, lab tests)
 
-Delivered via WhatsApp + push notification. Times and timezone configurable per patient.
+Timezone-aware, delivered via WhatsApp and push notification.
 
 ---
 
-### Scheduled Background Jobs
+## Background Automation
 
-| Job | Schedule | Purpose |
-|-----|----------|---------|
-| Morning digest dispatch | Per user timezone | Build + send morning health summary |
-| Evening digest dispatch | Per user timezone | Build + send evening summary |
-| Nightly crisis rebuild | 2:00 AM IST | Pre-compute emergency cards for all patients |
-| Daily gap detection | 6:00 AM IST | Find missing pre-visit tests, overdue refills |
-| Refill escalation | 10:00 AM IST | Send escalating refill reminders |
-| Caregiver visit messages | 8:00 AM IST | WhatsApp reminders to caregivers with visits today |
-| Deviation check | 12:00 PM IST | Midday state rebuild, flag rapid-deterioration patients |
-| Staleness check | 8:00 PM IST | Evening state rebuild, keep freshness scores current |
-| Calendar reminders | T-2 days | Appointment reminders to patient + caregiver |
+CareCircle runs scheduled jobs so nothing falls through the cracks:
+
+| Job | Time | Purpose |
+|-----|------|---------|
+| Morning digest | Per user timezone | Build and send morning health summary |
+| Evening digest | Per user timezone | Build and send evening summary |
+| Crisis card rebuild | 2:00 AM IST | Pre-compute emergency packets for all patients |
+| Gap detection | 6:00 AM IST | Find missing pre-visit tests, create gap alerts |
+| Refill escalation | 10:00 AM IST | Send and escalate overdue refill reminders |
+| Caregiver reminders | 8:00 AM IST | WhatsApp messages for caregivers with visits today |
+| Deviation check | 12:00 PM IST | Midday state rebuild, flag rapid deterioration |
+| Staleness check | 8:00 PM IST | Evening freshness score update |
+| Calendar reminders | T-2 days | Pre-appointment reminder to patient |
 
 ---
 
 ## Tech Stack
 
 ### Backend
-- **Runtime**: Python 3.11
-- **Framework**: FastAPI 0.136 + Uvicorn
-- **Database**: PostgreSQL via asyncpg (Supabase-hosted)
-- **Storage**: Supabase Storage (direct signed-URL uploads, never touches backend)
-- **Cache / Broker**: Redis 6.4
-- **Task Queue**: Celery 5.6
-- **Auth**: Supabase Auth + JWT (python-jose), OTP via SMS, Google OAuth
+| Component | Technology |
+|-----------|-----------|
+| API Framework | FastAPI 0.136 + Uvicorn |
+| Language | Python 3.11 |
+| Database | PostgreSQL (Supabase-hosted, asyncpg) |
+| File Storage | Supabase Storage (direct signed-URL uploads) |
+| Cache & Broker | Redis 6.4 |
+| Task Queue | Celery 5.6 |
+| Auth | Supabase Auth + JWT + Google OAuth |
+| PDF Generation | ReportLab + Pillow |
 
-### AI / ML
-- **Document extraction**: Google Gemini (vision + OCR)
-- **Pipeline reasoning**: Anthropic Claude (with prompt caching)
-- **Voice transcription**: Sarvam AI (Indian languages)
-- **Drug interaction analysis**: LLM-powered pair evaluation
+### AI & ML
+| Component | Technology |
+|-----------|-----------|
+| Document extraction | Google Gemini (vision + OCR) |
+| Clinical reasoning | Anthropic Claude (with prompt caching) |
+| Voice transcription | Sarvam AI (Indian languages) |
+| Drug interactions | LLM pair evaluation |
 
 ### Frontend
-- **Framework**: Next.js (App Router), React 19, TypeScript 5
-- **Styling**: Tailwind CSS 4, Radix UI components
-- **Auth**: Supabase client + Google OAuth
-- **Push**: Firebase 12
+| Component | Technology |
+|-----------|-----------|
+| Framework | Next.js (App Router) + React 19 |
+| Language | TypeScript 5 |
+| Styling | Tailwind CSS 4 + Radix UI |
+| Auth | Supabase client + Google OAuth |
+| Push Notifications | Firebase 12 (FCM) |
 
 ### Communications
-- **WhatsApp / SMS**: Twilio
-- **Push notifications**: Firebase Cloud Messaging (FCM)
-- **PDF generation**: ReportLab + Pillow
-
-### Observability
-- **Logging**: structlog (structured JSON)
-- **Metrics**: Prometheus client
-- **Retry logic**: Tenacity
+| Component | Technology |
+|-----------|-----------|
+| WhatsApp & SMS | Twilio |
+| Push Notifications | Firebase Cloud Messaging |
 
 ---
 
-## Architecture
+## Architecture Overview
 
 ```
-User (mobile/web)
-    │
-    ├── Upload document → Supabase Storage (direct PUT, signed URL)
-    │        │
-    │        └── POST /documents/{id}/process
-    │                 │
-    │                 └── Gemini extraction (sync, 5-30s)
-    │                          │
-    │                          └── User reviews + approves
-    │                                   │
-    │                                   └── on_document_approved event
-    │                                            │
-    │                                            └── Celery: run_pipeline task
-    │                                                     │
-    │                                                     ├── 5-layer pipeline
-    │                                                     ├── CalendarWriterAgent
-    │                                                     ├── GapDetectionAgent
-    │                                                     └── SurfaceAgent → notifications
-    │
-    ├── Dashboard polls /state → real-time alerts, watches, suggested items
-    │
-    └── WhatsApp (Twilio) ← → inbound webhook → caregiver responses
+┌─────────────────────────────────────────────────────────────┐
+│                        User (Web / Mobile)                   │
+└────────────┬────────────────────────────┬───────────────────┘
+             │                            │
+             ▼                            ▼
+    ┌─────────────────┐         ┌──────────────────┐
+    │  Next.js Frontend│         │  Supabase Storage│
+    │  (19 pages)      │         │  (direct upload) │
+    └────────┬────────┘         └────────┬─────────┘
+             │                           │
+             ▼                           ▼
+    ┌─────────────────────────────────────────────┐
+    │              FastAPI Backend                 │
+    │                                             │
+    │  ┌─────────────┐    ┌────────────────────┐  │
+    │  │  23 Routes  │    │  Document Service  │  │
+    │  │  (REST API) │    │  (Gemini extract)  │  │
+    │  └──────┬──────┘    └────────┬───────────┘  │
+    │         │                    │               │
+    │         ▼                    ▼               │
+    │  ┌─────────────────────────────────────┐    │
+    │  │          PostgreSQL (Supabase)       │    │
+    │  └─────────────────────────────────────┘    │
+    │                    │                         │
+    │                    ▼                         │
+    │  ┌─────────────────────────────────────┐    │
+    │  │        Celery + Redis               │    │
+    │  │                                     │    │
+    │  │  ┌──────────────────────────────┐   │    │
+    │  │  │  5-Layer AI Pipeline         │   │    │
+    │  │  │  Ingest → Normalize →        │   │    │
+    │  │  │  Enrich → Reconcile →        │   │    │
+    │  │  │  Reason → Surface            │   │    │
+    │  │  └──────────────────────────────┘   │    │
+    │  │                                     │    │
+    │  │  Scheduled Jobs (9 daily tasks)     │    │
+    │  └─────────────────────────────────────┘    │
+    └─────────────────────────────────────────────┘
+             │                    │
+             ▼                    ▼
+    ┌──────────────┐     ┌────────────────┐
+    │   Twilio     │     │    Firebase    │
+    │  (WhatsApp)  │     │    (Push FCM)  │
+    └──────────────┘     └────────────────┘
 ```
-
----
-
-## API Overview
-
-All endpoints under `/api/v1/`. Auth via Bearer token (JWT).
-
-| Domain | Base Path | Key Operations |
-|--------|-----------|----------------|
-| Auth | `/auth` | OTP send/verify, Google OAuth, token refresh |
-| Patients | `/patients` | CRUD |
-| Medications | `/patients/{id}/medications` | CRUD + refill tracking |
-| Lab Results | `/patients/{id}/lab-results` | CRUD + trend view |
-| Documents | `/documents` | Upload URL, process, approve, reject |
-| Calendar | `/patients/{id}/calendar` | CRUD + confirm + gap detection |
-| Caregivers | `/patients/{id}/caregivers` | CRUD + WhatsApp invite |
-| Drug Interactions | `/patients/{id}/drug-interactions` | List + trigger check |
-| Crisis | `/patients/{id}/crisis` | Enter, exit, PDF, follow-up |
-| Chatbot | `/patients/{id}/chatbot` | Query, confirm action, suggested prompts |
-| Digest | `/patients/{id}/digest` | On-demand build + preference update |
-| Search | `/patients/{id}/search` | Universal search across all data |
-| Notifications | `/patients/{id}/notifications` | List, unread count, mark read |
-| Patient State | `/patients/{id}/state` | Snapshot: alerts, freshness, summary |
-| Onboarding | `/onboarding` | Progress, step completion |
-| WhatsApp Webhook | `/webhooks/whatsapp` | Twilio inbound (HMAC validated) |
-
----
-
-## Onboarding Flow
-
-New users complete 5 steps (1–3 mandatory, 4–5 optional):
-
-1. **Add patient** — name, age, gender, conditions, allergies, blood type
-2. **Add medications** — current active medications
-3. **Set digest times** — morning/evening times + timezone
-4. *(Optional)* **Add caregiver** — WhatsApp invite
-5. *(Optional)* **Connect WhatsApp** — verify digest delivery channel
-
-Progress persists across sessions. Mandatory steps block core features until complete.
 
 ---
 
@@ -335,28 +419,28 @@ Progress persists across sessions. Mandatory steps block core features until com
 
 - Python 3.11+
 - Node.js 20+
-- PostgreSQL (or Supabase project)
-- Redis
-- Celery worker
-- Twilio account (WhatsApp Business API)
-- Google Gemini API key
-- Anthropic API key
-- Firebase project (FCM)
-- Sarvam AI API key (voice transcription)
+- PostgreSQL database (or Supabase project)
+- Redis instance
+- Accounts: Twilio, Google Cloud (Gemini), Anthropic, Firebase, Sarvam AI
 
-### Backend Setup
+### Backend
 
 ```bash
 cd Backend
+
+# Create virtual environment
 python -m venv .venv
-source .venv/bin/activate  # Windows: .venv\Scripts\activate
+source .venv/bin/activate        # Windows: .venv\Scripts\activate
+
+# Install dependencies
 pip install -r requirements.txt
 
-# Copy and fill environment variables
+# Configure environment
 cp .env.example .env
+# Fill in all values in .env
 
-# Run migrations
-# Apply SQL files in Backend/supabase/migrations/ in order
+# Run database migrations
+# Apply files in Backend/supabase/migrations/ sequentially
 
 # Start API server
 uvicorn app.main:app --reload --port 8000
@@ -364,48 +448,49 @@ uvicorn app.main:app --reload --port 8000
 # Start Celery worker (separate terminal)
 celery -A app.core.celery worker --loglevel=info
 
-# Start Celery beat scheduler (separate terminal)
+# Start Celery beat for scheduled jobs (separate terminal)
 celery -A app.core.celery beat --loglevel=info
 ```
 
-### Frontend Setup
+### Frontend
 
 ```bash
 cd Frontend
+
 npm install
 
-# Copy and fill environment variables
 cp .env.example .env.local
+# Fill in all values in .env.local
 
 npm run dev
 ```
 
 ### Environment Variables
 
-**Backend** (`.env`):
-```
-DATABASE_URL=
-SUPABASE_URL=
+**Backend `.env`**
+```env
+DATABASE_URL=postgresql://...
+SUPABASE_URL=https://xxx.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=
-SUPABASE_STORAGE_BUCKET_DOCUMENTS=
-REDIS_URL=
+SUPABASE_STORAGE_BUCKET_DOCUMENTS=documents
+REDIS_URL=redis://localhost:6379
 GEMINI_API_KEY=
 ANTHROPIC_API_KEY=
 TWILIO_ACCOUNT_SID=
 TWILIO_AUTH_TOKEN=
-TWILIO_WHATSAPP_FROM=
+TWILIO_WHATSAPP_FROM=whatsapp:+14155238886
 FIREBASE_SERVICE_ACCOUNT_JSON=
 SARVAM_API_KEY=
 JWT_SECRET=
 ```
 
-**Frontend** (`.env.local`):
-```
-NEXT_PUBLIC_API_URL=
+**Frontend `.env.local`**
+```env
+NEXT_PUBLIC_API_URL=http://localhost:8000
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
-NEXT_PUBLIC_FIREBASE_CONFIG=
 NEXT_PUBLIC_GOOGLE_CLIENT_ID=
+NEXT_PUBLIC_FIREBASE_CONFIG=
 ```
 
 ---
@@ -416,28 +501,32 @@ NEXT_PUBLIC_GOOGLE_CLIENT_ID=
 CareCircle/
 ├── Backend/
 │   ├── app/
-│   │   ├── api/v1/routes/          # 23 route files
-│   │   ├── agents/                 # AI agents (calendar, gap, crisis, surface)
+│   │   ├── api/v1/routes/          # API endpoints (23 route files)
+│   │   ├── agents/                 # AI agents
+│   │   │   ├── ingestion_orchestrator.py
+│   │   │   ├── calendar_writer_agent.py
+│   │   │   ├── gap_detection_agent.py
+│   │   │   └── surface_agent.py
 │   │   ├── pipeline/               # 5-layer processing pipeline
 │   │   │   ├── layer1_ingest/
 │   │   │   ├── layer2_normalize/
 │   │   │   ├── layer3_enrich/
 │   │   │   ├── layer4_reconcile/
 │   │   │   └── layer5_reason/
-│   │   ├── services/               # Business logic
-│   │   ├── repositories/           # DB access layer
+│   │   ├── services/               # Business logic layer
+│   │   ├── repositories/           # Database access layer
 │   │   ├── models/                 # ORM models
 │   │   ├── schemas/                # Pydantic request/response schemas
 │   │   ├── worker/
-│   │   │   ├── tasks/              # Celery tasks (extract, pipeline, interactions)
-│   │   │   └── jobs/               # Scheduled jobs (digest, gap, refill, crisis)
-│   │   └── providers/              # LLM, transcription, push notification providers
+│   │   │   ├── tasks/              # Celery async tasks
+│   │   │   └── jobs/               # Scheduled background jobs
+│   │   └── providers/              # LLM, transcription, push providers
 │   └── supabase/migrations/        # 27 SQL migration files
 │
 └── Frontend/
     ├── app/(app)/                  # 19 authenticated pages
     ├── components/                 # Reusable UI components
-    ├── hooks/                      # Data fetching hooks
+    ├── hooks/                      # Data fetching + state hooks
     └── lib/                        # API clients, types, utilities
 ```
 
@@ -445,15 +534,34 @@ CareCircle/
 
 ## Design Principles
 
-1. **Human approval gates everything** — AI extracts, human confirms. No silent writes to clinical records.
-2. **Alerts never cry wolf** — Every AI alert carries a disclaimer. Severity thresholds tuned to avoid fatigue.
-3. **WhatsApp-first for India** — Core workflows (alerts, reminders, caregiver updates) work entirely over WhatsApp without opening the app.
-4. **Offline-safe data** — Emergency card pre-computed nightly. Crisis mode works even if network is slow.
-5. **Multi-prescriber aware** — Drug interaction checks always run across all active medications regardless of which doctor prescribed them.
-6. **Structured logging everywhere** — Every AI decision is logged with patient_id, document_id, urgency, and reasoning for audit trail.
+**1. Human approval gates everything**
+AI extracts data from documents. Humans confirm it. No clinical information is ever written to the database without explicit user review and approval.
+
+**2. Alerts don't cry wolf**
+Every AI-generated alert carries a disclaimer: *"Flagged by AI — confirm with your prescribing doctor."* Severity thresholds are tuned conservatively to prevent alert fatigue.
+
+**3. WhatsApp-first for India**
+The entire core workflow — morning updates, refill reminders, caregiver coordination, emergency follow-ups — works entirely over WhatsApp without requiring the app to be open.
+
+**4. Emergency readiness**
+The emergency card is pre-computed nightly so it loads instantly. It never depends on a real-time database query during a crisis.
+
+**5. Multi-prescriber by design**
+Drug interaction checks always run across all active medications regardless of which doctor prescribed them. The system is built on the assumption that patients see multiple specialists who don't communicate with each other.
+
+**6. Full audit trail**
+Every AI decision is logged with patient ID, document ID, urgency level, and reasoning. Every medication and lab result is linked back to the source document it came from.
 
 ---
 
 ## License
 
-MIT
+MIT — see [LICENSE](LICENSE) for details.
+
+---
+
+<div align="center">
+
+Built for families navigating complex medical care in India.
+
+</div>
