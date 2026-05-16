@@ -120,35 +120,56 @@ Return ONLY valid JSON. No prose.
 """
 
 _GENERAL_PROMPT = """
-Analyze this medical document. It could be a prescription, lab report, or doctor note.
-Extract all relevant structured information into a single JSON object.
-Include:
-1. "medications": list of {brand_name, dose, frequency, timing, duration}
-2. "results": list of {test_name, test_name_display, value, unit, reference_range_low, reference_range_high, is_abnormal}
-3. "prescriber_name", "prescriber_specialty", "prescriber_hospital", "lab_name", "test_date", "prescription_date", "follow_up_date", "follow_up_weeks", "notes".
-4. "document_type_guess": one of "prescription", "lab_report", "doctor_note".
+Analyze this medical document. It may be a prescription, lab report, doctor note, or handwritten note.
+Extract ALL information present. Do not skip any section of the document.
 
-Return JSON structure:
+Return a JSON object with this exact structure:
 {
-  "document_type_guess": "...",
-  "medications": [...],
-  "results": [...],
-  "prescriber_name": "...",
-  "prescriber_specialty": "...",
-  "prescriber_hospital": "...",
-  "lab_name": "...",
-  "test_date": "...",
-  "prescription_date": "...",
-  "follow_up_date": "...",
-  "follow_up_weeks": ...,
-  "summary": "<a 1-2 sentence overview of the document>",
-  "notes": "...",
-  "raw_text": "<full verbatim readable text transcribed from this document>",
+  "document_type_guess": "<prescription|lab_report|doctor_note|handwritten_note>",
+  "medications": [
+    {
+      "brand_name": "<as written or null>",
+      "generic_name": "<generic drug name or null>",
+      "dose": "<e.g. 5mg or null>",
+      "frequency": "<e.g. once daily or null>",
+      "timing": "<e.g. after meals or null>",
+      "duration": "<e.g. 30 days or null>"
+    }
+  ],
+  "results": [
+    {
+      "test_name": "<normalized key e.g. fasting_glucose>",
+      "test_name_display": "<human label e.g. Fasting Glucose>",
+      "value": <numeric or null>,
+      "unit": "<e.g. mg/dL or null>",
+      "reference_range_low": <numeric or null>,
+      "reference_range_high": <numeric or null>,
+      "is_abnormal": <true|false|null>
+    }
+  ],
+  "prescriber_name": "<doctor name or null>",
+  "doctor_name": "<same as prescriber_name — include both>",
+  "prescriber_specialty": "<e.g. cardiologist or null>",
+  "prescriber_hospital": "<hospital name or null>",
+  "lab_name": "<lab or hospital name or null>",
+  "prescription_date": "<YYYY-MM-DD or null>",
+  "test_date": "<YYYY-MM-DD or null>",
+  "follow_up_date": "<YYYY-MM-DD or null>",
+  "follow_up_weeks": <integer or null>,
+  "follow_up_instructions": "<plain text follow-up instructions or null>",
+  "notes": "<any other instructions, observations, or important text>",
+  "summary": "<1-2 sentence overview of this document>",
+  "raw_text": "<full verbatim readable text from this document>",
   "field_confidence": {
     "<field_name>": <0.0-1.0>
   }
 }
-Return ONLY valid JSON. No prose.
+
+Rules:
+- Extract ALL medications listed, even if only mentioned in passing.
+- For lab results: only include tests ordered for the FUTURE (not vitals recorded today).
+- If a field is not present, set it to null.
+- Return ONLY valid JSON. No prose, no markdown.
 """
 
 _DOCUMENT_TYPE_TO_PROMPT: dict[str, str] = {
