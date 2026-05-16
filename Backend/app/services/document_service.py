@@ -99,16 +99,20 @@ class DocumentService:
 
     async def trigger_extraction(self, doc_id: UUID, user_id: UUID) -> None:
         """Trigger AI extraction for a newly uploaded document.
-        Queues Celery task — returns immediately. Frontend polls /documents/{id} every 3s.
+        Runs synchronously — Gemini takes 5-30s but result is immediate on return.
+        Frontend receives completed extraction in the /process response.
         """
         doc = await self._repo.get_by_id(doc_id)
         if not doc:
             raise NotFoundError("Document", str(doc_id))
         await self._assert_doc_access(doc, user_id)
 
-        from app.worker.tasks.extract_document import extract_document
-        extract_document.delay(str(doc_id))
-        logger.info("document.extraction_queued", doc_id=str(doc_id))
+        from app.worker.tasks.extract_document import _async_extract
+        try:
+            await _async_extract(str(doc_id))
+            logger.info("document.extraction_completed", doc_id=str(doc_id))
+        except Exception as e:
+            logger.error("document.extraction_failed", doc_id=str(doc_id), error=str(e))
 
     async def approve(
         self,
