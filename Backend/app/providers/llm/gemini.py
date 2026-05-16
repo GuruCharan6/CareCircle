@@ -60,7 +60,7 @@ class GeminiProvider(LLMProvider):
     def __init__(self, model: str | None = None) -> None:
         self._client = genai.Client(api_key=settings.gemini_api_key)
         self._embed_client = genai.Client(api_key=settings.gemini_api_key)
-        self._embedding_model = "text-embedding-004"
+        self._embedding_model = settings.gemini_embedding_model
         self._model = model or settings.gemini_model
 
     @retry(

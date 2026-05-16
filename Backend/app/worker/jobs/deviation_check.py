@@ -14,8 +14,6 @@ from app.core.logging import get_logger
 from app.repositories.notification_repository import NotificationRepository
 from app.worker._db import worker_conn
 from app.worker.jobs._helpers import get_all_patient_ids, get_user_id_for_patient, try_push
-from app.config import settings
-import httpx
 
 logger = get_logger(__name__)
 
@@ -28,23 +26,13 @@ def deviation_check() -> None:
 
 
 async def _async_run() -> None:
+    from app.worker.tasks.rebuild_patient_state import _async_rebuild
+
     async with worker_conn(max_size=3, command_timeout=60) as conn:
         patient_ids = await get_all_patient_ids(conn)
         logger.info("deviation_check.start", patient_count=len(patient_ids))
 
-        # Dispatch state rebuilds first (they run as separate tasks in uvicorn)
-        async with httpx.AsyncClient(timeout=10) as client:
-            for patient_id in patient_ids:
-                try:
-                    await client.post(
-                        f"{settings.internal_base_url}/internal/events/pipeline-complete",
-                        params={"patient_id": str(patient_id)},
-                        headers={"x-internal-secret": settings.internal_secret},
-                    )
-                except Exception as exc:
-                    logger.error("deviation_check.dispatch_failed", patient_id=str(patient_id), error=str(exc))
-
-        # Then check for high alert accumulation in this connection
+        # Check high alert accumulation
         flagged = 0
         for patient_id in patient_ids:
             try:
@@ -56,11 +44,17 @@ async def _async_run() -> None:
                     error=str(exc),
                 )
 
-        logger.info(
-            "deviation_check.done",
-            patient_count=len(patient_ids),
-            high_alert_patients=flagged,
-        )
+    # Rebuild patient state for all patients concurrently after releasing DB connection
+    await asyncio.gather(
+        *[_async_rebuild(str(pid)) for pid in patient_ids],
+        return_exceptions=True,
+    )
+
+    logger.info(
+        "deviation_check.done",
+        patient_count=len(patient_ids),
+        high_alert_patients=flagged,
+    )
 
 
 async def _check_alert_accumulation(conn, patient_id) -> int:

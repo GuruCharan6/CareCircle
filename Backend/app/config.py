@@ -29,6 +29,7 @@ class Settings(BaseSettings):
     # External providers
     gemini_api_key: str = ""
     gemini_model: str = "gemini-2.5-flash"
+    gemini_embedding_model: str = "gemini-embedding-001"
     firebase_credentials_path: str = ""   # file path (local dev)
     firebase_credentials_json: str = ""   # full JSON string (Render / cloud env)
     twilio_account_sid: str = ""

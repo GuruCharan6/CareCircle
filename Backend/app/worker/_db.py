@@ -9,12 +9,20 @@ from app.config import settings
 @asynccontextmanager
 async def worker_conn(min_size: int = 1, max_size: int = 3, command_timeout: int = 60):
     """
-    Async context manager that creates a fresh asyncpg pool for a Celery task,
-    yields one connection with JSON codecs registered, then closes the pool.
+    Yields one DB connection with JSON codecs registered.
 
-    Celery workers are separate processes — they don't share the FastAPI pool.
-    Supabase transaction pooler (port 6543) handles real connection reuse server-side.
+    Starlette background task path: app pool already exists — reuse it.
+    Celery worker path: separate process with no app pool — create a fresh pool.
     """
+    # Reuse the FastAPI app pool when running inside the web process (background tasks).
+    # Avoids creating a second pool that exhausts Supabase connection limits.
+    from app.core import database as _db_module
+    if _db_module._service_role_pool is not None:
+        async with _db_module.get_service_conn() as conn:
+            yield conn
+        return
+
+    # Celery worker process — no app pool exists, create a temporary one.
     pool = await asyncpg.create_pool(
         dsn=settings.supabase_db_url,
         min_size=min_size,

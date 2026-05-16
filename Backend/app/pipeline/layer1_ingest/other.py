@@ -57,6 +57,10 @@ class OtherExtractor(BaseExtractor):
         except ValueError:
             event_time = date.today()
 
+        raw_text = data.pop("raw_text", None) or document.extracted_text
+        data.pop("document_type_guess", None)  # stored as document_type column, not needed in JSONB
+        data.pop("summary", None)  # large string, not needed for pipeline logic
+
         return IngestedItem(
             source_type=detected_type,
             source_document_id=document.id,
@@ -65,5 +69,5 @@ class OtherExtractor(BaseExtractor):
             ingestion_time=datetime.now(timezone.utc),
             extracted_data=data,
             confidence_per_field=field_confidence,
-            raw_text=data.get("raw_text") or document.extracted_text,
+            raw_text=raw_text,
         )

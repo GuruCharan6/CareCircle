@@ -122,7 +122,12 @@ class SurfaceAgent:
         Watch: create in-app event card. No push notification.
         Surfaces in next digest and notification history.
         """
-        title = "New health observation"
+        # Derive a specific title from the first hypothesis if available
+        if output.hypotheses_text:
+            first_line = output.hypotheses_text.strip().splitlines()[0]
+            title = first_line[:80] if len(first_line) > 80 else first_line
+        else:
+            title = "Health observation"
         body = output.plain_summary[:300] if output.plain_summary else "Review your health update."
 
         await self._notification_repo.create(

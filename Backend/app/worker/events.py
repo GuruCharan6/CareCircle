@@ -1,37 +1,38 @@
 """
 Event dispatch — called by services when domain events occur.
-Now uses HTTP POST to internal FastAPI endpoints to trigger background tasks,
-avoiding the need for a separate Celery worker process.
+Schedules async background tasks directly into the running event loop.
+No HTTP self-calls — avoids deadlocks under single-worker deployments.
 """
-import httpx
-from app.config import settings
+import asyncio
+
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
 
 
-def _post_event(endpoint: str, params: dict) -> None:
-    """Helper to send a synchronous POST to the internal API."""
-    url = f"{settings.internal_base_url}/internal/events/{endpoint}"
-    headers = {"x-internal-secret": settings.internal_secret}
+def _fire(coro) -> None:
+    """Schedule a coroutine as a fire-and-forget task."""
     try:
-        # Use a relatively short timeout to avoid blocking the caller too long
-        with httpx.Client(timeout=30.0) as client:
-            resp = client.post(url, params=params, headers=headers)
-            resp.raise_for_status()
-    except Exception as exc:
-        logger.error(f"event_dispatch_failed.{endpoint}", error=str(exc), url=url)
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            asyncio.ensure_future(coro)
+        else:
+            loop.run_until_complete(coro)
+    except RuntimeError:
+        asyncio.run(coro)
 
 
 def on_document_uploaded(document_id: str) -> None:
-    """Document uploaded to storage → trigger AI extraction (Layer 1)."""
-    _post_event("document-uploaded", {"document_id": document_id})
+    from app.worker.tasks.extract_document import _async_extract
+    _fire(_async_extract(document_id))
     logger.info("event.on_document_uploaded", document_id=document_id)
 
 
 def on_document_approved(document_id: str, patient_id: str) -> None:
-    """Document approved by user → embed chunks + run pipeline in parallel."""
-    _post_event("document-approved", {"document_id": document_id, "patient_id": patient_id})
+    from app.worker.tasks.embed_document import _async_embed
+    from app.worker.tasks.run_pipeline import _async_run
+    _fire(_async_embed(document_id, patient_id))
+    _fire(_async_run(document_id, patient_id))
     logger.info(
         "event.on_document_approved",
         document_id=document_id,
@@ -40,18 +41,20 @@ def on_document_approved(document_id: str, patient_id: str) -> None:
 
 
 def on_medication_added(patient_id: str) -> None:
-    """New medication added → check interactions + rebuild patient_state."""
-    _post_event("medication-added", {"patient_id": patient_id})
+    from app.worker.tasks.check_drug_interactions import _async_check
+    from app.worker.tasks.rebuild_patient_state import _async_rebuild
+    _fire(_async_check(patient_id))
+    _fire(_async_rebuild(patient_id))
     logger.info("event.on_medication_added", patient_id=patient_id)
 
 
 def on_pipeline_complete(patient_id: str) -> None:
-    """Pipeline finished writing hypotheses → rebuild patient_state counts."""
-    _post_event("pipeline-complete", {"patient_id": patient_id})
+    from app.worker.tasks.rebuild_patient_state import _async_rebuild
+    _fire(_async_rebuild(patient_id))
     logger.info("event.on_pipeline_complete", patient_id=patient_id)
 
 
 def on_appointment_confirmed(patient_id: str) -> None:
-    """Appointment confirmed → refresh patient_state (gap actions may have changed)."""
-    _post_event("appointment-confirmed", {"patient_id": patient_id})
+    from app.worker.tasks.rebuild_patient_state import _async_rebuild
+    _fire(_async_rebuild(patient_id))
     logger.info("event.on_appointment_confirmed", patient_id=patient_id)

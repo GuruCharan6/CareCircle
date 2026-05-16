@@ -9,7 +9,6 @@ from app.providers.whatsapp.factory import get_whatsapp_provider
 from app.repositories.caregiver_repository import CaregiverRepository
 from app.repositories.whatsapp_message_repository import WhatsAppMessageRepository
 from app.config import settings
-import httpx
 
 logger = get_logger(__name__)
 
@@ -108,21 +107,10 @@ class WhatsAppService:
         if msg.message_type == "audio":
             db_msg = await self._msg_repo.get_by_twilio_sid(msg.provider_message_id)
             if db_msg:
-                try:
-                    async with httpx.AsyncClient() as client:
-                        await client.post(
-                            f"{settings.internal_base_url}/internal/events/whatsapp-media",
-                            params={"message_id": str(db_msg.id)},
-                            headers={"x-internal-secret": settings.internal_secret},
-                            timeout=5.0,
-                        )
-                    logger.info("whatsapp_service.media_task_triggered", message_id=str(db_msg.id))
-                except Exception as exc:
-                    logger.error(
-                        "whatsapp_service.media_trigger_failed",
-                        error=str(exc),
-                        message_id=str(db_msg.id),
-                    )
+                from app.worker.tasks.process_whatsapp_media import _async_run as _process_media
+                import asyncio
+                asyncio.ensure_future(_process_media(str(db_msg.id)))
+                logger.info("whatsapp_service.media_task_triggered", message_id=str(db_msg.id))
 
         if msg.message_type != "text" or not msg.content_text:
             # Non-text (audio/image) — acknowledge
