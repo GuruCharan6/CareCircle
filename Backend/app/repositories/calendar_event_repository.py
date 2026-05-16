@@ -135,6 +135,19 @@ class CalendarEventRepository(BaseRepository):
             patient_id, event_date, confirmed_by,
         )
 
+    async def update_event_date(self, event_id: UUID, new_date: date) -> CalendarEvent | None:
+        """Correct event_date (e.g. when explicit follow-up date overrides a weeks-based estimate)."""
+        row = await self.conn.fetchrow(
+            """
+            UPDATE public.calendar_events
+            SET event_date = $2, updated_at = now()
+            WHERE id = $1
+            RETURNING *
+            """,
+            event_id, new_date,
+        )
+        return CalendarEvent.from_record(row) if row else None
+
     async def update_status(self, event_id: UUID, status: str, confirmed_by: UUID | None = None) -> CalendarEvent | None:
         row = await self.conn.fetchrow(
             """

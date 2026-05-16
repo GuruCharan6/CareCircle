@@ -86,8 +86,8 @@ class CalendarWriterAgent:
         extracted = item.extracted_data or {}
 
         # Use item.event_time (prescription/note date) as the base for relative offsets
-        follow_up_date = self._resolve_follow_up_date(extracted, base_date=item.event_time)
-        
+        follow_up_date, is_explicit_date = self._resolve_follow_up_date(extracted, base_date=item.event_time)
+
         patient = await self._patient_repo.get_by_id(patient_id)
         if not patient:
             logger.error("calendar_writer_agent.patient_not_found", patient_id=str(patient_id))
@@ -108,19 +108,20 @@ class CalendarWriterAgent:
             )
             title = self._build_title(prescriber, specialist_type)
 
-            # Avoid duplicates: same specialist within ±7 days of follow_up_date.
-            # Exact date match misses re-uploads where Gemini returns weeks vs explicit date
-            # (e.g. June 18 via explicit date vs June 22 via 6-week offset = same appointment).
+            # Avoid duplicates: same specialist within ±14 days of follow_up_date.
+            # 14-day window catches the case where a weeks-based estimate (e.g. +6 weeks = Jun 27)
+            # differs from an explicit date (e.g. Jun 18) by 9 days — within the tolerance.
             existing = await self._calendar_repo.get_upcoming(patient_id, within_days=180)
-            already_suggested = any(
-                abs((e.event_date - follow_up_date).days) <= 7
-                and e.specialist_type == specialist_type
-                and e.event_type == "appointment"
-                and e.status in ("suggested", "confirmed")
-                for e in existing
+            existing_match = next(
+                (e for e in existing
+                 if abs((e.event_date - follow_up_date).days) <= 14
+                 and e.specialist_type == specialist_type
+                 and e.event_type == "appointment"
+                 and e.status in ("suggested", "confirmed")),
+                None,
             )
-            
-            if not already_suggested:
+
+            if existing_match is None:
                 event = await self._calendar_repo.create(
                     patient_id=patient_id,
                     event_type="appointment",
@@ -131,7 +132,7 @@ class CalendarWriterAgent:
                     status="suggested",
                 )
                 created.append(event)
-                
+
                 # Notify Meera — one tap to confirm, one to dismiss
                 weeks_hint = extracted.get("follow_up_weeks")
                 hint = f"in {weeks_hint} weeks (around {follow_up_date})" if weeks_hint else str(follow_up_date)
@@ -150,12 +151,23 @@ class CalendarWriterAgent:
                     linked_entity_id=event.id,
                     action_deep_link=f"/calendar/{event.id}",
                 )
-                
+
                 logger.info(
                     "calendar_writer_agent.event_created",
                     event_id=str(event.id),
                     date=str(follow_up_date),
                     specialist=specialist_type,
+                )
+            elif is_explicit_date and existing_match.event_date != follow_up_date:
+                # Explicit date from prescription is more accurate than a weeks estimate.
+                # Correct the existing event rather than creating a duplicate.
+                await self._calendar_repo.update_event_date(existing_match.id, follow_up_date)
+                created.append(existing_match)  # treat as "handled" for gap detection
+                logger.info(
+                    "calendar_writer_agent.event_date_corrected",
+                    event_id=str(existing_match.id),
+                    old_date=str(existing_match.event_date),
+                    new_date=str(follow_up_date),
                 )
             else:
                 logger.info(
@@ -234,27 +246,34 @@ class CalendarWriterAgent:
 
         return created
 
-    def _resolve_follow_up_date(self, extracted: dict, base_date: date | None = None) -> date | None:
+    def _resolve_follow_up_date(self, extracted: dict, base_date: date | None = None) -> tuple[date | None, bool]:
         """
         Resolve a concrete follow-up date from multiple possible extracted fields.
         Priority: explicit date > weeks.
 
         base_date is the document issue date (may be in the past).
         We use max(base_date, today) so old prescriptions don't create past appointments.
+
+        Returns: (resolved_date, is_explicit)
+            is_explicit=True when the date came from follow_up_date field (not weeks estimate).
+            Callers use is_explicit to decide whether to update existing events.
         """
         from app.lib.dates import parse_date_robust
 
-        # 1. Explicit date string
+        today = date.today()
+
+        # 1. Explicit date string — highest priority
         raw_date = extracted.get("follow_up_date")
         if raw_date:
             parsed = parse_date_robust(raw_date)
-            if parsed:
-                # Discard past dates — old documents with already-elapsed follow-ups
-                return parsed if parsed >= date.today() else None
+            if parsed and parsed >= today:
+                return parsed, True
+            # Explicit date present but unparseable or past — do NOT fall through to weeks.
+            # Falling through caused weeks-based estimates to override an explicit field.
+            return None, False
 
         # Use latest of document date and today as base for relative offsets.
         # Prevents old prescriptions from scheduling past appointments.
-        today = date.today()
         base = max(base_date, today) if base_date else today
 
         # 2. Weeks from base — Gemini may return int, float, or "6 weeks" string
@@ -263,11 +282,11 @@ class CalendarWriterAgent:
             match = re.search(r"[\d.]+", str(raw_weeks))
             if match:
                 try:
-                    return base + timedelta(weeks=float(match.group()))
+                    return base + timedelta(weeks=float(match.group())), False
                 except (ValueError, OverflowError):
                     pass
 
-        return None
+        return None, False
 
     async def auto_complete_from_lab_report(
         self,
