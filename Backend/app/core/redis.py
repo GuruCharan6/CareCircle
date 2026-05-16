@@ -1,3 +1,5 @@
+import asyncio
+
 import redis.asyncio as aioredis
 
 from app.config import settings
@@ -28,8 +30,10 @@ async def init_redis() -> None:
             settings.redis_url,
             encoding="utf-8",
             decode_responses=True,
+            socket_connect_timeout=5.0,
+            socket_timeout=5.0,
         )
-        await _redis.ping()
+        await asyncio.wait_for(_redis.ping(), timeout=5.0)
         logger.info("redis_connected", url=settings.redis_url)
     except Exception as exc:
         logger.warning("redis_connection_failed", url=settings.redis_url, error=str(exc))
