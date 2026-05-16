@@ -124,8 +124,8 @@ class SurfaceAgent:
         """
         # Derive a specific title from the first hypothesis if available
         if output.hypotheses_text:
-            first_line = output.hypotheses_text.strip().splitlines()[0]
-            title = first_line[:80] if len(first_line) > 80 else first_line
+            first_line = output.hypotheses_text[0] if isinstance(output.hypotheses_text, list) else output.hypotheses_text.splitlines()[0]
+            title = first_line[:80]
         else:
             title = "Health observation"
         body = output.plain_summary[:300] if output.plain_summary else "Review your health update."

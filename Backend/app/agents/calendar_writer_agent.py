@@ -178,7 +178,7 @@ class CalendarWriterAgent:
                 )
 
         # 2. Handle explicit tests found in prescription / doctor note
-        results = extracted.get("results") or []
+        results = extracted.get("ordered_tests") or []
 
         # Fetch existing upcoming events once for dedup (same window as appointment check)
         existing_upcoming = await self._calendar_repo.get_upcoming(patient_id, within_days=180)

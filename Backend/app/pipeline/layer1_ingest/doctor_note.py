@@ -72,7 +72,7 @@ class DoctorNoteExtractor(BaseExtractor):
             ingestion_time=datetime.now(timezone.utc),
             extracted_data={
                 "medication_changes": data.get("medication_changes") or [],
-                "results": data.get("results") or [],
+                "ordered_tests": data.get("ordered_tests") or [],
                 "follow_up_instructions": data.get("follow_up_instructions"),
                 "follow_up_date": follow_up_date_str,
                 "follow_up_weeks": data.get("follow_up_weeks"),

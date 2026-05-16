@@ -117,7 +117,7 @@ class IngestionOrchestrator:
                 extracted.get(key)
                 for key in ("follow_up_date", "follow_up_weeks", "follow_up_days")
             )
-            has_tests = len(extracted.get("results") or []) > 0
+            has_tests = len(extracted.get("ordered_tests") or []) > 0
             
             if has_follow_up or has_tests:
                 # Build an IngestedItem-like view from the document for CalendarWriterAgent.

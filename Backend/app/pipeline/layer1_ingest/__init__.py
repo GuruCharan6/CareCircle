@@ -3,18 +3,16 @@ from app.pipeline.layer1_ingest.doctor_note import DoctorNoteExtractor
 from app.pipeline.layer1_ingest.handwritten import HandwrittenNoteExtractor
 from app.pipeline.layer1_ingest.lab_report import LabReportExtractor
 from app.pipeline.layer1_ingest.prescription import PrescriptionExtractor
-from app.pipeline.layer1_ingest.other import OtherExtractor
 from app.pipeline.layer1_ingest.types import IngestedItem
 from app.pipeline.layer1_ingest.voice_note import VoiceNoteExtractor
 from app.providers.llm.base import LLMProvider
 
 _EXTRACTORS = {
-    "prescription": PrescriptionExtractor,
-    "lab_report": LabReportExtractor,
-    "doctor_note": DoctorNoteExtractor,
+    "prescription":     PrescriptionExtractor,
+    "lab_report":       LabReportExtractor,
+    "doctor_note":      DoctorNoteExtractor,
     "handwritten_note": HandwrittenNoteExtractor,
-    "voice_note": VoiceNoteExtractor,
-    "other": OtherExtractor,
+    "voice_note":       VoiceNoteExtractor,
 }
 
 

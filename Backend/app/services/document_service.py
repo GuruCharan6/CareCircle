@@ -42,12 +42,19 @@ class DocumentService:
         ext_map = {
             "image/jpeg": "jpg",
             "image/png": "png",
+            "image/webp": "webp",
+            "image/heic": "heic",
+            "image/heif": "heif",
+            "image/tiff": "tiff",
+            "image/bmp": "bmp",
             "application/pdf": "pdf",
             "audio/mpeg": "mp3",
             "audio/ogg": "ogg",
             "audio/mp4": "m4a",
             "audio/webm": "webm",
             "audio/wav": "wav",
+            "audio/x-m4a": "m4a",
+            "audio/aac": "aac",
         }
         base_mime = mime_type.split(";")[0].strip().lower()
         ext = ext_map.get(base_mime, "bin")
@@ -291,81 +298,52 @@ class DocumentService:
                     except Exception as e:
                         logger.error("document.persist_med_failed", doc_id=str(doc.id), error=str(e))
 
-        # 3. Handle Lab Results — only store results that have actual measured values.
-        #    Results without values are ordered tests (future lab work) handled by CalendarWriterAgent.
-        results = doc.extracted_data.get("results") or []
-        actual_results = [r for r in results if r.get("value") is not None]
-        if actual_results:
+        # 3. Handle Lab Results.
+        #    - lab_report: "results" field — actual measured values from the lab.
+        #    - prescription: "recent_lab_values" field — past investigations shown in the prescription.
+        #    - doctor_note: no lab values (ordered_tests has no values, handled by CalendarWriterAgent).
+        #    Calendar events for future ordered_tests are created by CalendarWriterAgent after pipeline.
+        lab_rows: list[dict] = []
+        lab_name_for_source = doc.extracted_data.get("lab_name")
+
+        if doc.document_type == "lab_report":
+            raw = doc.extracted_data.get("results") or []
+            lab_rows = [r for r in raw if r.get("value") is not None]
+
+        elif doc.document_type == "prescription":
+            raw = doc.extracted_data.get("recent_lab_values") or []
+            lab_rows = [r for r in raw if r.get("value") is not None]
+
+        if lab_rows:
             lab_svc = LabResultService(self._repo.conn)
             existing_labs = await lab_svc.list_by_document(doc.id)
             if not existing_labs:
-                for r in actual_results:
+                for r in lab_rows:
                     try:
+                        # Use test_date from extraction if present (e.g. "28 March 2026" in prescription header)
+                        from app.lib.dates import parse_date_robust
+                        raw_test_date = r.get("test_date")
+                        test_date = parse_date_robust(raw_test_date) if raw_test_date else None
+                        test_date = test_date or doc.event_date or date.today()
+
                         await lab_svc.create(doc.patient_id, LabResultCreate(
                             source_document_id=doc.id,
-                            test_name=r.get("test_name"),
-                            test_name_display=r.get("test_name_display"),
+                            test_name=r.get("test_name") or r.get("test_name_display", "unknown"),
+                            test_name_display=r.get("test_name_display") or r.get("test_name", "Unknown"),
                             value=r.get("value"),
                             unit=r.get("unit"),
-                            test_date=doc.event_date or date.today(),
+                            test_date=test_date,
                             reference_range_low=r.get("reference_range_low"),
                             reference_range_high=r.get("reference_range_high"),
                             is_abnormal=r.get("is_abnormal"),
                             specialist_type=r.get("specialist_type"),
-                            lab_name=doc.extracted_data.get("lab_name"),
+                            lab_name=lab_name_for_source,
                         ))
                     except Exception as e:
                         logger.error("document.persist_lab_failed", doc_id=str(doc.id), error=str(e))
 
-        # 4. Handle Appointments / Follow-ups
-        # Look for explicit follow-up date or relative weeks
-        follow_up_date_str = get_f(["follow_up_date"])
-        follow_up_weeks = get_f(["follow_up_weeks"])
-        
-        if follow_up_date_str or follow_up_weeks:
-            try:
-                from app.services.calendar_service import CalendarService
-                from app.schemas.calendar import CalendarEventCreate
-                from datetime import timedelta
-                
-                cal_svc = CalendarService(self._repo.conn)
-                
-                event_date = None
-                if follow_up_date_str:
-                    try:
-                        event_date = date.fromisoformat(follow_up_date_str)
-                    except ValueError:
-                        pass
-                
-                if not event_date and follow_up_weeks:
-                    # Default to weeks from document event_date or today
-                    base_date = doc.event_date or date.today()
-                    event_date = base_date + timedelta(weeks=int(follow_up_weeks))
-                
-                if event_date:
-                    # Check if already exists for this document to avoid duplicates
-                    existing_events = await cal_svc.list(doc.patient_id, within_days=365)
-                    
-                    # Robust duplicate check: look for doc.id in the notes
-                    doc_id_str = str(doc.id)
-                    is_duplicate = any(doc_id_str in (e.notes or "") for e in existing_events)
-                    
-                    if not is_duplicate:
-                        # Use patient_id as fallback if uploaded_by is missing (e.g. system ingestion)
-                        acting_user_id = doc.uploaded_by or doc.patient_id
-                        
-                        await cal_svc.create(doc.patient_id, acting_user_id, CalendarEventCreate(
-                            event_type="appointment",
-                            title=f"Follow-up with {prescriber_name or 'Doctor'}",
-                            specialist_type=get_f(["prescriber_specialty", "specialist_type", "specialist"]),
-                            event_date=event_date,
-                            location=get_f(["prescriber_hospital", "hospital_name", "location"]),
-                            source="prescription_ingestion" if doc.document_type == "prescription" else "doctor_note_extraction",
-                            notes=f"Automatically extracted from {doc.document_type} (ID: {doc.id})"
-                        ))
-                        logger.info("document.persist_appointment_added", doc_id=doc_id_str, event_date=str(event_date))
-            except Exception as e:
-                logger.error("document.persist_appointment_failed", doc_id=str(doc.id), error=str(e))
+        # Appointments and ordered lab test events are created by CalendarWriterAgent
+        # in IngestionOrchestrator after the pipeline runs. No duplicate creation here.
 
     def _clean_med_name(self, name: str) -> str:
         """Remove common medical tags like Tab, Cap, Inj to avoid duplicates."""

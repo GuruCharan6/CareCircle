@@ -62,6 +62,38 @@ async def _remind_for_patient(conn, patient_id) -> int:
     sent_count = 0
     today = date.today()
 
+    # Nudge for unconfirmed suggested events at T-7
+    # User may have dismissed or forgotten — remind once to confirm or dismiss
+    t7_date = today + timedelta(days=7)
+    suggested_rows = await conn.fetch(
+        """
+        SELECT * FROM public.calendar_events
+        WHERE patient_id = $1
+          AND event_date = $2
+          AND status = 'suggested'
+          AND NOT ('nudge-t7' = ANY(COALESCE(reminder_sent_at, ARRAY[]::text[])))
+        """,
+        patient_id, t7_date
+    )
+    for row in suggested_rows:
+        event_type_label = "appointment" if row["event_type"] == "appointment" else "lab test"
+        nudge_title = f"Unconfirmed {event_type_label} in 7 days"
+        nudge_body = f"{row['title']} is scheduled for {t7_date} but not confirmed. Please confirm or dismiss."
+        await notif_repo.create(
+            patient_id=patient_id,
+            recipient_user_id=user_id,
+            type="calendar_reminder",
+            channel="push",
+            title=nudge_title,
+            body=nudge_body,
+            linked_entity_type="calendar_event",
+            linked_entity_id=row["id"],
+            action_deep_link="/calendar",
+        )
+        await try_push(conn, user_id, nudge_title, nudge_body, data={"type": "calendar_reminder", "event_id": str(row["id"])})
+        await cal_repo.add_reminder_sent(row["id"], "nudge-t7")
+        sent_count += 1
+
     for days, label, recipient, tone in ESCALATIONS:
         target_date = today + timedelta(days=days)
         
