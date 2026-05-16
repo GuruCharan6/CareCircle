@@ -185,6 +185,203 @@ The caregiver is not blamed. The family is not alarmed. The doctor has the infor
 
 ---
 
+## The Harder Questions — And How CareCircle Answers Them
+
+The five scenarios above are the visible problems. Below them are harder design questions about data, trust, agency, and resilience. Here is how CareCircle addresses each one.
+
+---
+
+### On the Nature of the Data
+
+> *Health documents arrive as prescription photos, PDF lab reports, caregiver voice notes, and handwritten instructions. Each format requires different processing. What happens when a prescription photo is blurry or a voice note is in Hindi mixed with English? How does the system know that a piece of information is current vs. superseded?*
+
+**How CareCircle handles it:**
+
+Every document type has a dedicated ingestion path:
+
+| Format | Processor |
+|--------|-----------|
+| Prescription photo / PDF | Google Gemini vision + OCR |
+| Lab report PDF | Gemini structured extraction |
+| Doctor notes | Gemini text + vision |
+| Voice notes (Hindi, Telugu, mixed) | Sarvam AI transcription → then Gemini extraction |
+
+If extraction quality is low (blurry photo, unclear audio), the confidence score is surfaced to the user at review time. Every field shows a confidence badge — green (≥80%), orange (<80%), red (<50%). Low-confidence fields are highlighted for manual correction before approval.
+
+**Staleness is a first-class concern.** Every document has an `event_date` (when the prescription/lab was issued, not when it was uploaded). The system tracks medication validity windows. When a new prescription is approved, it doesn't blindly append — the pipeline checks for superseded medications:
+
+- Same generic name from the same prescriber → duplicate, skipped
+- Same generic name with a different dose → version conflict, flagged for review
+- Medication from 6 months ago with no refill record → flagged as potentially discontinued
+
+The freshness score on the dashboard reflects how current the patient's data actually is. If no new documents have been uploaded in 30 days, the score degrades — the family can see that the picture is becoming outdated.
+
+---
+
+### On Medical Knowledge the System Doesn't Have in the Input
+
+> *The system needs to know that "Amlodipine and Metformin can interact in patients with renal impairment" or "fasting blood sugar above 160 for a Type 2 diabetic on Glimepiride warrants a dosage review." This knowledge is not in the patient's documents. Where does it come from? What happens when the system retrieves something incorrect? How do you calibrate the threshold between alert and no alert?*
+
+**How CareCircle handles it:**
+
+Clinical knowledge is injected at the enrichment layer (Layer 3) of the pipeline. The LLM (Anthropic Claude) is given:
+
+1. The patient's current context: active medications, recent lab values, known conditions
+2. The newly extracted data from the document
+3. A prompt that asks it to reason about clinical implications — not generate free-form medical advice, but identify whether known patterns apply
+
+The output is classified by severity (`alert / watch / inform`) with a required reasoning field. The reasoning is stored — every alert is auditable.
+
+**Calibration against false positives:**
+
+- Every alert carries the disclaimer: *"Flagged by AI — confirm with your prescribing doctor."*
+- `alert` severity requires a push notification. `watch` is dashboard-only. `inform` is silent.
+- Contextual escalation: the system checks lab data before escalating. A renal-cleared drug only triggers a harder alert if creatinine is actually elevated. A glycemic drug only escalates if glucose trends are actually rising.
+- False positives cause alert fatigue. The threshold is conservative. The language is calibrated to inform, not alarm.
+
+---
+
+### On Trust and Confidence
+
+> *When the caregiver says one thing and the patient says another, how does the system represent this conflict? Does it pick a winner? If the system hasn't received any input from the cardiologist since the last visit eight weeks ago, how confident should it be about cardiac health? How does confidence decay over time?*
+
+**How CareCircle handles it:**
+
+**Conflicts are never resolved silently.** The reconciliation layer (Layer 4) classifies conflicts into types:
+
+| Conflict Type | Example | How Handled |
+|--------------|---------|-------------|
+| Observational discrepancy | Caregiver says dizziness, patient says fine | Both preserved, surfaced with lab context |
+| Medication timing mismatch | Prescribed after meals, taken before | `watch` alert, neutral language |
+| Duplicate medication | Same drug from two prescribers | Flagged for review before saving |
+| Lab contradiction | New result contradicts recent trend | Both values shown, trend charted |
+
+**Confidence decay is explicit.** The patient state object carries a `freshness_score` that degrades over time. Indicators:
+
+- `fresh` — data less than 7 days old
+- `aging` — 7–30 days
+- `stale` — 30–90 days
+- `critical` — over 90 days
+
+Each data category (medications, labs, observations) tracks its own staleness independently. The dashboard freshness bar shows the family exactly how current their picture is. If no cardiac data has arrived in 8 weeks, the cardiologist section shows `stale` — the family knows the system's confidence about cardiac health is low.
+
+---
+
+### On Coordination and Agency
+
+> *When the system detects that a blood test needs to be scheduled before a follow-up, who does it notify? What if the family is in a meeting? What if the caregiver doesn't respond? What is the escalation logic? How many decisions can be made automatically, and where must a human be in the loop?*
+
+**How CareCircle handles it:**
+
+**Notification hierarchy:**
+
+1. Primary: in-app dashboard (always)
+2. Push notification (for `alert` severity)
+3. WhatsApp (for all time-sensitive actions: refills, visit reminders, appointment briefings)
+
+**Escalation logic for refills:**
+```
+T-10 days → WhatsApp reminder (level 0)
+T-3 days  → WhatsApp escalation (level 1, marked urgent)
+T-0       → WhatsApp overdue alert (level 2)
+```
+
+**What the system decides automatically vs. what requires a human:**
+
+| Decision | Who Decides |
+|----------|-------------|
+| Flag a drug interaction | System (AI), human confirms with doctor |
+| Create a suggested appointment | System (AI), human confirms with one tap |
+| Send a refill reminder | System (automated) |
+| Schedule a blood test | System suggests, human confirms |
+| Confirm an appointment | Human only |
+| Approve extracted medication data | Human only — always |
+| Enter crisis mode (button) | Human triggers |
+| Enter crisis mode (keyword) | System triggers, family notified immediately |
+
+The line is clear: the system surfaces and suggests. Humans confirm anything that writes to the clinical record or takes a scheduled action.
+
+---
+
+### On Modes of Operation
+
+> *A system that works well for "What medications is Dad taking?" is architecturally different from a system built for "Dad is having chest pain right now." Can one system handle both? How does it know which mode it is in? Should the system wait for a query, or proactively surface information?*
+
+**How CareCircle handles it:**
+
+**Two distinct operating modes:**
+
+**Retrieval mode** (routine queries):
+- Chatbot handles plain-language questions about medications, lab results, appointments, prescribers
+- Semantic search across all documents and observations
+- Intent classification routes to SQL (factual), semantic (document search), or hybrid
+
+**Crisis mode** (emergency response):
+- Triggered by keyword detection or manual button tap
+- Switches immediately to a pre-computed emergency card
+- No database queries during a crisis — card was computed at 2:00 AM
+- The card loads in under a second regardless of network conditions
+
+**Proactive vs. reactive:**
+
+The system is proactive by default. It doesn't wait to be asked:
+- Refills are tracked and reminders sent without any query
+- Pre-visit gaps are detected the moment an appointment is confirmed
+- Morning and evening digests are pushed without the family opening the app
+- Caregiver silence is detected and flagged after N days of no activity
+- Staleness scores degrade in real time — the family sees when the picture is going outdated
+
+The risk of a proactive system that gets it wrong is managed by the severity ladder. Only `alert`-level findings trigger push notifications. `watch` and `inform` sit silently in the dashboard until the family is ready to review.
+
+---
+
+### On Structure and Resilience
+
+> *If the patient starts seeing a neurologist tomorrow with a new stream of data — brain MRI reports, cognitive assessment forms — how much of the system needs to be rewritten? If the caregiver stops sending updates for three days, is that data or the absence of data?*
+
+**How CareCircle handles it:**
+
+**Extensibility:** The pipeline is document-type agnostic at the ingestion layer. Adding a new specialist or document type means:
+- Adding a specialist entry to the gap detection rules table (required pre-visit tests)
+- No changes to the pipeline layers, notification system, or frontend
+
+The drug interaction check, calendar scheduling, and alert system all operate on structured data — they don't care whether it came from a cardiologist or a neurologist.
+
+**Caregiver silence is data.** The silence detector runs as a scheduled job. After N days of no caregiver activity:
+- A `watch` card surfaces in the Needs Attention dashboard
+- An optional re-engagement prompt is sent to the caregiver via WhatsApp
+
+The absence of a caregiver update is treated as information, not just a gap. It degrades the family's confidence score for the observation dimension of patient state. The family can see: *"No caregiver update in 4 days."*
+
+---
+
+### On the Person Reading the Output
+
+> *The primary caregiver checks this at 7 AM before work and at 10 PM when exhausted. They need to know: Is Dad okay? Is anything urgent? What do I need to do? They don't need twelve charts. They don't need a medical journal summary. When the system surfaces a drug interaction, how do you communicate it to someone who is not a pharmacist — without oversimplifying or triggering unnecessary anxiety?*
+
+**How CareCircle handles it:**
+
+**The morning digest is designed for cognitive load, not completeness:**
+- Leads with: Is anything urgent? (alerts first)
+- Follows with: What's coming up? (appointments, visits, refills)
+- Ends with: What's the overall picture? (one-line summary)
+
+Delivered via WhatsApp — readable in 30 seconds while making coffee.
+
+**Alert language is calibrated at three levels:**
+
+| Audience Need | CareCircle Output |
+|--------------|------------------|
+| Is this urgent? | Severity badge: ALERT / WATCH / INFO |
+| What is it? | Plain English: "Glimepiride and Rosuvastatin may interact" |
+| What should I do? | Action: "Review Interaction → " links to detail page |
+| What does it mean clinically? | Detail page: mechanism, severity, what to tell the doctor |
+| Should I be scared? | Disclaimer on every alert: "Flagged by AI — confirm with your prescribing doctor" |
+
+**Uncertainty is always disclosed, never hidden.** If the system hasn't received recent data, the freshness bar shows it. If a field was extracted with low confidence, the review screen shows it. If a conflict between sources couldn't be resolved, both sides are shown with a note explaining the discrepancy. The family is always the final judge — the system gives them the information to make that judgment, not a false sense of certainty.
+
+---
+
 ## Core Features
 
 ### 📄 Document Intelligence
