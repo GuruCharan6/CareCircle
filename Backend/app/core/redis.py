@@ -16,8 +16,8 @@ def make_redis() -> aioredis.Redis:
         settings.redis_url,
         encoding="utf-8",
         decode_responses=True,
-        socket_connect_timeout=0.3,
-        socket_timeout=0.5,
+        socket_connect_timeout=2.0,
+        socket_timeout=3.0,
     )
 
 

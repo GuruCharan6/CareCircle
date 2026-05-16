@@ -58,7 +58,7 @@ class Rule3CaregiverDiscrepancy(BaseRule):
         patient_name = context.patient.name or "the patient"
 
         return [Hypothesis(
-            rule_id="rule_3_caregiver_discrepancy",
+            rule_id="rule_5_caregiver_patient_discrepancy",
             patient_id=context.patient_id,
             trigger_event_type=item.trigger_event_type,
             trigger_event_id=item.ingest.source_document_id,

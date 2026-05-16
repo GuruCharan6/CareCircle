@@ -54,7 +54,7 @@ class Rule1DrugInteraction(BaseRule):
             ) else URGENCY_WATCH
 
             hypotheses.append(Hypothesis(
-                rule_id="rule_1_drug_interaction",
+                rule_id="rule_2_drug_interaction",
                 patient_id=context.patient_id,
                 trigger_event_type=item.trigger_event_type,
                 trigger_event_id=item.ingest.source_document_id,

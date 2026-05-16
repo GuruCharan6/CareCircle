@@ -16,7 +16,7 @@ def _post_event(endpoint: str, params: dict) -> None:
     headers = {"x-internal-secret": settings.internal_secret}
     try:
         # Use a relatively short timeout to avoid blocking the caller too long
-        with httpx.Client(timeout=10.0) as client:
+        with httpx.Client(timeout=30.0) as client:
             resp = client.post(url, params=params, headers=headers)
             resp.raise_for_status()
     except Exception as exc:

@@ -85,7 +85,7 @@ class Rule2LabTrend(BaseRule):
             # Creatinine gets ALERT (renal function is time-sensitive).
             if "creatinine" in test_name.lower() and _exceeds_meaningful_threshold(test_name, delta):
                 hypotheses.append(Hypothesis(
-                    rule_id="rule_2_lab_trend",
+                    rule_id="rule_3_lab_trend",
                     patient_id=context.patient_id,
                     trigger_event_type=item.trigger_event_type,
                     trigger_event_id=item.ingest.source_document_id,
@@ -103,7 +103,7 @@ class Rule2LabTrend(BaseRule):
                 ))
             elif _exceeds_meaningful_threshold(test_name, delta) and is_abnormal:
                 hypotheses.append(Hypothesis(
-                    rule_id="rule_2_lab_trend",
+                    rule_id="rule_3_lab_trend",
                     patient_id=context.patient_id,
                     trigger_event_type=item.trigger_event_type,
                     trigger_event_id=item.ingest.source_document_id,

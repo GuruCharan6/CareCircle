@@ -41,7 +41,7 @@ class Settings(BaseSettings):
     # URLs
     frontend_base_url: str = "https://carecircle.app"   # override in dev: http://localhost:3000
     backend_base_url: str = "https://api.carecircle.app"  # override in dev: http://localhost:8000
-    internal_base_url: str = "https://carecircle-84st.onrender.com"     # used for internal health/task triggers
+    internal_base_url: str = "http://localhost:10000"  # Render internal port; override in dev: http://localhost:8000
     internal_secret: str = ""
 
 
