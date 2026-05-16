@@ -7,9 +7,8 @@ import asyncpg
 
 from app.agents.crisis_mode_agent import CrisisModeAgent
 from app.config import settings
-from app.core.supabase import supabase_admin
 from app.lib.pdf_generator import generate_crisis_pdf
-from app.lib.signed_url import create_signed_view_url
+from app.lib.signed_url import create_signed_view_url, storage_upload
 from app.models.crisis_packet import CrisisPacket
 from app.repositories.caregiver_repository import CaregiverRepository
 from app.repositories.clinical_hypothesis_repository import ClinicalHypothesisRepository
@@ -181,9 +180,7 @@ class CrisisService:
         now_ts = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
         path = f"{patient_id}/crisis_{now_ts}.pdf"
         bucket = settings.supabase_storage_bucket_crisis_pdfs
-        supabase_admin.storage.from_(bucket).upload(
-            path, pdf_bytes, {"content-type": "application/pdf", "upsert": "true"},
-        )
+        storage_upload(bucket, path, pdf_bytes)
         return create_signed_view_url(bucket, path)
 
     async def exit_crisis(

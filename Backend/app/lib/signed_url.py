@@ -1,4 +1,7 @@
+import httpx
+
 from app.core.supabase import supabase_admin
+from app.config import settings
 
 # All storage URLs are signed with expiry — never public permanent URLs.
 # Health data must never be permanently accessible.
@@ -43,3 +46,19 @@ def create_signed_view_url(bucket: str, path: str, expires_in: int = _VIEW_EXPIR
 def delete_file(bucket: str, path: str) -> None:
     """Delete file from Supabase Storage. Used when document rejected."""
     supabase_admin.storage.from_(bucket).remove([path])
+
+
+def storage_upload(bucket: str, path: str, data: bytes, content_type: str = "application/pdf") -> None:
+    """Upload bytes to Supabase Storage using direct HTTP with service role JWT.
+
+    The supabase-py storage SDK does not reliably forward the service role token,
+    causing RLS violations even for admin uploads. Direct httpx call bypasses this.
+    """
+    url = f"{settings.supabase_url}/storage/v1/object/{bucket}/{path}"
+    headers = {
+        "Authorization": f"Bearer {settings.supabase_service_role_key}",
+        "Content-Type": content_type,
+        "x-upsert": "true",
+    }
+    response = httpx.post(url, content=data, headers=headers)
+    response.raise_for_status()

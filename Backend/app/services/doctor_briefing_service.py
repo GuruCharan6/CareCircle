@@ -8,9 +8,8 @@ import asyncpg
 from app.config import settings
 from app.core.exceptions import NotFoundError
 from app.core.logging import get_logger
-from app.core.supabase import supabase_admin
 from app.lib.pdf_generator import generate_doctor_briefing_pdf, generate_medication_list_pdf
-from app.lib.signed_url import create_signed_view_url
+from app.lib.signed_url import create_signed_view_url, storage_upload
 from app.repositories.calendar_event_repository import CalendarEventRepository
 from app.repositories.drug_interaction_repository import DrugInteractionRepository
 from app.repositories.lab_result_repository import LabResultRepository
@@ -179,9 +178,7 @@ class DoctorBriefingService:
         path = f"{patient_id}/medlist_{now_ts}.pdf"
         bucket = settings.supabase_storage_bucket_med_pdfs
 
-        supabase_admin.storage.from_(bucket).upload(
-            path, pdf_bytes, {"content-type": "application/pdf", "upsert": "true"},
-        )
+        storage_upload(bucket, path, pdf_bytes)
         return create_signed_view_url(bucket, path)
 
     async def generate_briefing_pdf_url(self, patient_id: UUID, event_id: UUID) -> str:
@@ -205,9 +202,7 @@ class DoctorBriefingService:
         path = f"{patient_id}/briefing_{event_id}_{now_ts}.pdf"
         bucket = settings.supabase_storage_bucket_med_pdfs
 
-        supabase_admin.storage.from_(bucket).upload(
-            path, pdf_bytes, {"content-type": "application/pdf", "upsert": "true"},
-        )
+        storage_upload(bucket, path, pdf_bytes)
         return create_signed_view_url(bucket, path, expires_in=_BRIEFING_URL_EXPIRY)
 
     # ── Helpers ────────────────────────────────────────────────────────────────

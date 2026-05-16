@@ -9,8 +9,7 @@ import asyncpg
 
 from app.core.logging import get_logger
 from app.lib.pdf_generator import generate_patient_history_pdf
-from app.lib.signed_url import create_signed_view_url, delete_file
-from app.core.supabase import supabase_admin
+from app.lib.signed_url import create_signed_view_url, delete_file, storage_upload
 from app.config import settings
 
 logger = get_logger(__name__)
@@ -355,9 +354,7 @@ class HistoryService:
 
         path = f"{patient_id}/history_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.pdf"
         bucket = settings.supabase_storage_bucket_documents
-        supabase_admin.storage.from_(bucket).upload(
-            path, pdf_bytes, {"content-type": "application/pdf", "upsert": "true"},
-        )
+        storage_upload(bucket, path, pdf_bytes)
 
         signed = create_signed_view_url(bucket, path, download=True)
         return signed

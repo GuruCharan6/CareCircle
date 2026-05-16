@@ -7,7 +7,7 @@ from celery import shared_task
 
 from app.config import settings
 from app.core.logging import get_logger
-from app.core.supabase import supabase_admin
+from app.lib.signed_url import storage_upload
 from app.providers.llm.gemini import GeminiProvider
 from app.providers.transcription.saravam import SaravamClient
 from app.repositories.caregiver_repository import CaregiverRepository
@@ -31,13 +31,9 @@ async def _download_twilio_audio(url: str) -> tuple[bytes, str]:
 
 
 def _upload_to_supabase(audio_bytes: bytes, storage_path: str, content_type: str) -> None:
-    """Upload audio bytes to Supabase Storage (sync — supabase-py is sync)."""
+    """Upload audio bytes to Supabase Storage."""
     bucket = settings.supabase_storage_bucket_documents
-    supabase_admin.storage.from_(bucket).upload(
-        storage_path,
-        audio_bytes,
-        file_options={"content-type": content_type, "upsert": "true"},
-    )
+    storage_upload(bucket, storage_path, audio_bytes, content_type=content_type)
 
 
 async def _async_run(message_id_str: str) -> None:
