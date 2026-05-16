@@ -63,20 +63,30 @@ export function useNotifications() {
     action: "handled" | "ongoing"
   ) => {
     try {
-      const updated = await notificationsApi.acknowledge(patientId, notificationId, { action });
-      setNotifications(prev =>
-        prev.map(n => n.id === notificationId ? updated : n)
-      );
-      // Only decrement if it was previously unread
-      setNotifications(prev => {
-        const wasUnread = prev.find(n => n.id === notificationId)?.is_unread ?? false;
-        if (wasUnread) setUnreadCount(c => Math.max(0, c - 1));
-        return prev;
-      });
+      await notificationsApi.acknowledge(patientId, notificationId, { action });
+      if (action === "handled") {
+        setNotifications(prev => {
+          const target = prev.find(n => n.id === notificationId);
+          if (target?.is_unread) setUnreadCount(c => Math.max(0, c - 1));
+          return prev.filter(n => n.id !== notificationId);
+        });
+      } else {
+        setNotifications(prev =>
+          prev.map(n =>
+            n.id === notificationId
+              ? { ...n, acknowledge_action: "ongoing", acknowledged_at: new Date().toISOString(), is_unread: false }
+              : n
+          )
+        );
+        setUnreadCount(prev => {
+          const wasUnread = notifications.find(n => n.id === notificationId)?.is_unread ?? false;
+          return wasUnread ? Math.max(0, prev - 1) : prev;
+        });
+      }
     } catch (e) {
       console.error("acknowledge failed", e);
     }
-  }, []);
+  }, [notifications]);
 
   /**
    * Start auto-polling for a patient.

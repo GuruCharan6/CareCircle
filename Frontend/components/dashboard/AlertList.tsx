@@ -48,12 +48,24 @@ export function AlertList({
   const [actioningId, setActioningId] = useState<string | null>(null);
 
   const pendingSuggested = suggestedAppointments.filter(a => !confirmedIds.has(a.id));
+  const pendingAppointments = pendingSuggested.filter(a => a.event_type !== "lab_test");
+  const pendingLabTests = pendingSuggested.filter(a => a.event_type === "lab_test");
+
+  // Group lab tests by event_date — same date = one confirm card
+  const labTestGroups: [string, any[]][] = Object.entries(
+    pendingLabTests.reduce<Record<string, any[]>>((acc, a) => {
+      if (!acc[a.event_date]) acc[a.event_date] = [];
+      acc[a.event_date].push(a);
+      return acc;
+    }, {})
+  ).sort(([a], [b]) => a.localeCompare(b));
 
   const totalItems =
     interactions.length +
     refills.length +
     emergencyFollowUps.length +
-    pendingSuggested.length +
+    pendingAppointments.length +
+    labTestGroups.length +
     gapActions.length;
 
   if (totalItems === 0) return null;
@@ -61,20 +73,40 @@ export function AlertList({
   const handleConfirmAppointment = async (eventId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     setActioningId(eventId);
-    // Optimistic: mark confirmed immediately, remove from list
     setConfirmedIds(prev => new Set(prev).add(eventId));
     try {
       await calendarApi.confirm(patientId, eventId);
-      // Fire background refresh without blocking UI
       onActionComplete?.();
     } catch (err) {
-      // Rollback optimistic update on failure
       setConfirmedIds(prev => {
         const next = new Set(prev);
         next.delete(eventId);
         return next;
       });
       console.error("Failed to confirm appointment:", err);
+    } finally {
+      setActioningId(null);
+    }
+  };
+
+  const handleConfirmLabGroup = async (events: any[], groupDate: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setActioningId(groupDate);
+    setConfirmedIds(prev => {
+      const next = new Set(prev);
+      events.forEach(ev => next.add(ev.id));
+      return next;
+    });
+    try {
+      await Promise.all(events.map(ev => calendarApi.confirm(patientId, ev.id)));
+      onActionComplete?.();
+    } catch (err) {
+      setConfirmedIds(prev => {
+        const next = new Set(prev);
+        events.forEach(ev => next.delete(ev.id));
+        return next;
+      });
+      console.error("Failed to confirm lab group:", err);
     } finally {
       setActioningId(null);
     }
@@ -130,50 +162,91 @@ export function AlertList({
           );
         })}
 
-        {/* 2. SUGGESTED APPOINTMENTS & LAB TESTS — need user action, show before passive alerts */}
-        {pendingSuggested.map((a) => {
-          const isLabTest = a.event_type === "lab_test";
-          return (
-            <div
-              key={a.id}
-              className="group flex items-start gap-4 rounded-2xl bg-white border border-slate-100 border-l-4 border-l-blue-500 p-4 shadow-sm"
-            >
-              <div className="p-2.5 rounded-xl bg-blue-50 text-blue-500 shadow-sm group-hover:scale-110 transition-transform">
-                {isLabTest ? <FlaskConical size={20} /> : <CalendarClock size={20} />}
+        {/* 2a. SUGGESTED APPOINTMENTS — one card per event */}
+        {pendingAppointments.map((a) => (
+          <div
+            key={a.id}
+            className="group flex items-start gap-4 rounded-2xl bg-white border border-slate-100 border-l-4 border-l-blue-500 p-4 shadow-sm"
+          >
+            <div className="p-2.5 rounded-xl bg-blue-50 text-blue-500 shadow-sm group-hover:scale-110 transition-transform">
+              <CalendarClock size={20} />
+            </div>
+            <div className="flex-1 min-w-0 space-y-1">
+              <div className="flex items-center justify-between">
+                <h4 className="text-[13px] font-bold text-[#0D3B6E]">{a.title}</h4>
+                <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-blue-100 text-blue-600 uppercase tracking-wider">
+                  Suggested
+                </span>
               </div>
-              <div className="flex-1 min-w-0 space-y-1">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-[13px] font-bold text-[#0D3B6E]">{a.title}</h4>
-                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-blue-100 text-blue-600 uppercase tracking-wider">
-                    {isLabTest ? "Lab Test" : "Suggested"}
-                  </span>
-                </div>
-                <p className="text-[12px] text-slate-500 leading-relaxed font-medium">
-                  {isLabTest
-                    ? `Suggested for ${new Date(a.event_date).toLocaleDateString()}`
-                    : `Follow-up suggested for ${new Date(a.event_date).toLocaleDateString()}`}
-                </p>
-                <div className="flex items-center gap-3 mt-3">
-                  <Button
-                    size="sm"
-                    className="h-8 bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-4 gap-1.5 shadow-sm transition-all active:scale-95"
-                    onClick={(e) => handleConfirmAppointment(a.id, e)}
-                    loading={actioningId === a.id}
-                  >
-                    <Check size={14} />
-                    Confirm
-                  </Button>
-                  <button
-                    onClick={() => router.push('/calendar')}
-                    className="text-[11px] font-bold text-slate-400 hover:text-slate-600 transition-colors"
-                  >
-                    View Details
-                  </button>
-                </div>
+              <p className="text-[12px] text-slate-500 leading-relaxed font-medium">
+                Follow-up suggested for {new Date(a.event_date).toLocaleDateString()}
+              </p>
+              <div className="flex items-center gap-3 mt-3">
+                <Button
+                  size="sm"
+                  className="h-8 bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-4 gap-1.5 shadow-sm transition-all active:scale-95"
+                  onClick={(e) => handleConfirmAppointment(a.id, e)}
+                  loading={actioningId === a.id}
+                >
+                  <Check size={14} />
+                  Confirm
+                </Button>
+                <button
+                  onClick={() => router.push('/calendar')}
+                  className="text-[11px] font-bold text-slate-400 hover:text-slate-600 transition-colors"
+                >
+                  View Details
+                </button>
               </div>
             </div>
-          );
-        })}
+          </div>
+        ))}
+
+        {/* 2b. SUGGESTED LAB TESTS — grouped by date, one card per date */}
+        {labTestGroups.map(([date, tests]) => (
+          <div
+            key={date}
+            className="group flex items-start gap-4 rounded-2xl bg-white border border-slate-100 border-l-4 border-l-amber-500 p-4 shadow-sm"
+          >
+            <div className="p-2.5 rounded-xl bg-amber-50 text-amber-500 shadow-sm group-hover:scale-110 transition-transform">
+              <FlaskConical size={20} />
+            </div>
+            <div className="flex-1 min-w-0 space-y-1">
+              <div className="flex items-center justify-between">
+                <h4 className="text-[13px] font-bold text-[#0D3B6E]">
+                  {tests.length === 1 ? "Lab Test" : `${tests.length} Lab Tests`} · {new Date(date).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                </h4>
+                <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-100 text-amber-600 uppercase tracking-wider">
+                  Lab Test
+                </span>
+              </div>
+              <ul className="space-y-0.5 mt-1">
+                {tests.map((t: any) => (
+                  <li key={t.id} className="text-[12px] text-slate-500 font-medium">
+                    · {t.title.replace(/^Lab Test:\s*/i, "")}
+                  </li>
+                ))}
+              </ul>
+              <div className="flex items-center gap-3 mt-3">
+                <Button
+                  size="sm"
+                  className="h-8 bg-amber-500 hover:bg-amber-600 text-white rounded-lg px-4 gap-1.5 shadow-sm transition-all active:scale-95"
+                  onClick={(e) => handleConfirmLabGroup(tests, date, e)}
+                  loading={actioningId === date}
+                >
+                  <Check size={14} />
+                  {tests.length === 1 ? "Confirm" : "Confirm All"}
+                </Button>
+                <button
+                  onClick={() => router.push('/calendar')}
+                  className="text-[11px] font-bold text-slate-400 hover:text-slate-600 transition-colors"
+                >
+                  View Details
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
 
         {/* 3. DRUG INTERACTIONS */}
         {interactions.map((i) => {

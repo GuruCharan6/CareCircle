@@ -5,7 +5,6 @@ import {
   Bell,
   Calendar,
   CheckCircle2,
-  Clock,
   Pill,
   RefreshCw,
   Stethoscope,
@@ -71,16 +70,17 @@ function getIconConfig(type: string, isUnread: boolean): IconConfig {
 export function NotifItem({ notification, patientId, onAcknowledge, onCrisisFollowUp, onMarkRead }: Props) {
   const router = useRouter();
   const isUnread = notification.is_unread;
-  const needsAck = notification.requires_acknowledge && isUnread && !notification.acknowledged_at;
   const { icon: Icon, bg, text, dot } = getIconConfig(notification.type, isUnread);
 
   const unactioned = !notification.acknowledged_at;
-  const canAddNote = unactioned && (notification.type === "watch_event_card" || notification.type === "crisis_follow_up");
+  const canAddNote = unactioned && notification.type === "crisis_follow_up";
   const canAddToCalendar = isUnread && notification.type === "calendar_reminder" && unactioned;
   const canMarkRefilled = isUnread && notification.type === "refill_reminder" && unactioned;
   const canUpload = isUnread && (notification.type === "staleness_notice" || notification.type === "gap_reminder");
+  // All unacknowledged notifications that don't have a specific action button show Handled
+  const canShowHandled = unactioned && !canAddNote && !canAddToCalendar && !canMarkRefilled && !canUpload;
 
-  const showUnreadDot = isUnread && !needsAck && !canAddNote && !canAddToCalendar && !canMarkRefilled && !canUpload;
+  const showUnreadDot = isUnread && !canShowHandled && !canAddNote && !canAddToCalendar && !canMarkRefilled && !canUpload;
 
   return (
     <div
@@ -119,24 +119,15 @@ export function NotifItem({ notification, patientId, onAcknowledge, onCrisisFoll
           {notification.body}
         </p>
 
-        {/* Acknowledge buttons */}
-        {needsAck && onAcknowledge && (
-          <div className="flex gap-2 mt-2">
-            <button
-              onClick={e => { e.stopPropagation(); onAcknowledge(notification.id, "handled"); }}
-              className="flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 hover:bg-green-200 transition-colors"
-            >
-              <CheckCircle2 size={11} />
-              Handled
-            </button>
-            <button
-              onClick={e => { e.stopPropagation(); onAcknowledge(notification.id, "ongoing"); }}
-              className="flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-700 hover:bg-orange-200 transition-colors"
-            >
-              <Clock size={11} />
-              Still ongoing
-            </button>
-          </div>
+        {/* Handled button — all non-specific-action notifications */}
+        {canShowHandled && onAcknowledge && (
+          <button
+            onClick={e => { e.stopPropagation(); onAcknowledge(notification.id, "handled"); }}
+            className="mt-2 flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 hover:bg-green-200 transition-colors"
+          >
+            <CheckCircle2 size={11} />
+            Handled
+          </button>
         )}
 
         {canAddNote && onCrisisFollowUp && (
@@ -190,15 +181,10 @@ export function NotifItem({ notification, patientId, onAcknowledge, onCrisisFoll
           </button>
         )}
 
-        {notification.acknowledged_at && (
+        {notification.acknowledged_at && notification.acknowledge_action === "ongoing" && (
           <div className="mt-1.5">
-            <span className={cn(
-              "text-[10px] font-medium px-2 py-0.5 rounded-full",
-              notification.acknowledge_action === "handled"
-                ? "bg-green-100 text-green-600"
-                : "bg-orange-100 text-orange-600"
-            )}>
-              {notification.acknowledge_action === "handled" ? "✓ Handled" : "⚠ Ongoing"}
+            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-orange-100 text-orange-600">
+              ⚠ Ongoing
             </span>
           </div>
         )}

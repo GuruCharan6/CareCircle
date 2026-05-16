@@ -1,26 +1,18 @@
 import Link from "next/link";
 import { useEffect } from "react";
-import { FlaskConical, ChevronRight, AlertTriangle, TrendingUp, TrendingDown, Minus } from "lucide-react";
-import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
+import { FlaskConical, ChevronRight, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { Card } from "@/components/ui/Card";
 import { useLabResults } from "@/hooks/useLabResults";
 
 interface LabSummaryRowProps {
   patientId: string;
 }
 
-function StatusDot({ abnormal }: { abnormal: boolean }) {
-  return (
-    <span
-      className={`w-2 h-2 rounded-full shrink-0 ${abnormal ? "bg-red-500" : "bg-emerald-500"}`}
-    />
-  );
-}
-
 function DeltaIcon({ delta }: { delta: number | null }) {
-  if (delta === null) return <Minus size={12} className="text-slate-400" />;
-  if (delta > 0) return <TrendingUp size={12} className="text-red-400" />;
-  if (delta < 0) return <TrendingDown size={12} className="text-emerald-500" />;
-  return <Minus size={12} className="text-slate-400" />;
+  if (delta === null) return null;
+  if (delta > 0) return <TrendingUp size={11} className="text-red-400" />;
+  if (delta < 0) return <TrendingDown size={11} className="text-emerald-500" />;
+  return <Minus size={11} className="text-slate-400" />;
 }
 
 export function LabSummaryRow({ patientId }: LabSummaryRowProps) {
@@ -31,67 +23,90 @@ export function LabSummaryRow({ patientId }: LabSummaryRowProps) {
   }, [patientId, fetch]);
 
   // Deduplicate by test_name — keep most recent per test
-  const recentByTest = Object.values(
-    results.reduce<Record<string, typeof results[0]>>((acc, r) => {
-      const prev = acc[r.test_name];
-      if (!prev || new Date(r.test_date) > new Date(prev.test_date)) {
-        acc[r.test_name] = r;
-      }
-      return acc;
-    }, {})
-  )
+  const byTest = results.reduce<Record<string, typeof results[0]>>((acc, r) => {
+    const prev = acc[r.test_name];
+    if (!prev || new Date(r.test_date) > new Date(prev.test_date)) {
+      acc[r.test_name] = r;
+    }
+    return acc;
+  }, {});
+
+  // Merge blood_pressure_systolic + blood_pressure_diastolic → single "Blood Pressure" row
+  const systolic = byTest["blood_pressure_systolic"];
+  const diastolic = byTest["blood_pressure_diastolic"];
+  const mergedRows = Object.values(byTest).filter(
+    r => r.test_name !== "blood_pressure_systolic" && r.test_name !== "blood_pressure_diastolic"
+  );
+  if (systolic || diastolic) {
+    const bpDisplay = systolic && diastolic
+      ? `${systolic.value}/${diastolic.value}`
+      : `${(systolic ?? diastolic!).value}`;
+    mergedRows.push({
+      ...(systolic ?? diastolic!),
+      test_name: "blood_pressure",
+      test_name_display: "Blood Pressure",
+      value: systolic?.value ?? diastolic!.value,
+      unit: "mmHg",
+      is_abnormal: (systolic?.is_abnormal || diastolic?.is_abnormal) ?? false,
+      delta_from_prev: systolic?.delta_from_prev ?? null,
+      _bp_display: bpDisplay,
+    } as any);
+  }
+
+  const recentByTest = mergedRows
     .sort((a, b) => new Date(b.test_date).getTime() - new Date(a.test_date).getTime())
     .slice(0, 5);
 
-  return (
-    <Card className="border-0 shadow-lg overflow-hidden bg-white/50 backdrop-blur-sm">
-      <CardHeader className="flex flex-row items-center justify-between pb-4">
-        <div className="flex items-center gap-2">
-          <div className="p-1.5 rounded-lg bg-teal-50 text-teal-600">
-            <FlaskConical size={18} />
-          </div>
-          <CardTitle className="text-[16px] font-bold text-[#0D3B6E]">Lab Results</CardTitle>
+  if (loading) {
+    return (
+      <Card title="Lab Results" padding="sm">
+        <div className="animate-pulse space-y-2">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="h-10 bg-[var(--color-bg)] rounded-lg" />
+          ))}
         </div>
-        <Link
-          href="/lab-results"
-          className="flex items-center gap-1 text-xs text-[var(--color-action)] font-semibold hover:underline"
-        >
-          View all <ChevronRight size={13} />
-        </Link>
-      </CardHeader>
+      </Card>
+    );
+  }
 
-      <div className="px-4 lg:px-6 pb-4 lg:pb-6 space-y-2 max-h-[272px] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent hover:scrollbar-thumb-slate-400">
-        {loading ? (
-          <div className="space-y-2">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="h-12 rounded-xl bg-slate-100 animate-pulse" />
-            ))}
-          </div>
-        ) : recentByTest.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-8 gap-2 text-center">
-            <FlaskConical size={28} className="text-slate-300" />
-            <p className="text-[13px] font-medium text-slate-400">No lab results yet</p>
-            <p className="text-[11px] text-slate-400">Upload a lab report to see results here</p>
+  return (
+    <Card
+      title="Lab Results"
+      padding="none"
+      headerAction={
+        <Link href="/lab-results" className="text-xs text-[var(--color-action)] font-medium hover:underline flex items-center gap-0.5">
+          View all <ChevronRight size={12} />
+        </Link>
+      }
+    >
+      <div className="divide-y divide-[var(--color-surface)]">
+        {recentByTest.length === 0 ? (
+          <div className="px-4 py-8 text-center flex flex-col items-center gap-2">
+            <FlaskConical size={28} className="text-[var(--color-border)]" />
+            <p className="text-sm text-[var(--color-muted)]">No lab results yet</p>
+            <p className="text-xs text-[var(--color-muted)]">Upload a lab report to see results here</p>
           </div>
         ) : (
-          recentByTest.map((r) => (
-            <div
-              key={r.id}
-              className="flex items-center gap-3 rounded-xl bg-white border border-slate-100 px-3 py-2.5 shadow-sm"
-            >
-              <StatusDot abnormal={r.is_abnormal} />
+          recentByTest.map(r => (
+            <div key={r.id} className="px-4 py-3 flex items-center gap-3 hover:bg-[var(--color-bg)] transition-colors">
+              <div className="p-2 rounded-lg bg-[var(--color-surface)]">
+                <FlaskConical size={16} className="text-[var(--color-action)]" />
+              </div>
               <div className="flex-1 min-w-0">
-                <p className="text-[12px] font-bold text-[#0D3B6E] truncate">{r.test_name_display}</p>
-                <p className="text-[11px] text-slate-400">
+                <p className="text-sm font-semibold text-[var(--color-text)] truncate">
+                  {r.test_name_display}
+                </p>
+                <p className="text-[10px] text-[var(--color-muted)] truncate">
                   {new Date(r.test_date).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "2-digit" })}
+                  {r.is_abnormal && " • Abnormal"}
                 </p>
               </div>
               <div className="flex items-center gap-1 shrink-0">
                 <DeltaIcon delta={r.delta_from_prev} />
-                <span className={`text-[13px] font-bold ${r.is_abnormal ? "text-red-600" : "text-emerald-700"}`}>
-                  {r.value}
+                <span className={`text-sm font-semibold ${r.is_abnormal ? "text-red-600" : "text-[var(--color-text)]"}`}>
+                  {(r as any)._bp_display ?? r.value}
                 </span>
-                {r.unit && <span className="text-[10px] text-slate-400">{r.unit}</span>}
+                {r.unit && <span className="text-[10px] text-[var(--color-muted)]">{r.unit}</span>}
               </div>
             </div>
           ))
