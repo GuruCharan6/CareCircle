@@ -94,28 +94,41 @@ export function AlertList({
 
       <div className="space-y-3 px-4 lg:px-6 pb-4 lg:pb-6 max-h-[272px] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent hover:scrollbar-thumb-slate-400">
 
-        {/* 1. EMERGENCY FOLLOW-UPS — highest priority */}
-        {emergencyFollowUps.map((e) => (
-          <div
-            key={e.id}
-            onClick={() => onEmergencyFollowUp?.(e.id)}
-            className="group flex items-start gap-4 rounded-2xl bg-rose-50/50 border border-rose-100 border-l-4 border-l-rose-500 p-4 shadow-sm cursor-pointer hover:bg-rose-50 transition-colors"
-          >
-            <div className="p-2.5 rounded-xl bg-white text-rose-500 shadow-sm group-hover:scale-110 transition-transform">
-              <Siren size={20} />
-            </div>
-            <div className="flex-1 min-w-0 space-y-1">
-              <div className="flex items-center justify-between">
-                <h4 className="text-[14px] font-bold text-rose-900">Emergency Follow-up</h4>
-                <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-rose-500 text-white uppercase tracking-wider">Urgent</span>
+        {/* 1. WATCH EVENT CARDS — crisis follow-ups and health observations */}
+        {emergencyFollowUps.map((e) => {
+          const isCrisis = e.title === "After the emergency";
+          return (
+            <div
+              key={e.id}
+              onClick={() => onEmergencyFollowUp?.(e.id)}
+              className={`group flex items-start gap-4 rounded-2xl border border-l-4 p-4 shadow-sm cursor-pointer transition-colors ${
+                isCrisis
+                  ? "bg-rose-50/50 border-rose-100 border-l-rose-500 hover:bg-rose-50"
+                  : "bg-amber-50/50 border-amber-100 border-l-amber-500 hover:bg-amber-50"
+              }`}
+            >
+              <div className={`p-2.5 rounded-xl bg-white shadow-sm group-hover:scale-110 transition-transform ${isCrisis ? "text-rose-500" : "text-amber-500"}`}>
+                {isCrisis ? <Siren size={20} /> : <AlertTriangle size={20} />}
               </div>
-              <p className="text-[12px] text-rose-700 leading-relaxed font-medium">{e.body}</p>
-              <div className="flex items-center gap-1.5 text-[11px] font-bold text-rose-600 mt-2">
-                Click to add note <ChevronRight size={14} />
+              <div className="flex-1 min-w-0 space-y-1">
+                <div className="flex items-center justify-between gap-2">
+                  <h4 className={`text-[13px] font-bold leading-snug ${isCrisis ? "text-rose-900" : "text-amber-900"}`}>
+                    {e.title}
+                  </h4>
+                  <span className={`shrink-0 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${
+                    isCrisis ? "bg-rose-500 text-white" : "bg-amber-100 text-amber-700"
+                  }`}>
+                    {isCrisis ? "Urgent" : "Watch"}
+                  </span>
+                </div>
+                <p className={`text-[12px] leading-relaxed font-medium ${isCrisis ? "text-rose-700" : "text-amber-800"}`}>{e.body}</p>
+                <div className={`flex items-center gap-1.5 text-[11px] font-bold mt-2 ${isCrisis ? "text-rose-600" : "text-amber-600"}`}>
+                  {isCrisis ? "Click to add note" : "View details"} <ChevronRight size={14} />
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
 
         {/* 2. SUGGESTED APPOINTMENTS & LAB TESTS — need user action, show before passive alerts */}
         {pendingSuggested.map((a) => {

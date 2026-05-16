@@ -52,21 +52,36 @@ function Highlight({ text, query }: { text: string; query?: string }) {
 function getDocTitle(doc: DocumentListItem): string {
   const type = TYPE_LABEL[doc.document_type];
   const data = doc.extracted_data as any;
-  if (data) {
-    if (doc.document_type === "prescription") {
-      let docName = data.prescriber_name || data.doctor_name || data.doctor || data.prescriber || data.physician;
-      if (!docName && Array.isArray(data.medications) && data.medications.length > 0) {
-        docName = data.medications[0].prescriber_name;
-      }
-      if (docName) {
-        const cleanName = docName.toLowerCase().startsWith("dr") ? docName : `Dr. ${docName}`;
-        return `${type} — ${cleanName}`;
-      }
-    } else if (doc.document_type === "lab_report") {
-      const facility = data.lab_name || data.hospital_name || data.facility_name || data.clinic_name || data.hospital || data.lab || data.facility;
-      if (facility) return `${type} — ${facility}`;
+  if (!data) return type;
+
+  const looksLikePrescription =
+    doc.document_type === "prescription" ||
+    (doc.document_type === "other" && (data.prescriber_name || data.doctor_name || (Array.isArray(data.medications) && data.medications.length > 0)));
+
+  const looksLikeLabReport =
+    doc.document_type === "lab_report" ||
+    (doc.document_type === "other" && (data.lab_name || data.hospital_name) && Array.isArray(data.results) && data.results.length > 0);
+
+  if (looksLikePrescription) {
+    let docName = data.prescriber_name || data.doctor_name || data.doctor || data.prescriber || data.physician;
+    if (!docName && Array.isArray(data.medications) && data.medications.length > 0) {
+      docName = data.medications[0].prescriber_name;
     }
+    const label = doc.document_type === "other" ? "Prescription" : type;
+    if (docName) {
+      const cleanName = docName.toLowerCase().startsWith("dr") ? docName : `Dr. ${docName}`;
+      return `${label} — ${cleanName}`;
+    }
+    return label;
   }
+
+  if (looksLikeLabReport) {
+    const facility = data.lab_name || data.hospital_name || data.facility_name || data.clinic_name || data.hospital || data.lab || data.facility;
+    const label = doc.document_type === "other" ? "Lab Report" : type;
+    if (facility) return `${label} — ${facility}`;
+    return label;
+  }
+
   return type;
 }
 
@@ -107,8 +122,8 @@ export function DocTable({ documents, searchTerm, onSelect, onDelete, onViewOrig
   return (
     <div className="w-full min-h-[400px]">
       {/* ── Mobile card list ─────────────────────────────── */}
-      <div className="lg:hidden bg-white rounded-2xl border border-[rgba(0,0,0,0.06)] shadow-[0_1px_3px_rgba(0,0,0,0.08)] divide-y divide-[var(--color-border)] overflow-hidden">
-        {documents.map(doc => {
+      <div className="lg:hidden bg-white rounded-2xl border border-[rgba(0,0,0,0.06)] shadow-[0_1px_3px_rgba(0,0,0,0.08)] divide-y divide-[var(--color-border)]">
+        {documents.map((doc, idx) => {
           const Icon = TYPE_ICON[doc.document_type];
           const title = getDocTitle(doc);
           const date = new Date(doc.event_date || doc.created_at || Date.now()).toLocaleDateString("en-GB", {
@@ -120,7 +135,7 @@ export function DocTable({ documents, searchTerm, onSelect, onDelete, onViewOrig
           return (
             <div
               key={doc.id}
-              className="flex items-start gap-3 px-4 py-3.5 hover:bg-[var(--color-bg)]/50 active:bg-[var(--color-bg)] transition-colors cursor-pointer"
+              className={`flex items-start gap-3 px-4 py-3.5 hover:bg-[var(--color-bg)]/50 active:bg-[var(--color-bg)] transition-colors cursor-pointer relative${idx === 0 ? " rounded-t-2xl" : ""}${idx === documents.length - 1 ? " rounded-b-2xl" : ""}`}
               onClick={() => onSelect?.(doc)}
             >
               {/* File icon */}
