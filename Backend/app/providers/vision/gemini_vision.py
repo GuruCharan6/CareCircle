@@ -165,9 +165,15 @@ Return a JSON object with this exact structure:
   }
 }
 
-Rules:
+Classification rules for document_type_guess:
+- "prescription": Document primarily lists medications with drug names, doses, and frequency/duration — even if handwritten. Rx symbol or a medication table is a strong signal. A doctor's note that also prescribes medicines is STILL a "prescription".
+- "lab_report": Document shows laboratory test results with numeric values, units, and reference ranges from a diagnostic lab.
+- "doctor_note": Document records clinical observations, diagnosis, examination findings, or treatment plan WITHOUT a formal medication list (no drug names with doses).
+- "handwritten_note": Informal handwritten personal notes not fitting the above categories.
+
+Extraction rules:
+- For "results" in a prescription or doctor_note: only include tests/investigations the doctor is ORDERING for the patient to do in the FUTURE. Do NOT include vitals recorded at this visit (BP, HR, SpO2, weight, temperature).
 - Extract ALL medications listed, even if only mentioned in passing.
-- For lab results: only include tests ordered for the FUTURE (not vitals recorded today).
 - If a field is not present, set it to null.
 - Return ONLY valid JSON. No prose, no markdown.
 """

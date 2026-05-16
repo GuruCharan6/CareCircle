@@ -59,11 +59,7 @@ def _to_gemini_tools(tools: list[dict]) -> list[types.Tool]:
 class GeminiProvider(LLMProvider):
     def __init__(self, model: str | None = None) -> None:
         self._client = genai.Client(api_key=settings.gemini_api_key)
-        # text-embedding-004 requires v1 API; google-genai SDK defaults to v1beta
-        self._embed_client = genai.Client(
-            api_key=settings.gemini_api_key,
-            http_options=types.HttpOptions(api_version="v1"),
-        )
+        self._embed_client = genai.Client(api_key=settings.gemini_api_key)
         self._embedding_model = "text-embedding-004"
         self._model = model or settings.gemini_model
 
