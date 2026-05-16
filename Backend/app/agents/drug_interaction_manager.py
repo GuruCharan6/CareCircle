@@ -31,7 +31,7 @@ _GLYCEMIC_DRUGS = frozenset({
     "glimepiride", "glibenclamide", "glyburide", "glipizide",
     "insulin", "repaglinide", "nateglinide", "pioglitazone",
     "dapagliflozin", "empagliflozin", "voglibose", "acarbose",
-    "sitagliptin", "vildagliptin",
+    "sitagliptin", "vildagliptin", "teneligliptin",
 })
 
 
@@ -52,8 +52,9 @@ class DrugInteractionManager:
       1. Load all active medications for patient.
       2. For each pair: cache check (skip if checked within 30 days).
       3. Fan out uncached pairs to DrugPairWorker via asyncio.gather (LLM calls parallel).
-      4. Apply lab-value modifiers (creatinine, glucose trend) to each result.
-      5. Store all results. Emit alert notification for confirmed+high severity.
+      4. Filter out LOW severity interactions.
+      5. Apply lab-value modifiers (creatinine, glucose trend) to each result.
+      6. Store all results. Emit alert notification for confirmed+high severity.
 
     DB operations remain sequential on the single connection.
     Only LLM calls are parallelised.
@@ -72,6 +73,7 @@ class DrugInteractionManager:
         """
         Check unique medication generic-name pairs for this patient.
         Returns list of DrugPairResult for pairs that were actually checked (cache misses).
+        Filters out LOW severity interactions before storage.
         """
         all_meds = await self._med_repo.get_active_by_patient(patient_id)
         if len(all_meds) < 2:
@@ -137,7 +139,23 @@ class DrugInteractionManager:
         )
 
         # All LLM calls execute in parallel
-        results: list[DrugPairResult] = await asyncio.gather(*check_coroutines)
+        raw_results: list[DrugPairResult | None] = await asyncio.gather(*check_coroutines)
+
+        # ═══════════════════════════════════════════════════════════
+        # FILTER: Remove None (from worker) and LOW severity results
+        # ═══════════════════════════════════════════════════════════
+        results = [
+            r for r in raw_results 
+            if r is not None and r.severity != "low"
+        ]
+
+        logger.info(
+            "drug_interaction_manager.post_filter",
+            patient_id=str(patient_id),
+            total_checked=len(check_coroutines),
+            filtered_out=len(check_coroutines) - len(results),
+            after_filter=len(results),
+        )
 
         # Apply modifiers + store sequentially (single DB connection)
         stored: list[DrugPairResult] = []

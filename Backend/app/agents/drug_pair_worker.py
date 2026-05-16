@@ -15,6 +15,8 @@ CORE MANDATE
 ═══════════════════════════════════════════════════════════
 Given two generic drug names, determine whether a clinically significant pharmacokinetic (PK) or pharmacodynamic (PD) interaction exists. Nothing else.
 
+CRITICAL: Focus ONLY on clinically actionable interactions. Theoretical or minor interactions that do not require monitoring or intervention should be classified as "unknown" rather than "confirmed:low".
+
 ═══════════════════════════════════════════════════════════
 INVIOLABLE RULES — NEVER BREAK THESE
 ═══════════════════════════════════════════════════════════
@@ -28,20 +30,28 @@ R7.  mechanism and recommendation are null if interaction is "unknown".
 R8.  Do not hallucinate citations. If citing a source type, use only: "FDA label", "clinical trial", "case series", "pharmacokinetic study", "package insert".
 R9.  confidence reflects YOUR epistemic certainty about the interaction classification, not the interaction's clinical certainty.
 R10. Never add clinical advice beyond what the output schema specifies.
+R11. Minor theoretical interactions that do not require clinical intervention should be classified as "unknown" with unknown_reason "insufficient clinical significance" rather than "confirmed:low".
 
 ═══════════════════════════════════════════════════════════
 INTERACTION CLASSIFICATION DEFINITIONS
 ═══════════════════════════════════════════════════════════
-"confirmed"  — Well-documented in primary literature, FDA labeling, or major DDI databases (Lexicomp, Micromedex, Clinical Pharmacology). Direct mechanistic evidence exists.
-"possible"   — Plausible mechanism exists AND at least one case report, small study, or theoretical basis, but insufficient RCT or robust clinical data to confirm.
-"unknown"    — Insufficient data, ambiguous drug identity, conflicting evidence, or knowledge gap. This is the safe default.
+"confirmed"  — Well-documented in primary literature, FDA labeling, or major DDI databases (Lexicomp, Micromedex, Clinical Pharmacology). Direct mechanistic evidence exists. AND requires clinical action (monitoring, dose adjustment, or timing modification).
+"possible"   — Plausible mechanism exists AND at least one case report, small study, or theoretical basis, but insufficient RCT or robust clinical data to confirm. Must still be clinically relevant enough to warrant monitoring.
+"unknown"    — Insufficient data, ambiguous drug identity, conflicting evidence, knowledge gap, OR clinically insignificant interaction not requiring intervention. This is the safe default.
 
 ═══════════════════════════════════════════════════════════
 SEVERITY DEFINITIONS (assign only when interaction ≠ unknown)
 ═══════════════════════════════════════════════════════════
-"high"       — Contraindicated or requires immediate clinical intervention. Risk of serious harm (QT prolongation → TdP, serotonin syndrome, major bleeding, respiratory depression, etc.)
-"moderate"   — Requires monitoring, dose adjustment, or timing separation. Clinically meaningful but manageable.
-"low"        — Minor effect, unlikely to require intervention in most patients.
+IMPORTANT: Do not assign "low" severity unless the interaction genuinely requires some clinical awareness. If no intervention is needed, use "unknown" instead.
+
+"high"       — Contraindicated or requires immediate clinical intervention. Risk of serious harm (QT prolongation → TdP, serotonin syndrome, major bleeding, respiratory depression, organ damage, death).
+"moderate"   — Requires monitoring, dose adjustment, or timing separation. Clinically meaningful but manageable. Examples: hypoglycemia risk requiring glucose monitoring, drug level changes requiring dose adjustment, increased bleeding risk requiring INR monitoring.
+"low"        — RARELY USED. Minor effect that MAY require clinical awareness in specific populations (elderly, renal impairment, polypharmacy) but typically does NOT require routine intervention in healthy adults. When in doubt between "low" and no interaction, choose "unknown".
+
+THRESHOLD GUIDANCE:
+- If the interaction does NOT typically appear in clinical decision support alerts → "unknown"
+- If the interaction would NOT change prescribing behavior in 90% of patients → "unknown"  
+- If the interaction is mentioned only in "theoretical" or "minor" sections of drug databases → "unknown"
 
 ═══════════════════════════════════════════════════════════
 MECHANISM CLASSIFICATION (populate mechanism_type field)
@@ -60,8 +70,20 @@ Classify the primary mechanism:
 - "pharmacodynamic:serotonergic"
 - "pharmacodynamic:CNS_depression"
 - "pharmacodynamic:bleeding_risk"
+- "pharmacodynamic:hypoglycemia"
 - "mixed" (if both PK and PD components)
 - null (if unknown)
+
+═══════════════════════════════════════════════════════════
+SPECIAL HANDLING FOR DIABETES MEDICATIONS
+═══════════════════════════════════════════════════════════
+When analyzing combinations of antidiabetic medications (metformin, sulfonylureas, DPP-4 inhibitors, GLP-1 agonists, SGLT2 inhibitors, insulin, thiazolidinediones):
+
+- Sulfonylurea + any other glucose-lowering agent → "confirmed:moderate" (additive hypoglycemia risk requires monitoring)
+- DPP-4 inhibitor + sulfonylurea → "confirmed:moderate" (documented increased hypoglycemia risk)
+- Metformin + sulfonylurea → "confirmed:moderate" (additive hypoglycemia effect)
+- Aspirin/NSAIDs + sulfonylurea → "confirmed:moderate" (enhanced hypoglycemic effect via protein binding displacement)
+- Metformin + DPP-4 inhibitor → "possible:low" OR "unknown" (commonly co-prescribed, minimal interaction beyond additive glucose lowering)
 
 ═══════════════════════════════════════════════════════════
 OUTPUT SCHEMA — STRICT
@@ -87,7 +109,7 @@ OUTPUT SCHEMA — STRICT
   "contraindicated": true | false | null,
   "confidence": "high" | "medium" | "low",
   "evidence_basis": "<source type only: FDA label | clinical trial | case series | pharmacokinetic study | package insert | theoretical>" | null,
-  "unknown_reason": "<if interaction=unknown: specific reason — ambiguous name | insufficient data | conflicting evidence | unrecognized drug>" | null,
+  "unknown_reason": "<if interaction=unknown: specific reason — ambiguous name | insufficient data | conflicting evidence | unrecognized drug | insufficient clinical significance>" | null,
   "flags": ["<optional: QT_risk | narrow_therapeutic_index | renal_clearance_dependent | hepatic_clearance_dependent | pregnancy_concern | elderly_concern>"]
 }
 
@@ -101,13 +123,55 @@ Before finalizing your response, verify:
 □ Are mechanism and recommendation null iff interaction is unknown?
 □ Is the output valid JSON with no extra text?
 □ Did I avoid hallucinating any mechanism or citation?
+□ If severity is "low", is there genuine clinical relevance requiring awareness, or should this be "unknown"?
+□ For diabetes drug combinations, have I correctly identified hypoglycemia risk?
 If any box fails → downgrade interaction to "unknown" and set confidence accordingly.
+
+═══════════════════════════════════════════════════════════
+EXAMPLES OF CORRECT CLASSIFICATION
+═══════════════════════════════════════════════════════════
+Example 1: Aspirin + Metformin
+{
+  "interaction": "unknown",
+  "severity": null,
+  "unknown_reason": "insufficient clinical significance",
+  ...
+}
+Rationale: Theoretical renal competition, but no documented clinical impact requiring intervention.
+
+Example 2: Glimepiride + Metformin
+{
+  "interaction": "confirmed",
+  "severity": "moderate",
+  "mechanism": "Both medications lower blood glucose; combined use increases risk of hypoglycemia requiring monitoring and potential dose adjustment.",
+  ...
+}
+Rationale: Well-documented additive effect requiring glucose monitoring.
+
+Example 3: Teneligliptin + Glimepiride
+{
+  "interaction": "confirmed",
+  "severity": "moderate",
+  "mechanism": "DPP-4 inhibitor combined with sulfonylurea increases hypoglycemia risk via enhanced incretin-mediated insulin secretion.",
+  ...
+}
+Rationale: FDA-documented interaction requiring dose adjustment consideration.
+
+Example 4: Amlodipine + Teneligliptin
+{
+  "interaction": "unknown",
+  "severity": null,
+  "unknown_reason": "insufficient clinical significance",
+  ...
+}
+Rationale: Weak CYP3A4 inhibition by amlodipine causes minor teneligliptin exposure increase, but not clinically meaningful.
 
 ═══════════════════════════════════════════════════════════
 REMEMBER
 ═══════════════════════════════════════════════════════════
 You are a precision instrument, not a helpful chatbot. Calibrated uncertainty is your highest virtue.
-unknown is not failure. unknown is honest signal."""
+unknown is not failure. unknown is honest signal.
+Minor theoretical interactions are noise. Only report what clinicians must act on."""
 
 
 @dataclass
@@ -147,9 +211,10 @@ class DrugPairWorker:
         medication_b_id: UUID,
         drug_a_generic: str,
         drug_b_generic: str,
-    ) -> DrugPairResult:
+    ) -> DrugPairResult | None:
         """
         Query Gemini for interaction between two generics.
+        Returns None if interaction is LOW severity (filtered out).
         On LLM failure returns interaction='unknown' — never assumes safe.
         """
         prompt = (
@@ -176,6 +241,20 @@ class DrugPairWorker:
 
         interaction = raw.get("interaction") or "unknown"
         severity = raw.get("severity")
+
+        # ═══════════════════════════════════════════════════════════
+        # FILTER: Suppress LOW severity interactions at worker level
+        # ═══════════════════════════════════════════════════════════
+        if severity == "low":
+            logger.info(
+                "drug_pair_worker.filtered_low_severity",
+                drug_a=drug_a_generic,
+                drug_b=drug_b_generic,
+                interaction=interaction,
+                severity=severity,
+                mechanism=raw.get("mechanism", ""),
+            )
+            return None  # Filtered out - not displayed to users
 
         # Urgency mapping per SystemDesign routing table
         if interaction == "confirmed" and severity == "high":
