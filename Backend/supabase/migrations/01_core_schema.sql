@@ -1,17 +1,17 @@
--- ============================================================
--- Migration 001: Initial Schema
--- 19 tables in dependency order.
--- Extensions, tables, non-vector indexes only.
--- No RLS, no triggers, no policies — those come in later migrations.
--- ============================================================
+-- ============================================
+-- FILE: Core Schema
+-- DESCRIPTION: All 21 tables in dependency order (no FK → has FK → complex).
+--              Incorporates all column additions and constraint fixes from
+--              migrations 009–029. This is the single source of truth for
+--              table structure.
+-- ============================================
 
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-CREATE EXTENSION IF NOT EXISTS vector;
+-- ============================================
+-- SECTION 1: Standalone tables (no patient FK)
+-- ============================================
 
-
--- ── TABLE 1: users ───────────────────────────────────────────
+-- ── TABLE: users ─────────────────────────────────────────────────
 -- Extends Supabase auth.users. id = auth.users.id (no separate UUID).
-
 CREATE TABLE public.users (
   id                uuid        PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   phone_number      text        UNIQUE,
@@ -35,28 +35,58 @@ CREATE TABLE public.users (
 );
 
 
--- ── TABLE 2: patients ─────────────────────────────────────────
+-- ── TABLE: drug_generic_lookup ───────────────────────────────────
+-- India-specific brand → generic translation. Public read, service_role writes.
+-- body_systems classifies each drug by targeted organ/system.
+CREATE TABLE public.drug_generic_lookup (
+  id            uuid    PRIMARY KEY DEFAULT gen_random_uuid(),
+  brand_name    text    NOT NULL UNIQUE,
+  generic_name  text    NOT NULL,
+  drug_class    text,
+  manufacturer  text,
+  country       text    NOT NULL DEFAULT 'IN',
+  data_source   text    NOT NULL CHECK (data_source IN ('CIMS','1mg','manual_entry')),
+  body_systems  text[]  NOT NULL DEFAULT '{}',
+  created_at    timestamptz DEFAULT now(),
+  updated_at    timestamptz DEFAULT now()
+);
 
+CREATE UNIQUE INDEX idx_drug_generic_lookup_brand        ON public.drug_generic_lookup(brand_name);
+CREATE INDEX        idx_drug_generic_lookup_generic      ON public.drug_generic_lookup(generic_name);
+CREATE INDEX        idx_drug_generic_lookup_body_systems ON public.drug_generic_lookup USING GIN (body_systems);
+
+
+-- ============================================
+-- SECTION 2: Core patient tables
+-- ============================================
+
+-- ── TABLE: patients ──────────────────────────────────────────────
+-- emergency_contact_primary/secondary: {name, phone, relationship}
+-- primary_physician: {name, phone}
+-- nearest_hospital: {name, phone}
 CREATE TABLE public.patients (
-  id                uuid    PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id           uuid    NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
-  name              text    NOT NULL,
-  date_of_birth     date,
-  gender            text    CHECK (gender IN ('male', 'female', 'other')),
-  blood_type        text    CHECK (blood_type IN ('A+','A-','B+','B-','AB+','AB-','O+','O-')),
-  known_conditions  text[]  DEFAULT '{}',
-  known_allergies   text[]  DEFAULT '{}',
-  primary_city      text,
-  emergency_notes   text,
-  created_at        timestamptz DEFAULT now(),
-  updated_at        timestamptz DEFAULT now()
+  id                              uuid    PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id                         uuid    NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+  name                            text    NOT NULL,
+  date_of_birth                   date,
+  gender                          text    CHECK (gender IN ('male', 'female', 'other')),
+  blood_type                      text    CHECK (blood_type IN ('A+','A-','B+','B-','AB+','AB-','O+','O-')),
+  known_conditions                text[]  DEFAULT '{}',
+  known_allergies                 text[]  DEFAULT '{}',
+  primary_city                    text,
+  emergency_notes                 text,
+  emergency_contact_primary       jsonb   DEFAULT NULL,
+  emergency_contact_secondary     jsonb   DEFAULT NULL,
+  primary_physician               jsonb   DEFAULT NULL,
+  nearest_hospital                jsonb   DEFAULT NULL,
+  created_at                      timestamptz DEFAULT now(),
+  updated_at                      timestamptz DEFAULT now()
 );
 
 CREATE INDEX idx_patients_user_id ON public.patients(user_id);
 
 
--- ── TABLE 3: caregivers ───────────────────────────────────────
-
+-- ── TABLE: caregivers ────────────────────────────────────────────
 CREATE TABLE public.caregivers (
   id                    uuid  PRIMARY KEY DEFAULT gen_random_uuid(),
   patient_id            uuid  NOT NULL REFERENCES public.patients(id) ON DELETE CASCADE,
@@ -79,11 +109,38 @@ CREATE INDEX idx_caregivers_patient_id   ON public.caregivers(patient_id);
 CREATE INDEX idx_caregivers_phone_number ON public.caregivers(phone_number);
 
 
--- ── TABLE 4: source_documents ─────────────────────────────────
+-- ── TABLE: prescribers ───────────────────────────────────────────
+-- Tracks doctors per patient. Deactivatable — history preserved.
+-- medications.prescriber_id (nullable FK) links med to doctor.
+CREATE TABLE public.prescribers (
+  id            uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
+  patient_id    uuid        NOT NULL REFERENCES public.patients(id) ON DELETE CASCADE,
+  name          text        NOT NULL,
+  specialty     text,
+  hospital      text,
+  phone         text,
+  status        text        NOT NULL DEFAULT 'active'
+                            CHECK (status IN ('active', 'inactive')),
+  notes         text,
+  created_at    timestamptz DEFAULT now(),
+  updated_at    timestamptz DEFAULT now()
+);
 
+CREATE INDEX idx_prescribers_patient_id ON public.prescribers(patient_id);
+CREATE INDEX idx_prescribers_status     ON public.prescribers(status);
+
+
+-- ============================================
+-- SECTION 3: Document and messaging tables
+-- ============================================
+
+-- ── TABLE: source_documents ──────────────────────────────────────
+-- file_mime_type allows: image/*, audio/*, pdf, text/plain, octet-stream
+-- ingestion_source includes crisis_follow_up for text notes
+-- embedding: vector(768) for Gemini text-embedding-004
 CREATE TABLE public.source_documents (
   id                    uuid  PRIMARY KEY DEFAULT gen_random_uuid(),
-  patient_id            uuid  NOT NULL REFERENCES public.patients(id),
+  patient_id            uuid  NOT NULL REFERENCES public.patients(id) ON DELETE CASCADE,
   uploaded_by           uuid  REFERENCES public.users(id),
   caregiver_id          uuid  REFERENCES public.caregivers(id),
   document_type         text  NOT NULL
@@ -93,14 +150,18 @@ CREATE TABLE public.source_documents (
                                 )),
   ingestion_source      text  NOT NULL
                                 CHECK (ingestion_source IN (
-                                  'app_upload','os_share_sheet','whatsapp_caregiver','camera'
+                                  'app_upload','os_share_sheet','whatsapp_caregiver',
+                                  'camera','crisis_follow_up'
                                 )),
   file_url              text  NOT NULL,
   file_mime_type        text  NOT NULL
-                                CHECK (file_mime_type IN (
-                                  'image/jpeg','image/png','application/pdf',
-                                  'audio/mpeg','audio/ogg','audio/mp4','audio/wav'
-                                )),
+                                CHECK (
+                                  file_mime_type LIKE 'image/%' OR
+                                  file_mime_type LIKE 'audio/%' OR
+                                  file_mime_type = 'application/pdf' OR
+                                  file_mime_type = 'text/plain' OR
+                                  file_mime_type = 'application/octet-stream'
+                                ),
   file_size_bytes       int,
   extraction_status     text  NOT NULL DEFAULT 'pending'
                                 CHECK (extraction_status IN (
@@ -113,7 +174,7 @@ CREATE TABLE public.source_documents (
   user_approved_at      timestamptz,
   rejection_reason      text,
   event_date            date,
-  embedding             vector(1536),
+  embedding             vector(768),
   created_at            timestamptz DEFAULT now()
 );
 
@@ -122,16 +183,15 @@ CREATE INDEX idx_source_documents_document_type     ON public.source_documents(d
 CREATE INDEX idx_source_documents_extraction_status ON public.source_documents(extraction_status);
 
 
--- ── TABLE 5: whatsapp_messages ────────────────────────────────
+-- ── TABLE: whatsapp_messages ─────────────────────────────────────
 -- linked_observation_id and linked_notification_id FKs added after
--- observations and notifications tables are created below.
-
+-- observations and notifications tables are created (see deferred FKs below).
 CREATE TABLE public.whatsapp_messages (
   id                          uuid  PRIMARY KEY DEFAULT gen_random_uuid(),
   direction                   text  NOT NULL CHECK (direction IN ('inbound','outbound')),
   sender_phone                text  NOT NULL,
   recipient_phone             text  NOT NULL,
-  patient_id                  uuid  REFERENCES public.patients(id),
+  patient_id                  uuid  REFERENCES public.patients(id) ON DELETE CASCADE,
   sender_type                 text  CHECK (sender_type IN ('caregiver','system','unknown')),
   message_type                text  NOT NULL
                                       CHECK (message_type IN ('text','image','audio','document','video')),
@@ -151,11 +211,17 @@ CREATE INDEX idx_whatsapp_messages_patient_id   ON public.whatsapp_messages(pati
 CREATE INDEX idx_whatsapp_messages_sender_phone ON public.whatsapp_messages(sender_phone);
 
 
--- ── TABLE 6: medications ──────────────────────────────────────
+-- ============================================
+-- SECTION 4: Clinical data tables
+-- ============================================
 
+-- ── TABLE: medications ───────────────────────────────────────────
+-- timing: raw extraction text from document
+-- timing_slots: structured picker values (morning, night, etc.)
+-- prescriber_id: nullable link to prescribers table
 CREATE TABLE public.medications (
   id                    uuid  PRIMARY KEY DEFAULT gen_random_uuid(),
-  patient_id            uuid  NOT NULL REFERENCES public.patients(id),
+  patient_id            uuid  NOT NULL REFERENCES public.patients(id) ON DELETE CASCADE,
   source_document_id    uuid  NOT NULL REFERENCES public.source_documents(id),
   brand_name            text,
   generic_name          text  NOT NULL,
@@ -163,9 +229,11 @@ CREATE TABLE public.medications (
   dose                  text  NOT NULL,
   frequency             text  NOT NULL,
   timing                text,
+  timing_slots          text[] NOT NULL DEFAULT '{}',
   prescriber_name       text,
   prescriber_specialty  text,
   prescriber_hospital   text,
+  prescriber_id         uuid  REFERENCES public.prescribers(id) ON DELETE SET NULL,
   prescribed_date       date,
   status                text  NOT NULL DEFAULT 'active'
                                 CHECK (status IN ('active','superseded','discontinued')),
@@ -176,15 +244,18 @@ CREATE TABLE public.medications (
   created_at            timestamptz DEFAULT now()
 );
 
+COMMENT ON COLUMN public.medications.timing_slots IS
+  'Structured timing: [morning, night] etc. Set by user picker during approval or edit. Separate from timing (raw extraction text).';
+
 CREATE INDEX idx_medications_patient_status ON public.medications(patient_id, status);
 CREATE INDEX idx_medications_generic_name   ON public.medications(generic_name);
+CREATE INDEX idx_medications_prescriber_id  ON public.medications(prescriber_id);
 
 
--- ── TABLE 7: drug_interaction_results ────────────────────────
-
+-- ── TABLE: drug_interaction_results ──────────────────────────────
 CREATE TABLE public.drug_interaction_results (
   id                      uuid  PRIMARY KEY DEFAULT gen_random_uuid(),
-  patient_id              uuid  NOT NULL REFERENCES public.patients(id),
+  patient_id              uuid  NOT NULL REFERENCES public.patients(id) ON DELETE CASCADE,
   medication_a_id         uuid  NOT NULL REFERENCES public.medications(id),
   medication_b_id         uuid  NOT NULL REFERENCES public.medications(id),
   drug_a_generic          text  NOT NULL,
@@ -205,30 +276,11 @@ CREATE INDEX idx_drug_interactions_patient_id ON public.drug_interaction_results
 CREATE INDEX idx_drug_interactions_pair_date  ON public.drug_interaction_results(drug_a_generic, drug_b_generic, checked_at);
 
 
--- ── TABLE 8: drug_generic_lookup ─────────────────────────────
-
-CREATE TABLE public.drug_generic_lookup (
-  id            uuid  PRIMARY KEY DEFAULT gen_random_uuid(),
-  brand_name    text  NOT NULL UNIQUE,
-  generic_name  text  NOT NULL,
-  drug_class    text,
-  manufacturer  text,
-  country       text  NOT NULL DEFAULT 'IN',
-  data_source   text  NOT NULL CHECK (data_source IN ('CIMS','1mg','manual_entry')),
-  created_at    timestamptz DEFAULT now(),
-  updated_at    timestamptz DEFAULT now()
-);
-
-CREATE UNIQUE INDEX idx_drug_generic_lookup_brand   ON public.drug_generic_lookup(brand_name);
-CREATE INDEX        idx_drug_generic_lookup_generic ON public.drug_generic_lookup(generic_name);
-
-
--- ── TABLE 9: medication_refills ───────────────────────────────
-
+-- ── TABLE: medication_refills ────────────────────────────────────
 CREATE TABLE public.medication_refills (
   id                      uuid    PRIMARY KEY DEFAULT gen_random_uuid(),
   medication_id           uuid    NOT NULL REFERENCES public.medications(id),
-  patient_id              uuid    NOT NULL REFERENCES public.patients(id),
+  patient_id              uuid    NOT NULL REFERENCES public.patients(id) ON DELETE CASCADE,
   days_supply             int     NOT NULL,
   prescription_start_date date    NOT NULL,
   refill_due_date         date    NOT NULL,
@@ -249,16 +301,16 @@ CREATE INDEX idx_medication_refills_med_date ON public.medication_refills(medica
 CREATE INDEX idx_medication_refills_due_date ON public.medication_refills(refill_due_date);
 
 
--- ── TABLE 10: lab_results ─────────────────────────────────────
-
+-- ── TABLE: lab_results ───────────────────────────────────────────
+-- value and unit are nullable to support ordered tests without results yet
 CREATE TABLE public.lab_results (
   id                    uuid    PRIMARY KEY DEFAULT gen_random_uuid(),
-  patient_id            uuid    NOT NULL REFERENCES public.patients(id),
+  patient_id            uuid    NOT NULL REFERENCES public.patients(id) ON DELETE CASCADE,
   source_document_id    uuid    NOT NULL REFERENCES public.source_documents(id),
   test_name             text    NOT NULL,
   test_name_display     text    NOT NULL,
-  value                 numeric NOT NULL,
-  unit                  text    NOT NULL,
+  value                 numeric,
+  unit                  text,
   reference_range_low   numeric,
   reference_range_high  numeric,
   is_abnormal           boolean,
@@ -276,11 +328,10 @@ CREATE INDEX idx_lab_results_patient_test_date ON public.lab_results(patient_id,
 CREATE INDEX idx_lab_results_patient_id        ON public.lab_results(patient_id);
 
 
--- ── TABLE 11: observations ────────────────────────────────────
-
+-- ── TABLE: observations ──────────────────────────────────────────
 CREATE TABLE public.observations (
   id                      uuid    PRIMARY KEY DEFAULT gen_random_uuid(),
-  patient_id              uuid    NOT NULL REFERENCES public.patients(id),
+  patient_id              uuid    NOT NULL REFERENCES public.patients(id) ON DELETE CASCADE,
   source_type             text    NOT NULL CHECK (source_type IN ('caregiver_voice','meera_call_log')),
   caregiver_id            uuid    REFERENCES public.caregivers(id),
   source_document_id      uuid    NOT NULL REFERENCES public.source_documents(id),
@@ -310,17 +361,18 @@ ALTER TABLE public.whatsapp_messages
   FOREIGN KEY (linked_observation_id) REFERENCES public.observations(id);
 
 
--- ── TABLE 12: clinical_hypotheses ─────────────────────────────
-
+-- ── TABLE: clinical_hypotheses ────────────────────────────────────
+-- rule_4_llm_general added for pipeline's rule4_llm_general.py
 CREATE TABLE public.clinical_hypotheses (
   id                    uuid  PRIMARY KEY DEFAULT gen_random_uuid(),
-  patient_id            uuid  NOT NULL REFERENCES public.patients(id),
+  patient_id            uuid  NOT NULL REFERENCES public.patients(id) ON DELETE CASCADE,
   rule_id               text  NOT NULL
                                 CHECK (rule_id IN (
                                   'rule_1_medication_without_food',
                                   'rule_2_drug_interaction',
                                   'rule_3_lab_trend',
                                   'rule_4_new_cardiac_med',
+                                  'rule_4_llm_general',
                                   'rule_5_caregiver_patient_discrepancy',
                                   'rule_6_meal_skipping_pattern'
                                 )),
@@ -344,11 +396,10 @@ CREATE INDEX idx_clinical_hypotheses_patient_status ON public.clinical_hypothese
 CREATE INDEX idx_clinical_hypotheses_urgency        ON public.clinical_hypotheses(urgency);
 
 
--- ── TABLE 13: conflict_records ────────────────────────────────
-
+-- ── TABLE: conflict_records ───────────────────────────────────────
 CREATE TABLE public.conflict_records (
   id                      uuid    PRIMARY KEY DEFAULT gen_random_uuid(),
-  patient_id              uuid    NOT NULL REFERENCES public.patients(id),
+  patient_id              uuid    NOT NULL REFERENCES public.patients(id) ON DELETE CASCADE,
   conflict_type           text    NOT NULL
                                     CHECK (conflict_type IN (
                                       'A_temporal','B_observational','C_dimensional','D_factual'
@@ -387,11 +438,14 @@ CREATE INDEX idx_conflict_records_patient_status ON public.conflict_records(pati
 CREATE INDEX idx_conflict_records_type           ON public.conflict_records(conflict_type);
 
 
--- ── TABLE 14: patient_state ───────────────────────────────────
+-- ============================================
+-- SECTION 5: State and scheduling tables
+-- ============================================
 
+-- ── TABLE: patient_state ─────────────────────────────────────────
 CREATE TABLE public.patient_state (
   id                          uuid  PRIMARY KEY DEFAULT gen_random_uuid(),
-  patient_id                  uuid  NOT NULL UNIQUE REFERENCES public.patients(id),
+  patient_id                  uuid  NOT NULL UNIQUE REFERENCES public.patients(id) ON DELETE CASCADE,
   overall_status              text  NOT NULL DEFAULT 'unknown'
                                       CHECK (overall_status IN ('ok','watch','alert','unknown','cannot_assess')),
   biochemical_confidence      text  NOT NULL DEFAULT 'unknown'
@@ -419,11 +473,13 @@ CREATE TABLE public.patient_state (
 CREATE UNIQUE INDEX idx_patient_state_patient_id ON public.patient_state(patient_id);
 
 
--- ── TABLE 15: calendar_events ─────────────────────────────────
-
+-- ── TABLE: calendar_events ───────────────────────────────────────
+-- caregiver_id: when set, only that caregiver notified (not all confirmed caregivers)
+-- source includes chatbot (AI assistant) and caregiver_schedule (visit sync)
 CREATE TABLE public.calendar_events (
   id                    uuid    PRIMARY KEY DEFAULT gen_random_uuid(),
-  patient_id            uuid    NOT NULL REFERENCES public.patients(id),
+  patient_id            uuid    NOT NULL REFERENCES public.patients(id) ON DELETE CASCADE,
+  caregiver_id          uuid    REFERENCES public.caregivers(id) ON DELETE SET NULL,
   event_type            text    NOT NULL CHECK (event_type IN ('appointment','caregiver_visit','lab_test')),
   title                 text    NOT NULL,
   specialist_type       text,
@@ -435,7 +491,7 @@ CREATE TABLE public.calendar_events (
   source                text    NOT NULL
                                   CHECK (source IN (
                                     'manual','prescription_ingestion','gap_detection',
-                                    'voice_log','doctor_note_extraction'
+                                    'voice_log','doctor_note_extraction','chatbot','caregiver_schedule'
                                   )),
   required_tests        text[]  DEFAULT '{}',
   tests_status          jsonb   DEFAULT '{}',
@@ -451,13 +507,13 @@ CREATE TABLE public.calendar_events (
 
 CREATE INDEX idx_calendar_events_patient_date_status ON public.calendar_events(patient_id, event_date, status);
 CREATE INDEX idx_calendar_events_event_type          ON public.calendar_events(event_type);
+CREATE INDEX idx_calendar_events_caregiver_id        ON public.calendar_events(caregiver_id) WHERE caregiver_id IS NOT NULL;
 
 
--- ── TABLE 16: gap_actions ─────────────────────────────────────
-
+-- ── TABLE: gap_actions ───────────────────────────────────────────
 CREATE TABLE public.gap_actions (
   id                      uuid  PRIMARY KEY DEFAULT gen_random_uuid(),
-  patient_id              uuid  NOT NULL REFERENCES public.patients(id),
+  patient_id              uuid  NOT NULL REFERENCES public.patients(id) ON DELETE CASCADE,
   action_type             text  NOT NULL
                                   CHECK (action_type IN (
                                     'schedule_test','refill_medication',
@@ -482,11 +538,16 @@ CREATE INDEX idx_gap_actions_due_by             ON public.gap_actions(due_by);
 CREATE INDEX idx_gap_actions_for_appointment_id ON public.gap_actions(for_appointment_id);
 
 
--- ── TABLE 17: notifications ───────────────────────────────────
+-- ============================================
+-- SECTION 6: Notification and crisis tables
+-- ============================================
 
+-- ── TABLE: notifications ─────────────────────────────────────────
+-- acknowledge_action values: 'handled' | 'ongoing' | NULL (not yet acknowledged)
+-- type includes crisis_follow_up, crisis_follow_up_response, calendar_reminder
 CREATE TABLE public.notifications (
   id                      uuid  PRIMARY KEY DEFAULT gen_random_uuid(),
-  patient_id              uuid  NOT NULL REFERENCES public.patients(id),
+  patient_id              uuid  NOT NULL REFERENCES public.patients(id) ON DELETE CASCADE,
   recipient_user_id       uuid  REFERENCES public.users(id),
   recipient_caregiver_id  uuid  REFERENCES public.caregivers(id),
   type                    text  NOT NULL
@@ -495,7 +556,9 @@ CREATE TABLE public.notifications (
                                     'morning_digest','evening_digest',
                                     'caregiver_visit_reminder','caregiver_update_request',
                                     'caregiver_invitation','refill_reminder','gap_reminder',
-                                    'staleness_notice','crisis_access','drug_interaction_alert'
+                                    'staleness_notice','crisis_access',
+                                    'crisis_follow_up','crisis_follow_up_response',
+                                    'drug_interaction_alert','calendar_reminder'
                                   )),
   channel                 text  NOT NULL CHECK (channel IN ('push','whatsapp','in_app','system_event')),
   direction               text  NOT NULL DEFAULT 'outbound' CHECK (direction IN ('outbound','system_event')),
@@ -512,6 +575,8 @@ CREATE TABLE public.notifications (
   sent_at                 timestamptz,
   delivered_at            timestamptz,
   read_at                 timestamptz,
+  acknowledged_at         timestamptz  DEFAULT NULL,
+  acknowledge_action      text         DEFAULT NULL,
   status                  text  NOT NULL DEFAULT 'pending'
                                   CHECK (status IN ('pending','sent','delivered','read','failed')),
   error_message           text,
@@ -528,16 +593,18 @@ ALTER TABLE public.whatsapp_messages
   FOREIGN KEY (linked_notification_id) REFERENCES public.notifications(id);
 
 
--- ── TABLE 18: crisis_packets ──────────────────────────────────
-
+-- ── TABLE: crisis_packets ────────────────────────────────────────
+-- One row per patient (UNIQUE). Rebuilt nightly or on trigger events.
+-- lab_results: snapshot of recent lab values for emergency responders
+-- patient_name/patient_dob: denormalized for quick emergency card display
 CREATE TABLE public.crisis_packets (
   id                      uuid    PRIMARY KEY DEFAULT gen_random_uuid(),
-  patient_id              uuid    NOT NULL UNIQUE REFERENCES public.patients(id),
+  patient_id              uuid    NOT NULL UNIQUE REFERENCES public.patients(id) ON DELETE CASCADE,
   generated_at            timestamptz NOT NULL,
   rebuild_triggered_by    text    NOT NULL
                                     CHECK (rebuild_triggered_by IN (
                                       'scheduled_nightly','medication_change',
-                                      'contact_update','manual'
+                                      'contact_update','manual','pdf_export'
                                     )),
   medications             jsonb   NOT NULL DEFAULT '[]',
   last_cardiac_event      jsonb,
@@ -546,6 +613,10 @@ CREATE TABLE public.crisis_packets (
   known_allergies         text[]  DEFAULT '{}',
   blood_type              text,
   active_alerts           text[]  DEFAULT '{}',
+  lab_results             jsonb   NOT NULL DEFAULT '[]',
+  known_conditions        text[]  NOT NULL DEFAULT '{}',
+  patient_name            text,
+  patient_dob             text,
   is_current              boolean NOT NULL DEFAULT true,
   updated_at              timestamptz DEFAULT now()
 );
@@ -554,19 +625,30 @@ CREATE UNIQUE INDEX idx_crisis_packets_patient_id         ON public.crisis_packe
 CREATE INDEX        idx_crisis_packets_patient_is_current ON public.crisis_packets(patient_id, is_current);
 
 
--- ── TABLE 19: document_chunks ─────────────────────────────────
+-- ============================================
+-- SECTION 7: Vector search / RAG table
+-- ============================================
 
+-- ── TABLE: document_chunks ───────────────────────────────────────
+-- embedding: vector(768) for Gemini text-embedding-004
+-- fts_tokens: maintained by chunks_fts_trigger for keyword search fallback
 CREATE TABLE public.document_chunks (
   id                    uuid    PRIMARY KEY DEFAULT gen_random_uuid(),
   source_document_id    uuid    NOT NULL REFERENCES public.source_documents(id) ON DELETE CASCADE,
-  patient_id            uuid    NOT NULL REFERENCES public.patients(id),
+  patient_id            uuid    NOT NULL REFERENCES public.patients(id) ON DELETE CASCADE,
   chunk_text            text    NOT NULL,
   chunk_index           int     NOT NULL,
   token_count           int,
-  embedding             vector(1536) NOT NULL,
+  embedding             vector(768) NOT NULL,
+  fts_tokens            tsvector,
   metadata              jsonb   NOT NULL DEFAULT '{}',
   created_at            timestamptz DEFAULT now()
 );
 
 CREATE INDEX idx_document_chunks_patient_id         ON public.document_chunks(patient_id);
 CREATE INDEX idx_document_chunks_source_document_id ON public.document_chunks(source_document_id);
+CREATE INDEX idx_chunks_fts                         ON public.document_chunks USING GIN(fts_tokens);
+
+-- ============================================
+-- END OF FILE
+-- ============================================
