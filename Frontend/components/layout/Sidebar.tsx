@@ -23,7 +23,7 @@ const SECTIONS = [
     items: [
       { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
       { href: "/daily-digest", label: "Daily Digest", icon: Newspaper },
-      { href: "/chatbot", label: "Ask AI", icon: Sparkles },
+      { href: "/chatbot", label: "Health Assistant", icon: Sparkles },
     ],
   },
   {

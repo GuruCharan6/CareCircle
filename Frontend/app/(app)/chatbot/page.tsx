@@ -76,7 +76,7 @@ export default function ChatbotPage() {
         {/* Header */}
         <div className="mb-3 shrink-0 flex items-start justify-between">
           <div>
-            <h1 className="text-xl font-bold text-[var(--color-primary)]">Ask AI</h1>
+            <h1 className="text-xl font-bold text-[var(--color-primary)]">Health Assistant</h1>
             <p className="text-sm text-[#6B7280] mt-0.5">Ask about medications, labs, symptoms, or history</p>
           </div>
           {messages.length > 0 && (
@@ -141,7 +141,7 @@ export default function ChatbotPage() {
       <div className="hidden lg:flex flex-col h-[calc(100vh-8rem)] max-w-6xl mx-auto">
         <div className="mb-4 shrink-0 flex items-start justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-[var(--color-primary)]">Ask AI</h1>
+            <h1 className="text-2xl font-bold text-[var(--color-primary)]">Health Assistant</h1>
             <p className="text-sm text-[#6B7280] mt-0.5">Ask about medications, labs, symptoms, or history</p>
           </div>
           {messages.length > 0 && (
