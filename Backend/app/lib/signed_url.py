@@ -1,6 +1,7 @@
 import httpx
 
 from app.config import settings
+from app.core.logging import logger
 
 # All storage URLs are signed with expiry — never public permanent URLs.
 # Health data must never be permanently accessible.
@@ -29,12 +30,12 @@ def create_signed_upload_url(bucket: str, path: str) -> str:
     the service role token, causing RLS violations on storage operations.
     """
     url = f"{settings.supabase_url}/storage/v1/object/upload/sign/{bucket}/{path}"
-    headers = {
-        "Authorization": f"Bearer {settings.supabase_service_role_key}",
-        "Content-Type": "application/json",
-    }
+    headers = {"Authorization": f"Bearer {settings.supabase_service_role_key}"}
     response = httpx.post(url, headers=headers)
-    response.raise_for_status()
+    if not response.is_success:
+        logger.error("storage.signed_upload_url_failed", bucket=bucket, path=path,
+                     status=response.status_code, body=response.text)
+        response.raise_for_status()
     data = response.json()
     signed_url = data.get("url") or data.get("signedURL") or data.get("signedUrl")
     if not signed_url:
