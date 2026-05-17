@@ -37,6 +37,11 @@ class PatientStateService:
         else:
             state = await self._repo.get_by_patient_id(patient_id)
             if not state:
+                # New patient — no state row yet. Build it on-demand.
+                from app.worker.tasks.rebuild_patient_state import _async_rebuild
+                await _async_rebuild(str(patient_id))
+                state = await self._repo.get_by_patient_id(patient_id)
+            if not state:
                 raise NotFoundError("PatientState", str(patient_id))
             await set_patient_state(patient_id, state.model_dump(mode="json"))
 
