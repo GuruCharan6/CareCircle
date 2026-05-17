@@ -10,9 +10,9 @@ import { useDocuments } from "@/hooks/useDocuments";
 import { useLabResults } from "@/hooks/useLabResults";
 import { formatDateLocal } from "@/lib/utils";
 import {
-  LayoutDashboard, Pill, BarChart2, FileText, CalendarDays,
-  RefreshCw, Users, Bell, Sparkles, Stethoscope, Eye, Settings, Plus,
-  ChevronLeft, ChevronRight, Menu, TriangleAlert, Coffee,
+  LayoutDashboard, Pill, FlaskConical, FileText, CalendarDays,
+  PackageCheck, Users, Bell, Sparkles, Stethoscope, Eye, Settings, Plus,
+  ChevronLeft, ChevronRight, Menu, TriangleAlert, Newspaper,
   FileClock, Search, LogOut, UserCircle, Files
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -22,7 +22,7 @@ const SECTIONS = [
     title: "OVERVIEW",
     items: [
       { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-      { href: "/daily-digest", label: "Daily Digest", icon: Coffee },
+      { href: "/daily-digest", label: "Daily Digest", icon: Newspaper },
       { href: "/chatbot", label: "Ask AI", icon: Sparkles },
     ],
   },
@@ -30,7 +30,7 @@ const SECTIONS = [
     title: "CLINICAL",
     items: [
       { href: "/medications", label: "Medications", icon: Pill },
-      { href: "/lab-results", label: "Lab Results", icon: BarChart2 },
+      { href: "/lab-results", label: "Lab Results", icon: FlaskConical },
       { href: "/drug-interactions", label: "Drug Interactions", icon: TriangleAlert },
       { href: "/observations", label: "Observations", icon: Eye },
     ],
@@ -54,7 +54,7 @@ const SECTIONS = [
     title: "SCHEDULE",
     items: [
       { href: "/calendar", label: "Calendar", icon: CalendarDays },
-      { href: "/refills", label: "Refills", icon: RefreshCw },
+      { href: "/refills", label: "Refills", icon: PackageCheck },
       { href: "/doctor-briefing", label: "Doctor Briefing", icon: FileText },
     ],
   },
