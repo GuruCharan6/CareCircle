@@ -11,10 +11,10 @@ export function FreshnessBar({ score, computedAt, indicators }: FreshnessBarProp
   const isFresh = score >= 80;
   const isAging = score >= 50;
 
-  const barColor = isFresh ? "bg-green-500" : isAging ? "bg-yellow-500" : "bg-red-500";
-  const borderColor = isFresh ? "border-green-200" : isAging ? "border-yellow-200" : "border-red-200";
-  const bgColor = isFresh ? "bg-green-50" : isAging ? "bg-yellow-50" : "bg-red-50";
-  const badgeColor = isFresh ? "bg-green-500" : isAging ? "bg-yellow-500" : "bg-red-500";
+  const barColor = isFresh ? "bg-[var(--color-ok)]" : isAging ? "bg-[var(--color-watch)]" : "bg-[var(--color-alert)]";
+  const borderColor = isFresh ? "border-[var(--color-ok)]/30" : isAging ? "border-[var(--color-watch)]/30" : "border-[var(--color-alert)]/30";
+  const bgColor = isFresh ? "bg-[var(--color-ok)]/5" : isAging ? "bg-[var(--color-watch)]/5" : "bg-[var(--color-alert)]/5";
+  const badgeColor = isFresh ? "bg-[var(--color-ok)]" : isAging ? "bg-[var(--color-watch)]" : "bg-[var(--color-alert)]";
 
   const label = isFresh ? "Up to date" : isAging ? "Partially fresh" : "Stale data";
 
@@ -47,9 +47,9 @@ export function FreshnessBar({ score, computedAt, indicators }: FreshnessBarProp
           {indicators.filter(ind => ind.source !== "prescription").map((ind, i) => (
             <div key={i} className="flex items-center gap-1.5">
               <div className={cn("w-2 h-2 rounded-full shrink-0",
-                ind.status === "fresh" ? "bg-green-500" :
-                ind.status === "aging" ? "bg-yellow-500" :
-                "bg-red-500"
+                ind.status === "fresh" ? "bg-[var(--color-ok)]" :
+                ind.status === "aging" ? "bg-[var(--color-watch)]" :
+                "bg-[var(--color-alert)]"
               )} />
               <span className="text-[11px] font-medium text-[var(--color-text)]">
                 {sourceLabels[ind.source] || ind.source}
