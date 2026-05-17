@@ -48,7 +48,7 @@ export default function SignupPage() {
   return (
     <div className="space-y-5">
       <div>
-        <h2 className="text-2xl font-bold text-[#0D3B6E] tracking-tight">Get started free</h2>
+        <h2 className="text-2xl font-bold text-[#0D3B6E] tracking-tight">Get started</h2>
         <p className="text-sm text-[#6B7280] mt-1">Enter your mobile number to receive an OTP</p>
       </div>
 
