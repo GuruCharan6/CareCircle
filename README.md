@@ -34,6 +34,8 @@ CareCircle is a GenAI-powered care coordination platform that ingests health doc
 
 **Who it's for:** Adult children (25–45 years) remotely managing a parent's chronic illness across multiple providers in India.
 
+**Cross-platform:** Progressive Web App (PWA) works on any device — iOS, Android, desktop — without app store downloads. Install once, works offline.
+
 **What makes it different:** The AI pipeline is deterministic — LLMs only format data, they never generate medical hypotheses. This prevents hallucinations from influencing clinical decisions. Every alert traces back to a specific rule or lab value, not LLM guesswork.
 
 ---
@@ -47,6 +49,7 @@ CareCircle is a GenAI-powered care coordination platform that ingests health doc
 - **🔄 Multi-Source Reconciliation** — Detects when caregiver notes, patient self-reports, and lab data conflict. Classifies conflict type (temporal/observational/dimensional/factual).
 - **📅 Proactive Care Gap Detection** — Flags missing pre-visit tests before appointments. Creates reminder workflows.
 - **💬 WhatsApp-First Design** — Morning/evening digests, medication reminders, caregiver updates — all via WhatsApp without requiring app install.
+- **📱 Progressive Web App (PWA)** — Install on any device (iOS, Android, Desktop). Works offline with cached data. No app store required.
 - **🤖 AI Chatbot with Tool Use** — Query patient data in natural language. Schedule events, log observations, generate doctor briefings.
 
 ---
@@ -56,7 +59,7 @@ CareCircle is a GenAI-powered care coordination platform that ingests health doc
 | Category | Technologies |
 |----------|-------------|
 | **Backend** | FastAPI 0.136, Python 3.11+, asyncpg, Celery 5.6, Redis 6.4 |
-| **Frontend** | Next.js 16.2, React 19, TypeScript 5, Tailwind CSS, Radix UI |
+| **Frontend** | Next.js 16.2, React 19, TypeScript 5, Tailwind CSS, Radix UI, PWA (Service Workers) |
 | **Database** | PostgreSQL (Supabase), pgvector (768d embeddings), Row Level Security |
 | **AI/ML** | Google Gemini 2.5 Flash (vision, LLM, embeddings), Sarvam AI (Hindi STT) |
 | **External APIs** | Twilio (WhatsApp), Firebase (push notifications), Prometheus (metrics) |
