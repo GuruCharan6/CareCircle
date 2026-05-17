@@ -4,10 +4,10 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  LayoutDashboard, Upload, Coffee, Sparkles, MoreHorizontal,
-  Pill, BarChart2, FileText, CalendarDays, RefreshCw, Users,
-  Bell, Stethoscope, Settings, Eye, TriangleAlert, FileClock, Search,
-  Files, X, LogOut, ShieldAlert,
+  LayoutDashboard, Upload, Newspaper, Sparkles, MoreHorizontal,
+  Pill, FlaskConical, FileText, CalendarDays, PackageCheck, Users,
+  Bell, Stethoscope, Settings, Activity, ShieldAlert, FileClock, Search,
+  Files, X, LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { authStorage } from "@/lib/auth-storage";
@@ -15,8 +15,8 @@ import { authStorage } from "@/lib/auth-storage";
 const BOTTOM_TABS = [
   { href: "/dashboard",    label: "Home",   icon: LayoutDashboard },
   { href: "/upload",       label: "Upload", icon: Upload },
-  { href: "/daily-digest", label: "Digest", icon: Coffee },
-  { href: "/chatbot",      label: "Ask AI", icon: Sparkles },
+  { href: "/daily-digest", label: "Digest",    icon: Newspaper },
+  { href: "/chatbot",      label: "Assistant", icon: Sparkles },
 ] as const;
 
 const MORE_SECTIONS = [
@@ -24,9 +24,9 @@ const MORE_SECTIONS = [
     title: "CLINICAL",
     items: [
       { href: "/medications",       label: "Medications",       icon: Pill },
-      { href: "/lab-results",       label: "Lab Results",       icon: BarChart2 },
-      { href: "/drug-interactions", label: "Drug Interactions", icon: TriangleAlert },
-      { href: "/observations",      label: "Observations",      icon: Eye },
+      { href: "/lab-results",       label: "Lab Results",       icon: FlaskConical },
+      { href: "/drug-interactions", label: "Drug Interactions", icon: ShieldAlert },
+      { href: "/observations",      label: "Observations",      icon: Activity },
     ],
   },
   {
@@ -48,7 +48,7 @@ const MORE_SECTIONS = [
     title: "SCHEDULE",
     items: [
       { href: "/calendar",        label: "Calendar",        icon: CalendarDays },
-      { href: "/refills",         label: "Refills",         icon: RefreshCw },
+      { href: "/refills",         label: "Refills",         icon: PackageCheck },
       { href: "/doctor-briefing", label: "Doctor Briefing", icon: FileText },
     ],
   },
