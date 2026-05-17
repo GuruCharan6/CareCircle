@@ -288,7 +288,7 @@ class DocumentService:
                             generic_name=clean_generic,
                             drug_class=m.get("drug_class"),
                             dose=m.get("dose") or "Not specified",
-                            frequency=m.get("frequency"),
+                            frequency=m.get("frequency") or "Not specified",
                             timing=m.get("timing"),
                             prescriber_name=prescriber_name,
                             prescriber_specialty=get_f(["prescriber_specialty", "specialist_type"]),
