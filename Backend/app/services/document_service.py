@@ -119,7 +119,8 @@ class DocumentService:
             await _async_extract(str(doc_id))
             logger.info("document.extraction_completed", doc_id=str(doc_id))
         except Exception as e:
-            logger.error("document.extraction_failed", doc_id=str(doc_id), error=str(e))
+            logger.error("document.extraction_failed", doc_id=str(doc_id), error=str(e), exc_info=True)
+            raise
 
     async def approve(
         self,

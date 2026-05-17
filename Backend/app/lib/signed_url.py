@@ -66,9 +66,9 @@ def create_signed_view_url(bucket: str, path: str, expires_in: int = _VIEW_EXPIR
     signed_url = data.get("signedURL") or data.get("signedUrl") or data.get("signed_url")
     if not signed_url:
         raise ValueError(f"Supabase Storage returned no view URL for {bucket}/{path}: {data}")
-    # API returns a relative path — prepend base URL
+    # API returns relative path like /object/sign/... — prepend storage base URL
     if signed_url.startswith("/"):
-        return f"{settings.supabase_url}{signed_url}"
+        return f"{settings.supabase_url}/storage/v1{signed_url}"
     return signed_url
 
 
