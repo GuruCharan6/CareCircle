@@ -1,6 +1,5 @@
 import httpx
 
-from app.core.supabase import supabase_admin
 from app.config import settings
 
 # All storage URLs are signed with expiry — never public permanent URLs.
@@ -25,9 +24,22 @@ def create_signed_upload_url(bucket: str, path: str) -> str:
     """Generate Supabase Storage signed upload URL (PUT to this URL).
     Client uploads directly to Supabase Storage — backend never handles file bytes.
     Returns signed URL string.
+
+    Uses direct httpx (not supabase-py SDK) — SDK does not reliably forward
+    the service role token, causing RLS violations on storage operations.
     """
-    result = supabase_admin.storage.from_(bucket).create_signed_upload_url(path)
-    return _extract_url(result, "upload", bucket, path)
+    url = f"{settings.supabase_url}/storage/v1/object/upload/sign/{bucket}/{path}"
+    headers = {
+        "Authorization": f"Bearer {settings.supabase_service_role_key}",
+        "Content-Type": "application/json",
+    }
+    response = httpx.post(url, headers=headers)
+    response.raise_for_status()
+    data = response.json()
+    signed_url = data.get("url") or data.get("signedURL") or data.get("signedUrl")
+    if not signed_url:
+        raise ValueError(f"Supabase Storage returned no upload URL for {bucket}/{path}: {data}")
+    return signed_url
 
 
 def create_signed_view_url(bucket: str, path: str, expires_in: int = _VIEW_EXPIRY, download: bool | str = False) -> str:
@@ -35,17 +47,29 @@ def create_signed_view_url(bucket: str, path: str, expires_in: int = _VIEW_EXPIR
     Regenerated on every access — never stored permanently.
     Returns signed URL string.
     """
-    options: dict = {}
+    params: dict = {"expiresIn": expires_in}
     if download:
-        options["download"] = download
+        params["download"] = download if isinstance(download, str) else ""
 
-    result = supabase_admin.storage.from_(bucket).create_signed_url(path, expires_in, options)  # type: ignore[arg-type]
-    return _extract_url(result, "view", bucket, path)
+    url = f"{settings.supabase_url}/storage/v1/object/sign/{bucket}/{path}"
+    headers = {
+        "Authorization": f"Bearer {settings.supabase_service_role_key}",
+        "Content-Type": "application/json",
+    }
+    response = httpx.post(url, json=params, headers=headers)
+    response.raise_for_status()
+    data = response.json()
+    signed_url = data.get("signedURL") or data.get("signedUrl") or data.get("signed_url")
+    if not signed_url:
+        raise ValueError(f"Supabase Storage returned no view URL for {bucket}/{path}: {data}")
+    return f"{settings.supabase_url}/storage/v1{signed_url}" if signed_url.startswith("/object/sign") else signed_url
 
 
 def delete_file(bucket: str, path: str) -> None:
     """Delete file from Supabase Storage. Used when document rejected."""
-    supabase_admin.storage.from_(bucket).remove([path])
+    url = f"{settings.supabase_url}/storage/v1/object/{bucket}/{path}"
+    headers = {"Authorization": f"Bearer {settings.supabase_service_role_key}"}
+    httpx.delete(url, headers=headers)
 
 
 def storage_upload(bucket: str, path: str, data: bytes, content_type: str = "application/pdf") -> None:
