@@ -43,6 +43,9 @@ async def _async_extract(document_id: str) -> None:
         # Update status to extracting
         await doc_repo.update_extraction(doc_uuid, extraction_status="extracting")
 
+        logger.info("extract_document.doc_loaded", document_id=document_id,
+                    doc_type=document.document_type, file_url=document.file_url,
+                    mime_type=document.file_mime_type)
         try:
             # Handle Voice Note Transcription if needed
             if document.document_type == "voice_note" and not document.extracted_text:

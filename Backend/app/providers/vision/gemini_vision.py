@@ -252,7 +252,12 @@ class GeminiVisionClient:
     ) -> tuple[dict[str, Any], dict[str, float]]:
         """Download file from URL then extract. For Supabase Storage signed URLs."""
         import httpx
-        async with httpx.AsyncClient(timeout=30.0) as client:
+        logger.info("gemini_vision.downloading", url=file_url, mime_type=mime_type, document_type=document_type)
+        async with httpx.AsyncClient(timeout=60.0) as client:
             resp = await client.get(file_url)
+            if not resp.is_success:
+                logger.error("gemini_vision.download_failed", url=file_url,
+                             status=resp.status_code, body=resp.text[:500])
             resp.raise_for_status()
+        logger.info("gemini_vision.download_ok", bytes=len(resp.content), mime_type=mime_type)
         return await self.extract(resp.content, mime_type, document_type)

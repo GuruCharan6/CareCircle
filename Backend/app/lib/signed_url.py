@@ -9,16 +9,7 @@ from app.core.logging import logger
 _UPLOAD_EXPIRY = 900    # 15 min — enough to upload, not long enough to leak
 _VIEW_EXPIRY = 3600     # 1 hour — enough to view, regenerated on each access
 
-
-def _extract_url(result: object, label: str, bucket: str, path: str) -> str:
-    url: str | None = None
-    if hasattr(result, "signed_url"):
-        url = str(result.signed_url)  # type: ignore[union-attr]
-    elif isinstance(result, dict):
-        url = result.get("signedURL") or result.get("signedUrl") or result.get("signed_url")
-    if not url:
-        raise ValueError(f"Supabase Storage returned no {label} URL for {bucket}/{path}: {result}")
-    return url
+_STORAGE_BASE = f"{settings.supabase_url}/storage/v1"
 
 
 def create_signed_upload_url(bucket: str, path: str) -> str:
@@ -29,17 +20,21 @@ def create_signed_upload_url(bucket: str, path: str) -> str:
     Uses direct httpx (not supabase-py SDK) — SDK does not reliably forward
     the service role token, causing RLS violations on storage operations.
     """
-    url = f"{settings.supabase_url}/storage/v1/object/upload/sign/{bucket}/{path}"
+    api_url = f"{_STORAGE_BASE}/object/upload/sign/{bucket}/{path}"
     headers = {"Authorization": f"Bearer {settings.supabase_service_role_key}"}
-    response = httpx.post(url, headers=headers)
+    response = httpx.post(api_url, headers=headers)
     if not response.is_success:
         logger.error("storage.signed_upload_url_failed", bucket=bucket, path=path,
                      status=response.status_code, body=response.text)
         response.raise_for_status()
     data = response.json()
-    signed_url = data.get("url") or data.get("signedURL") or data.get("signedUrl")
-    if not signed_url:
+    logger.info("storage.signed_upload_url_raw_response", data=data)
+    raw = data.get("url") or data.get("signedURL") or data.get("signedUrl")
+    if not raw:
         raise ValueError(f"Supabase Storage returned no upload URL for {bucket}/{path}: {data}")
+    # SDK prepends storage base URL — do the same for raw API responses
+    signed_url = f"{_STORAGE_BASE}{raw}" if raw.startswith("/") else raw
+    logger.info("storage.signed_upload_url_generated", bucket=bucket, signed_url=signed_url)
     return signed_url
 
 
@@ -52,31 +47,32 @@ def create_signed_view_url(bucket: str, path: str, expires_in: int = _VIEW_EXPIR
     if download:
         params["download"] = download if isinstance(download, str) else ""
 
-    url = f"{settings.supabase_url}/storage/v1/object/sign/{bucket}/{path}"
+    api_url = f"{_STORAGE_BASE}/object/sign/{bucket}/{path}"
     headers = {
         "Authorization": f"Bearer {settings.supabase_service_role_key}",
         "Content-Type": "application/json",
     }
-    response = httpx.post(url, json=params, headers=headers)
+    response = httpx.post(api_url, json=params, headers=headers)
     if not response.is_success:
         logger.error("storage.signed_view_url_failed", bucket=bucket, path=path,
                      status=response.status_code, body=response.text)
         response.raise_for_status()
     data = response.json()
-    signed_url = data.get("signedURL") or data.get("signedUrl") or data.get("signed_url")
-    if not signed_url:
+    logger.info("storage.signed_view_url_raw_response", data=data)
+    raw = data.get("signedURL") or data.get("signedUrl") or data.get("signed_url") or data.get("url")
+    if not raw:
         raise ValueError(f"Supabase Storage returned no view URL for {bucket}/{path}: {data}")
-    # API returns relative path like /object/sign/... — prepend storage base URL
-    if signed_url.startswith("/"):
-        return f"{settings.supabase_url}/storage/v1{signed_url}"
+    # SDK prepends storage base URL — do the same for raw API responses
+    signed_url = f"{_STORAGE_BASE}{raw}" if raw.startswith("/") else raw
+    logger.info("storage.signed_view_url_generated", bucket=bucket, path=path, signed_url=signed_url)
     return signed_url
 
 
 def delete_file(bucket: str, path: str) -> None:
     """Delete file from Supabase Storage. Used when document rejected."""
-    url = f"{settings.supabase_url}/storage/v1/object/{bucket}/{path}"
+    api_url = f"{_STORAGE_BASE}/object/{bucket}/{path}"
     headers = {"Authorization": f"Bearer {settings.supabase_service_role_key}"}
-    httpx.delete(url, headers=headers)
+    httpx.delete(api_url, headers=headers)
 
 
 def storage_upload(bucket: str, path: str, data: bytes, content_type: str = "application/pdf") -> None:
@@ -85,11 +81,11 @@ def storage_upload(bucket: str, path: str, data: bytes, content_type: str = "app
     The supabase-py storage SDK does not reliably forward the service role token,
     causing RLS violations even for admin uploads. Direct httpx call bypasses this.
     """
-    url = f"{settings.supabase_url}/storage/v1/object/{bucket}/{path}"
+    api_url = f"{_STORAGE_BASE}/object/{bucket}/{path}"
     headers = {
         "Authorization": f"Bearer {settings.supabase_service_role_key}",
         "Content-Type": content_type,
         "x-upsert": "true",
     }
-    response = httpx.post(url, content=data, headers=headers)
+    response = httpx.post(api_url, content=data, headers=headers)
     response.raise_for_status()
