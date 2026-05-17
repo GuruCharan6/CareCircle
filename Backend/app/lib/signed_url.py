@@ -58,12 +58,18 @@ def create_signed_view_url(bucket: str, path: str, expires_in: int = _VIEW_EXPIR
         "Content-Type": "application/json",
     }
     response = httpx.post(url, json=params, headers=headers)
-    response.raise_for_status()
+    if not response.is_success:
+        logger.error("storage.signed_view_url_failed", bucket=bucket, path=path,
+                     status=response.status_code, body=response.text)
+        response.raise_for_status()
     data = response.json()
     signed_url = data.get("signedURL") or data.get("signedUrl") or data.get("signed_url")
     if not signed_url:
         raise ValueError(f"Supabase Storage returned no view URL for {bucket}/{path}: {data}")
-    return f"{settings.supabase_url}/storage/v1{signed_url}" if signed_url.startswith("/object/sign") else signed_url
+    # API returns a relative path — prepend base URL
+    if signed_url.startswith("/"):
+        return f"{settings.supabase_url}{signed_url}"
+    return signed_url
 
 
 def delete_file(bucket: str, path: str) -> None:
