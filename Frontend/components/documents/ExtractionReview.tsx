@@ -51,11 +51,9 @@ export function ExtractionReview({ docType, data, confidence, onChange }: Extrac
         <Section title="Medications" accent="primary">
           {data.medications.map((med: any, idx: number) => (
             <Card key={idx} index={idx + 1} total={data.medications.length}>
-              <div className="grid grid-cols-2 gap-3">
-                <Field label="Brand Name" value={med.brand_name || med.generic_name} onChange={(v: string) => handleMedicationChange(idx, "brand_name", v)} />
+              <Field label="Brand / Generic Name" value={med.brand_name || med.generic_name} onChange={(v: string) => handleMedicationChange(idx, "brand_name", v)} />
+              <div className="grid grid-cols-3 gap-3">
                 <Field label="Dosage" value={med.dose} onChange={(v: string) => handleMedicationChange(idx, "dose", v)} required />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
                 <Field label="Frequency" value={med.frequency} onChange={(v: string) => handleMedicationChange(idx, "frequency", v)} />
                 <Field label="Duration" value={med.duration} onChange={(v: string) => handleMedicationChange(idx, "duration", v)} />
               </div>
@@ -69,8 +67,8 @@ export function ExtractionReview({ docType, data, confidence, onChange }: Extrac
         <Section title="Lab Results" accent="ok">
           {data.results.map((res: any, idx: number) => (
             <Card key={idx} index={idx + 1} total={data.results.length}>
-              <div className="grid grid-cols-3 gap-3">
-                <div className="col-span-2">
+              <div className="grid grid-cols-4 gap-3">
+                <div className="col-span-3">
                   <Field label="Test Name" value={res.test_name_display || res.test_name} onChange={(v: string) => handleResultChange(idx, "test_name_display", v)} />
                 </div>
                 <Field label="Value" value={res.value} onChange={(v: string) => handleResultChange(idx, "value", v)} />
@@ -90,13 +88,13 @@ export function ExtractionReview({ docType, data, confidence, onChange }: Extrac
         <Section title="Vitals & Lab Values at Visit" accent="watch">
           {data.recent_lab_values.map((item: any, idx: number) => (
             <Card key={idx} index={idx + 1} total={data.recent_lab_values.length}>
-              <div className="grid grid-cols-3 gap-3">
-                <div className="col-span-2">
+              <div className="grid grid-cols-4 gap-3">
+                <div className="col-span-3">
                   <Field label="Test / Vital" value={item.test_name_display || item.test_name} onChange={(v: string) => handleLabValueChange(idx, "test_name_display", v)} />
                 </div>
                 <Field label="Value" value={item.value} onChange={(v: string) => handleLabValueChange(idx, "value", v)} />
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 <Field label="Unit" value={item.unit} onChange={(v: string) => handleLabValueChange(idx, "unit", v)} />
                 <Field label="Date" value={item.test_date} onChange={(v: string) => handleLabValueChange(idx, "test_date", v)} />
               </div>

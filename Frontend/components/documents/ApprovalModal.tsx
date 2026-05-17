@@ -72,10 +72,10 @@ export function ApprovalModal({ open, onClose, uploadState, onApprove, onReject,
   }
 
   return (
-    <Modal open={open} onClose={onClose} title="Review Extraction" size="xl">
-      <div className="flex h-[75vh] divide-x divide-[var(--color-border)]">
+    <Modal open={open} onClose={onClose} title="Review Extraction" size="3xl">
+      <div className="flex h-[80vh] divide-x divide-[var(--color-border)]">
         {/* Left: Preview */}
-        <div className="w-1/2 p-4 overflow-hidden flex flex-col gap-4">
+        <div className="w-2/5 p-4 overflow-hidden flex flex-col gap-4">
           {uploadState.extractedText && (
             <div className="shrink-0">
               <p className="text-[10px] font-bold text-[var(--color-muted)] uppercase mb-2">Original Text</p>
@@ -90,7 +90,7 @@ export function ApprovalModal({ open, onClose, uploadState, onApprove, onReject,
         </div>
 
         {/* Right: Review */}
-        <div className="w-1/2 flex flex-col">
+        <div className="w-3/5 flex flex-col">
           {hasLowConfidence && onReprocess && (
             <div className="px-4 pt-4 pb-0">
               <div className="flex items-center justify-between gap-3 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
