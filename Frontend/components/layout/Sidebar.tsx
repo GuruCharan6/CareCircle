@@ -11,8 +11,8 @@ import { useLabResults } from "@/hooks/useLabResults";
 import { formatDateLocal } from "@/lib/utils";
 import {
   LayoutDashboard, Pill, FlaskConical, FileText, CalendarDays,
-  PackageCheck, Users, Bell, Sparkles, Stethoscope, Eye, Settings, Plus,
-  ChevronLeft, ChevronRight, Menu, TriangleAlert, Newspaper,
+  PackageCheck, Users, Bell, Sparkles, Stethoscope, Activity, Settings, Plus,
+  ChevronLeft, ChevronRight, Menu, ShieldAlert, Newspaper,
   FileClock, Search, LogOut, UserCircle, Files
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -31,8 +31,8 @@ const SECTIONS = [
     items: [
       { href: "/medications", label: "Medications", icon: Pill },
       { href: "/lab-results", label: "Lab Results", icon: FlaskConical },
-      { href: "/drug-interactions", label: "Drug Interactions", icon: TriangleAlert },
-      { href: "/observations", label: "Observations", icon: Eye },
+      { href: "/drug-interactions", label: "Drug Interactions", icon: ShieldAlert },
+      { href: "/observations", label: "Observations", icon: Activity },
     ],
   },
   {
