@@ -78,7 +78,8 @@ async def _digest_for_patient(conn, patient_id: UUID) -> None:
         patient_id, today,
     ) or 0)
 
-    latest_obs = all_obs[0] if all_obs else None
+    today_obs = [o for o in all_obs if o.observation_date == today]
+    latest_obs = today_obs[0] if today_obs else None
     meds_taken = latest_obs.medications_taken if latest_obs else None
 
     lines = []
