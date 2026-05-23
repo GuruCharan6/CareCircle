@@ -111,15 +111,31 @@ class CalendarWriterAgent:
             # Avoid duplicates: same specialist within ±14 days of follow_up_date.
             # 14-day window catches the case where a weeks-based estimate (e.g. +6 weeks = Jun 27)
             # differs from an explicit date (e.g. Jun 18) by 9 days — within the tolerance.
+            #
+            # Dedup logic:
+            #   - Both have specialist_type → match on specialist_type (original behaviour)
+            #   - Either is None → fall back to prescriber name match so two different doctors
+            #     with an unresolved specialty don't falsely collapse into one event.
+            prescriber_norm = prescriber.lower().strip()
+
+            def _is_appointment_match(e: CalendarEvent) -> bool:
+                if e.event_type != "appointment":
+                    return False
+                if e.status not in ("suggested", "confirmed"):
+                    return False
+                if abs((e.event_date - follow_up_date).days) > 14:
+                    return False
+                if specialist_type is not None and e.specialist_type is not None:
+                    return e.specialist_type == specialist_type
+                # One or both specialist_type values are None — match on prescriber name
+                existing_prescriber = (
+                    e.title.split(" — ", 1)[-1].lower().strip()
+                    if " — " in e.title else ""
+                )
+                return bool(prescriber_norm) and prescriber_norm == existing_prescriber
+
             existing = await self._calendar_repo.get_upcoming(patient_id, within_days=180)
-            existing_match = next(
-                (e for e in existing
-                 if abs((e.event_date - follow_up_date).days) <= 14
-                 and e.specialist_type == specialist_type
-                 and e.event_type == "appointment"
-                 and e.status in ("suggested", "confirmed")),
-                None,
-            )
+            existing_match = next((e for e in existing if _is_appointment_match(e)), None)
 
             if existing_match is None:
                 event = await self._calendar_repo.create(
@@ -159,16 +175,53 @@ class CalendarWriterAgent:
                     specialist=specialist_type,
                 )
             elif is_explicit_date and existing_match.event_date != follow_up_date:
-                # Explicit date from prescription is more accurate than a weeks estimate.
-                # Correct the existing event rather than creating a duplicate.
-                await self._calendar_repo.update_event_date(existing_match.id, follow_up_date)
-                created.append(existing_match)  # treat as "handled" for gap detection
-                logger.info(
-                    "calendar_writer_agent.event_date_corrected",
-                    event_id=str(existing_match.id),
-                    old_date=str(existing_match.event_date),
-                    new_date=str(follow_up_date),
-                )
+                if existing_match.status == "suggested":
+                    # Explicit date is more accurate than a weeks estimate.
+                    # Safe to correct — user hasn't confirmed yet.
+                    await self._calendar_repo.update_event_date(existing_match.id, follow_up_date)
+                    created.append(existing_match)  # treat as "handled" for gap detection
+                    logger.info(
+                        "calendar_writer_agent.event_date_corrected",
+                        event_id=str(existing_match.id),
+                        old_date=str(existing_match.event_date),
+                        new_date=str(follow_up_date),
+                    )
+                else:
+                    # Existing event is confirmed (user-approved) — never mutate it.
+                    # Different date means this is a genuinely new appointment; suggest it.
+                    event = await self._calendar_repo.create(
+                        patient_id=patient_id,
+                        event_type="appointment",
+                        title=title,
+                        event_date=follow_up_date,
+                        source="prescription_ingestion" if item.is_prescription else "doctor_note_extraction",
+                        specialist_type=specialist_type,
+                        status="suggested",
+                    )
+                    created.append(event)
+                    weeks_hint = extracted.get("follow_up_weeks")
+                    hint = f"in {weeks_hint} weeks (around {follow_up_date})" if weeks_hint else str(follow_up_date)
+                    await self._notification_repo.create(
+                        patient_id=patient_id,
+                        recipient_user_id=patient.user_id,
+                        type="calendar_reminder",
+                        channel="in_app",
+                        title="Follow-up appointment scheduled",
+                        body=(
+                            f"{prescriber} mentioned a follow-up {hint}. "
+                            f"Tap to confirm or dismiss."
+                        ),
+                        linked_entity_type="calendar_event",
+                        linked_entity_id=event.id,
+                        action_deep_link=f"/calendar/{event.id}",
+                    )
+                    logger.info(
+                        "calendar_writer_agent.event_created",
+                        event_id=str(event.id),
+                        date=str(follow_up_date),
+                        specialist=specialist_type,
+                        reason="existing confirmed event not mutated",
+                    )
             else:
                 logger.info(
                     "calendar_writer_agent.skip_appointment",
