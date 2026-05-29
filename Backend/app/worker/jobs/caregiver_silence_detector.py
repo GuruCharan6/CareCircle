@@ -61,7 +61,17 @@ async def _check_for_patient(conn, patient_id) -> int:
     if not confirmed:
         return 0  # no caregivers assigned — silence detector not applicable
 
-    latest_obs = await ObservationRepository(conn).get_latest(patient_id, "caregiver_voice")
+    already_sent = await conn.fetchval(
+        """SELECT 1 FROM public.notifications
+           WHERE patient_id = $1 AND type = 'staleness_notice'
+             AND created_at::date = CURRENT_DATE
+           LIMIT 1""",
+        patient_id,
+    )
+    if already_sent:
+        return 0
+
+    latest_obs = await ObservationRepository(conn).get_latest(patient_id, "caregiver_note")
     if latest_obs:
         silence_days = (date.today() - latest_obs.observation_date).days
     else:

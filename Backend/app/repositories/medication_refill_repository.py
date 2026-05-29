@@ -30,7 +30,7 @@ class MedicationRefillRepository(BaseRepository):
             JOIN public.medications m ON r.medication_id = m.id
             WHERE r.patient_id = $1
               AND m.status = 'active'
-              AND r.refill_due_date <= CURRENT_DATE + $2::int
+              AND r.refill_due_date BETWEEN CURRENT_DATE AND CURRENT_DATE + $2::int
               AND r.refill_confirmed_at IS NULL
             ORDER BY r.refill_due_date ASC
             """,
