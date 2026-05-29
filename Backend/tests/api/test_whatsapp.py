@@ -7,9 +7,10 @@ import pytest
 @pytest.fixture(autouse=True)
 def mock_whatsapp_service():
     """Patch WhatsAppService so no Twilio init happens during webhook tests."""
+    import app.api.v1.routes.whatsapp as _whatsapp_route  # ensure module loaded
     svc = MagicMock()
     svc.handle_inbound = AsyncMock(return_value=None)
-    with patch("app.api.v1.routes.whatsapp.WhatsAppService", return_value=svc):
+    with patch.object(_whatsapp_route, "WhatsAppService", return_value=svc):
         yield svc
 
 

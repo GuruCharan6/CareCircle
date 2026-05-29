@@ -26,13 +26,19 @@ from unittest.mock import MagicMock
 
 _mock = MagicMock()
 for _mod in [
-    # Google / Gemini
+    # Google / Gemini — must cover ALL submodules imported transitively
     "google",
     "google.ai",
     "google.ai.generativelanguage_v1beta",
     "google.generativeai",
     "google.generativeai.types",
     "google.generativeai.client",
+    "google.genai",
+    "google.genai.types",
+    "google.api_core",
+    "google.api_core.exceptions",
+    "google.auth",
+    "google.auth.credentials",
     # Anthropic
     "anthropic",
     # Firebase
@@ -44,6 +50,7 @@ for _mod in [
     "twilio.rest",
     "twilio.twiml",
     "twilio.twiml.messaging_response",
+    "twilio.request_validator",
     # Supabase (create_client makes network calls at module level)
     "supabase",
     "supabase.client",
@@ -182,6 +189,8 @@ async def client(test_user, mock_conn):
     - get_current_user returns test_user (no JWT verification against DB)
     - init_db / init_redis patched to no-ops (no real connections on startup)
     """
+    # Import modules before patching — patch() needs the module in sys.modules
+    import app.main as _main
     from app.api.deps import get_current_user, get_db
 
     async def override_get_db():
@@ -191,13 +200,12 @@ async def client(test_user, mock_conn):
         return test_user
 
     with (
-        patch("app.main.init_db", AsyncMock()),
-        patch("app.main.init_redis", AsyncMock()),
-        patch("app.main.close_db", AsyncMock()),
-        patch("app.main.close_redis", AsyncMock()),
+        patch.object(_main, "init_db", AsyncMock()),
+        patch.object(_main, "init_redis", AsyncMock()),
+        patch.object(_main, "close_db", AsyncMock()),
+        patch.object(_main, "close_redis", AsyncMock()),
     ):
-        from app.main import create_app
-        app = create_app()
+        app = _main.create_app()
         app.dependency_overrides[get_db] = override_get_db
         app.dependency_overrides[get_current_user] = override_get_current_user
 
@@ -211,19 +219,19 @@ async def anon_client(mock_conn):
     Unauthenticated client — get_current_user NOT overridden.
     Used to verify 401 enforcement. DB mock still in place so no real pool needed.
     """
+    import app.main as _main
     from app.api.deps import get_db
 
     async def override_get_db():
         yield mock_conn
 
     with (
-        patch("app.main.init_db", AsyncMock()),
-        patch("app.main.init_redis", AsyncMock()),
-        patch("app.main.close_db", AsyncMock()),
-        patch("app.main.close_redis", AsyncMock()),
+        patch.object(_main, "init_db", AsyncMock()),
+        patch.object(_main, "init_redis", AsyncMock()),
+        patch.object(_main, "close_db", AsyncMock()),
+        patch.object(_main, "close_redis", AsyncMock()),
     ):
-        from app.main import create_app
-        app = create_app()
+        app = _main.create_app()
         app.dependency_overrides[get_db] = override_get_db
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
