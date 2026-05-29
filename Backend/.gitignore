@@ -1,13 +1,38 @@
+# Python
 venv/
-.env
-.pytest_cache/
+.venv/
 __pycache__/
 *.pyc
+*.pyo
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+
+# Env files
+.env
+.env.local
+.env.staging
+.env.production
+# .env.example is intentionally committed (template, no real values)
+
+# Firebase service account keys
+*.firebase-adminsdk*.json
+carecircle-*.json
+
+# Celery artifacts
 celerybeat-schedule.bak
 celerybeat-schedule.dat
 celerybeat-schedule.dir
+
+# Test + coverage
+htmlcov/
+.coverage
+coverage.xml
+
+# Logs / debug
 error_log.txt
-tests/
-scratch/
-carecircle-bdb2b-firebase-ad*.json
+*.log
+
+# Dev scripts
 reset_db.py
+scratch/

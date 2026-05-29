@@ -1,8 +1,12 @@
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
+import sentry_sdk
 from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
+from sentry_sdk.integrations.asyncio import AsyncioIntegration
+from sentry_sdk.integrations.fastapi import FastApiIntegration
+from sentry_sdk.integrations.starlette import StarletteIntegration
 
 from app.config import settings
 from app.core.database import close_db, init_db
@@ -15,6 +19,26 @@ from app.middleware.rate_limit import RateLimitMiddleware
 from app.middleware.request_id import RequestIDMiddleware
 from app.monitoring.health import router as health_router
 from app.monitoring.metrics import MetricsMiddleware, metrics_app
+
+
+def _init_sentry() -> None:
+    """Initialize Sentry if DSN configured. No-op in dev/test."""
+    if not settings.sentry_dsn:
+        return
+    sentry_sdk.init(
+        dsn=settings.sentry_dsn,
+        environment=settings.environment,
+        traces_sample_rate=settings.sentry_traces_sample_rate,
+        send_default_pii=False,      # never send patient data to Sentry
+        integrations=[
+            StarletteIntegration(transaction_style="endpoint"),
+            FastApiIntegration(transaction_style="endpoint"),
+            AsyncioIntegration(),
+        ],
+        # Ignore expected operational errors — only track real bugs
+        ignore_errors=[],
+    )
+    logger.info("sentry.initialized", environment=settings.environment)
 
 
 @asynccontextmanager
@@ -33,6 +57,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
 
 def create_app() -> FastAPI:
+    _init_sentry()
+
     app = FastAPI(
         title=settings.app_name,
         version="1.0.0",
@@ -52,10 +78,7 @@ def create_app() -> FastAPI:
 
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=[
-            "https://care-circle-three.vercel.app",
-            "http://localhost:3000",
-        ],
+        allow_origins=settings.get_cors_origins(),
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],

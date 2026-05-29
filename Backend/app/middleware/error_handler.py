@@ -1,3 +1,4 @@
+import sentry_sdk
 import structlog
 from fastapi import Request
 from fastapi.responses import JSONResponse
@@ -12,6 +13,7 @@ class ErrorHandlerMiddleware(BaseHTTPMiddleware):
     """Catch all unhandled exceptions → standard ErrorResponse.
     AppException subclasses → their status_code.
     Unknown exceptions → 500. Never leaks stack traces to client.
+    500s are captured to Sentry (if configured).
     """
 
     async def dispatch(self, request: Request, call_next):
@@ -33,6 +35,13 @@ class ErrorHandlerMiddleware(BaseHTTPMiddleware):
                 },
             )
         except Exception as exc:
+            # Capture to Sentry before swallowing — never send PII
+            with sentry_sdk.new_scope() as scope:
+                scope.set_tag("path", request.url.path)
+                scope.set_tag("method", request.method)
+                scope.set_tag("request_id", getattr(request.state, "request_id", "unknown"))
+                sentry_sdk.capture_exception(exc)
+
             logger.exception(
                 "unhandled_exception",
                 error=str(exc),
