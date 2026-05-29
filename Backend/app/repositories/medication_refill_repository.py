@@ -49,7 +49,7 @@ class MedicationRefillRepository(BaseRepository):
         is_default_assumption: bool = False,
         notes: str | None = None,
     ) -> MedicationRefill:
-        refill_due = f"($5::date + $4::int - 7)"
+        refill_due = "($5::date + $4::int - 7)"
         row = await self.conn.fetchrow(
             f"""
             INSERT INTO public.medication_refills

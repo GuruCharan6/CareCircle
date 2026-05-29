@@ -1,4 +1,4 @@
-from datetime import date, datetime, timedelta, timezone
+from datetime import UTC, date, datetime, timedelta
 
 from app.config import settings
 from app.lib.signed_url import create_signed_view_url
@@ -50,18 +50,18 @@ class DoctorNoteExtractor(BaseExtractor):
 
         # Resolve follow_up_date: explicit date takes priority, else compute from weeks.
         from app.lib.dates import parse_date_robust
-        
+
         event_time = document.event_date or date.today()
-        
+
         raw_follow_up = data.get("follow_up_date")
         follow_up_date_obj = parse_date_robust(raw_follow_up)
-        
+
         if not follow_up_date_obj and data.get("follow_up_weeks"):
             try:
                 follow_up_date_obj = event_time + timedelta(weeks=float(data["follow_up_weeks"]))
             except (ValueError, TypeError):
                 pass
-        
+
         follow_up_date_str = follow_up_date_obj.isoformat() if follow_up_date_obj else None
 
         return IngestedItem(
@@ -69,7 +69,7 @@ class DoctorNoteExtractor(BaseExtractor):
             source_document_id=document.id,
             patient_id=document.patient_id,
             event_time=event_time,
-            ingestion_time=datetime.now(timezone.utc),
+            ingestion_time=datetime.now(UTC),
             extracted_data={
                 "medication_changes": data.get("medication_changes") or [],
                 "ordered_tests": data.get("ordered_tests") or [],

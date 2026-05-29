@@ -1,9 +1,9 @@
 import json
-from typing import Any, Dict
+from typing import Any
 
 from google import genai
-from google.genai import types
 from google.api_core import exceptions
+from google.genai import types
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
 from app.config import settings
@@ -219,7 +219,7 @@ class GeminiVisionClient:
             elif "```" in text:
                 clean_text = text.split("```")[1].split("```")[0].strip()
 
-            data: Dict[str, Any] = json.loads(clean_text)
+            data: dict[str, Any] = json.loads(clean_text)
         except json.JSONDecodeError as exc:
             logger.error("gemini_vision.json_parse_error", raw=text[:300])
             raise ValueError(f"Gemini returned invalid JSON: {exc}") from exc

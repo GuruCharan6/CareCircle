@@ -32,7 +32,6 @@ def detect_temporal_conflicts(
         return conflicts
 
     new_results = item.ingest.extracted_data.get("results") or []
-    event_date = item.ingest.event_time
 
     # We don't have a direct way to check lab_results via recent_observations,
     # but we CAN check if the same lab test appears twice in the SAME document

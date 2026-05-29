@@ -7,7 +7,7 @@ For each pending 'refill_medication' gap_action:
 - due date passed: mark gap_action as 'overdue'
 """
 import asyncio
-from datetime import date, timedelta
+from datetime import date
 
 from app.core.celery import celery_app
 from app.core.logging import get_logger

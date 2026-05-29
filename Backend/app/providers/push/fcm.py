@@ -31,6 +31,7 @@ class FCMClient:
     def _get_app(self) -> Any:
         if self._app is None:
             import json
+
             import firebase_admin
             from firebase_admin import credentials
             if not firebase_admin._apps:

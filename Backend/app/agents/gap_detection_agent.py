@@ -28,7 +28,7 @@ REQUIRED_TESTS: dict[str, list[str]] = {
     "ophthalmologist": ["CBC", "basic_metabolic_panel", "serum_creatinine"],
     "otolaryngologist": ["CBC", "basic_metabolic_panel", "serum_creatinine"],
     "urologist": ["CBC", "basic_metabolic_panel", "serum_creatinine"],
-    
+
 }
 
 # Test results must be from within this many days before the appointment to count as valid.
@@ -128,7 +128,7 @@ class GapDetectionAgent:
                 continue
 
             urgency = self._urgency_from_days(days_until)
-            
+
             # The user wants tests done 1 week before the visit if possible.
             # We'll set the due_by to 1 week before, but no later than 2 days before.
             due_by = appointment_date - timedelta(days=7)

@@ -1,11 +1,12 @@
 from __future__ import annotations
+
 import asyncio
 import json
-from typing import Any, List, Dict, Union
+from typing import Any
 
 from google import genai
-from google.genai import types
 from google.api_core import exceptions
+from google.genai import types
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
 from app.config import settings
@@ -94,7 +95,7 @@ class GeminiProvider(LLMProvider):
                     "role": "user" if h.get("role") == "user" else "model",
                     "parts": [{"text": h.get("content", "")}]
                 })
-            
+
             chat = self._client.aio.chats.create(
                 model=self._model,
                 history=gemini_history,
@@ -155,7 +156,7 @@ class GeminiProvider(LLMProvider):
             logger.error("gemini.json_parse_error", raw=getattr(response, "text", "")[:300])
             raise ValueError(f"Gemini returned invalid JSON: {exc}") from exc
 
-    async def embed(self, text: str) -> List[float]:
+    async def embed(self, text: str) -> list[float]:
         try:
             result = await self._embed_client.aio.models.embed_content(
                 model=self._embedding_model,
@@ -169,17 +170,17 @@ class GeminiProvider(LLMProvider):
             embeddings = getattr(result, "embeddings", None)
             if embeddings and len(embeddings) > 0:
                 return embeddings[0].values
-            
+
             embedding = getattr(result, "embedding", None)
             if embedding and hasattr(embedding, "values"):
                 return embedding.values
-            
+
             return [0.0] * 768
         except Exception as exc:
             logger.error("gemini.embedding_failed", error=str(exc))
             return [0.0] * 768
 
-    async def embed_batch(self, texts: List[str]) -> List[List[float]]:
+    async def embed_batch(self, texts: list[str]) -> list[list[float]]:
         if not texts:
             return []
         try:
@@ -189,7 +190,7 @@ class GeminiProvider(LLMProvider):
             logger.error("gemini.embedding_batch_failed", error=str(exc))
             return [[0.0] * 768 for _ in texts]
 
-    async def embed_query(self, query: str) -> List[float]:
+    async def embed_query(self, query: str) -> list[float]:
         try:
             result = await self._embed_client.aio.models.embed_content(
                 model=self._embedding_model,
@@ -202,11 +203,11 @@ class GeminiProvider(LLMProvider):
             embeddings = getattr(result, "embeddings", None)
             if embeddings and len(embeddings) > 0:
                 return embeddings[0].values
-            
+
             embedding = getattr(result, "embedding", None)
             if embedding and hasattr(embedding, "values"):
                 return embedding.values
-            
+
             return [0.0] * 768
         except Exception as exc:
             logger.error("gemini.embedding_query_failed", error=str(exc))

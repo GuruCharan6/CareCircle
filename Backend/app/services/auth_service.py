@@ -1,4 +1,3 @@
-from uuid import UUID
 
 from app.config import settings
 from app.core.exceptions import ExternalServiceError, UnauthorizedError
@@ -44,6 +43,7 @@ class AuthService:
     async def send_custom_phone_otp(self, user_id, phone_number: str) -> None:
         """Generate 6-digit OTP, store in Redis, send via SMS (or WhatsApp fallback)."""
         import secrets
+
         from app.cache.phone_otp_cache import set_phone_otp
 
         otp = f"{secrets.randbelow(1_000_000):06d}"
@@ -115,20 +115,21 @@ class AuthService:
         Bypasses potential library issues with service role key propagation.
         """
         import httpx
+
         from app.config import settings
-        
+
         url = f"{settings.supabase_url}/auth/v1/admin/users/{uid}"
         headers = {
             "apikey": settings.supabase_service_role_key,
             "Authorization": f"Bearer {settings.supabase_service_role_key}"
         }
-        
+
         try:
             async with httpx.AsyncClient() as client:
                 response = await client.get(url, headers=headers)
                 if response.status_code != 200:
                     raise Exception(f"Status {response.status_code}: {response.text}")
-                
+
                 data = response.json()
                 # Construct a simple object-like structure to match previous return type if possible,
                 # or just return the dict. get_current_user expects an object with .user_metadata etc.

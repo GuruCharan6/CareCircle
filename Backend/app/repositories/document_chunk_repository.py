@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 from typing import Any
 from uuid import UUID
 
@@ -52,7 +53,7 @@ class DocumentChunkRepository(BaseRepository):
             )
             for c in chunks
         ]
-        result = await self.conn.executemany(
+        await self.conn.executemany(
             """
             INSERT INTO public.document_chunks
               (source_document_id, patient_id, chunk_text, chunk_index,

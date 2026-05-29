@@ -1,9 +1,9 @@
 import asyncio
 from uuid import UUID
 
+from app.agents.ingestion_orchestrator import IngestionOrchestrator
 from app.core.celery import celery_app
 from app.core.logging import get_logger
-from app.agents.ingestion_orchestrator import IngestionOrchestrator
 from app.providers.llm.gemini import GeminiProvider
 from app.worker._db import worker_conn
 

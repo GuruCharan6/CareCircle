@@ -4,7 +4,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Query
 
-from app.api.deps import CurrentPatient, CurrentUser, DBConn
+from app.api.deps import CurrentPatient, DBConn
 from app.schemas.common import SuccessResponse
 from app.schemas.medication import MedicationCreate, MedicationResponse, MedicationUpdate
 from app.services.medication_service import MedicationService

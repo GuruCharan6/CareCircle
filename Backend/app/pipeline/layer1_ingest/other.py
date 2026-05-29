@@ -1,12 +1,13 @@
-from datetime import datetime, date, timezone
-from app.pipeline.layer1_ingest.base import BaseExtractor
-from app.pipeline.layer1_ingest.types import IngestedItem
-from app.models.source_document import SourceDocument
-from app.providers.llm.base import LLMProvider
-from app.providers.vision.gemini_vision import GeminiVisionClient
-from app.lib.signed_url import create_signed_view_url
+from datetime import UTC, date, datetime
+
 from app.config import settings
 from app.core.logging import get_logger
+from app.lib.signed_url import create_signed_view_url
+from app.models.source_document import SourceDocument
+from app.pipeline.layer1_ingest.base import BaseExtractor
+from app.pipeline.layer1_ingest.types import IngestedItem
+from app.providers.llm.base import LLMProvider
+from app.providers.vision.gemini_vision import GeminiVisionClient
 
 logger = get_logger(__name__)
 
@@ -66,7 +67,7 @@ class OtherExtractor(BaseExtractor):
             source_document_id=document.id,
             patient_id=document.patient_id,
             event_time=event_time,
-            ingestion_time=datetime.now(timezone.utc),
+            ingestion_time=datetime.now(UTC),
             extracted_data=data,
             confidence_per_field=field_confidence,
             raw_text=raw_text,

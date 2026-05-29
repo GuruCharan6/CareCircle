@@ -1,6 +1,6 @@
 from __future__ import annotations
-from typing import List
 
+import builtins
 from uuid import UUID
 
 import asyncpg
@@ -52,7 +52,7 @@ class CalendarService:
         patient_id: UUID,
         within_days: int = 30,
         status: str | None = None,
-    ) -> List[CalendarEvent]:
+    ) -> builtins.list[CalendarEvent]:
         return await self._repo.get_upcoming(
             patient_id, within_days=within_days, status=status
         )

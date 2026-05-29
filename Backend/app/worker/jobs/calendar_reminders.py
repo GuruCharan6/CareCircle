@@ -11,7 +11,11 @@ from app.core.logging import get_logger
 from app.repositories.calendar_event_repository import CalendarEventRepository
 from app.repositories.notification_repository import NotificationRepository
 from app.worker._db import worker_conn
-from app.worker.jobs._helpers import get_all_patient_ids, get_user_id_for_patient, try_push, try_whatsapp
+from app.worker.jobs._helpers import (
+    get_all_patient_ids,
+    get_user_id_for_patient,
+    try_push,
+)
 
 logger = get_logger(__name__)
 
@@ -43,7 +47,7 @@ async def _async_run() -> None:
 async def _remind_for_patient(conn, patient_id) -> int:
     cal_repo = CalendarEventRepository(conn)
     notif_repo = NotificationRepository(conn)
-    
+
     # Escalation levels from System Design
     # (days_offset, label, recipient, tone)
     ESCALATIONS = [
@@ -54,7 +58,7 @@ async def _remind_for_patient(conn, patient_id) -> int:
         (3, "T-3", "meera", "alert"),
         (1, "T-1", "meera", "alert"),
     ]
-    
+
     user_id = await get_user_id_for_patient(conn, patient_id)
     if not user_id:
         return 0
@@ -96,7 +100,7 @@ async def _remind_for_patient(conn, patient_id) -> int:
 
     for days, label, recipient, tone in ESCALATIONS:
         target_date = today + timedelta(days=days)
-        
+
         # Get confirmed events for this specific offset that haven't sent this reminder label
         rows = await conn.fetch(
             """
@@ -114,7 +118,7 @@ async def _remind_for_patient(conn, patient_id) -> int:
             title = row["title"]
             event_type = row["event_type"]
             type_label = "appointment" if event_type == "appointment" else "lab test"
-            
+
             # Construct message
             if days == 1:
                 msg_title = f"FINAL ALERT: {type_label.upper()} TOMORROW"
@@ -135,11 +139,11 @@ async def _remind_for_patient(conn, patient_id) -> int:
                 from app.worker.jobs._helpers import send_whatsapp_to_phone
                 cg_repo = CaregiverRepository(conn)
                 caregivers = await cg_repo.get_by_patient_id(patient_id, active_only=True)
-                
+
                 for cg in caregivers:
                     cg_msg = f"CareCircle Reminder: {title} for the patient on {target_date}. Please prepare for the visit."
                     await send_whatsapp_to_phone(cg.phone_number, cg_msg)
-            
+
             # 2. Recipient: Meera (All levels)
             # Create in-app notification record
             await notif_repo.create(
@@ -174,5 +178,5 @@ async def _remind_for_patient(conn, patient_id) -> int:
             # 3. Mark as sent
             await cal_repo.add_reminder_sent(event_id, label)
             sent_count += 1
-            
+
     return sent_count

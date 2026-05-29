@@ -1,4 +1,5 @@
-from typing import Annotated, AsyncGenerator
+from collections.abc import AsyncGenerator
+from typing import Annotated
 from uuid import UUID
 
 import asyncpg
@@ -43,17 +44,17 @@ async def get_current_user(request: Request, conn: DBConn) -> User:
             from app.services.auth_service import AuthService
             auth_svc = AuthService()
             supabase_user = await auth_svc.get_user_by_uid(user_id_str)
-            
+
             meta = getattr(supabase_user, "user_metadata", {}) or {}
             app_meta = getattr(supabase_user, "app_metadata", {}) or {}
-            
+
             provider = app_meta.get("provider", "phone_otp")
             if provider != "google":
                 provider = "phone_otp"
-                
+
             name = meta.get("full_name") or meta.get("name") or "User"
             role = meta.get("role", "family_caregiver")
-            
+
             phone = getattr(supabase_user, "phone", None)
             if phone == "": phone = None
             email = getattr(supabase_user, "email", None)

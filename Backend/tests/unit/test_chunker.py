@@ -1,5 +1,5 @@
 """Unit tests for app/lib/chunker.py."""
-from app.lib.chunker import CHUNK_OVERLAP, CHUNK_SIZE, _CHARS_PER_TOKEN, chunk_text, estimate_tokens
+from app.lib.chunker import _CHARS_PER_TOKEN, CHUNK_OVERLAP, CHUNK_SIZE, chunk_text, estimate_tokens
 
 
 class TestChunkText:

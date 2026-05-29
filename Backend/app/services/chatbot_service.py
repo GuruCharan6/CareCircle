@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
 import asyncpg
 
 from app.core.logging import get_logger
+from app.lib.reranker import rerank_chunks
 from app.providers.llm.gemini import GeminiProvider
 from app.repositories.calendar_event_repository import CalendarEventRepository
 from app.repositories.clinical_hypothesis_repository import ClinicalHypothesisRepository
@@ -17,7 +18,6 @@ from app.repositories.medication_repository import MedicationRepository
 from app.repositories.observation_repository import ObservationRepository
 from app.repositories.patient_repository import PatientRepository
 from app.repositories.patient_state_repository import PatientStateRepository
-from app.lib.reranker import rerank_chunks
 from app.schemas.chatbot import (
     ChatActionConfirm,
     ChatHistoryItem,
@@ -154,7 +154,7 @@ class ChatbotService:
                     payload={},
                 )],
                 suggested_prompts=prompts,
-                generated_at=datetime.now(timezone.utc),
+                generated_at=datetime.now(UTC),
             )
 
         if any(kw in q for kw in self._LOG_TRIGGERS):
@@ -167,7 +167,7 @@ class ChatbotService:
                     payload={"notes": query},
                 )],
                 suggested_prompts=prompts,
-                generated_at=datetime.now(timezone.utc),
+                generated_at=datetime.now(UTC),
             )
 
         return None
@@ -225,7 +225,7 @@ class ChatbotService:
                         sources=list(set(all_sources)),
                         processing_steps=processing_steps,
                         suggested_prompts=prompts,
-                        generated_at=datetime.now(timezone.utc),
+                        generated_at=datetime.now(UTC),
                     )
 
                 # Process ALL tool calls returned in this iteration
@@ -254,7 +254,7 @@ class ChatbotService:
                             processing_steps=processing_steps,
                             proposed_actions=[ProposedAction(**args)],
                             suggested_prompts=prompts,
-                            generated_at=datetime.now(timezone.utc),
+                            generated_at=datetime.now(UTC),
                         )
 
                     context, sources = await self._execute_tool(name, args, patient_id, history, local_time)
@@ -280,14 +280,14 @@ class ChatbotService:
                     sources=list(set(all_sources)),
                     processing_steps=processing_steps,
                     suggested_prompts=prompts,
-                    generated_at=datetime.now(timezone.utc),
+                    generated_at=datetime.now(UTC),
                 )
 
             return ChatResponse(
                 answer="I looked but couldn't find relevant information. Please try rephrasing.",
                 query_type="error",
                 suggested_prompts=prompts,
-                generated_at=datetime.now(timezone.utc),
+                generated_at=datetime.now(UTC),
             )
 
         except Exception as exc:
@@ -296,7 +296,7 @@ class ChatbotService:
                 answer="I'm having a bit of trouble accessing the records right now. Please try again in a moment.",
                 query_type="error",
                 suggested_prompts=prompts,
-                generated_at=datetime.now(timezone.utc),
+                generated_at=datetime.now(UTC),
             )
 
     async def _execute_tool(
@@ -373,7 +373,7 @@ class ChatbotService:
                     answer="I need a specific date to add this to the calendar. Could you provide the date (e.g. 'May 15' or '2026-05-15')?",
                     query_type="chat",
                     suggested_prompts=prompts,
-                    generated_at=datetime.now(timezone.utc),
+                    generated_at=datetime.now(UTC),
                 )
             event_date = datetime.strptime(payload["event_date"], "%Y-%m-%d").date()
             await self._cal_repo.create(
@@ -398,7 +398,7 @@ class ChatbotService:
                     answer="I need a specific date to schedule the visit. Could you provide the date (e.g. 'May 15' or '2026-05-15')?",
                     query_type="chat",
                     suggested_prompts=prompts,
-                    generated_at=datetime.now(timezone.utc),
+                    generated_at=datetime.now(UTC),
                 )
             event_date = datetime.strptime(payload["event_date"], "%Y-%m-%d").date()
             await self._cal_repo.create(
@@ -438,7 +438,7 @@ class ChatbotService:
             query_type="action",
             suggested_prompts=prompts,
             redirect_url=redirect_url,
-            generated_at=datetime.now(timezone.utc),
+            generated_at=datetime.now(UTC),
         )
 
     def _get_today(self, local_time: str | None) -> str:
@@ -448,7 +448,7 @@ class ChatbotService:
                 return datetime.fromisoformat(local_time.replace("Z", "+00:00")).date().isoformat()
             except Exception:
                 pass
-        return datetime.now(timezone.utc).date().isoformat()
+        return datetime.now(UTC).date().isoformat()
 
     async def suggested_prompts(self, patient_id: UUID) -> list[SuggestedPrompt]:
         """Context-aware suggested prompts on chatbot open."""
@@ -464,7 +464,7 @@ class ChatbotService:
 
         state = await self._state_repo.get_by_patient_id(patient_id)
         if state and state.last_caregiver_note_date:
-            days_silent = (datetime.now(timezone.utc).date() - state.last_caregiver_note_date).days
+            days_silent = (datetime.now(UTC).date() - state.last_caregiver_note_date).days
             if days_silent >= 3:
                 prompts.append(SuggestedPrompt(
                     text="Log caregiver update",

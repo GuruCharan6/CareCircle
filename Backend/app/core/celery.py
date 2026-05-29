@@ -18,7 +18,7 @@ class DummyConf:
 class DummyCelery:
     def __init__(self, *args, **kwargs):
         self.conf = DummyConf()
-        
+
     def task(self, *args, **kwargs):
         # If the decorator is called without parens: @celery_app.task
         if len(args) == 1 and callable(args[0]):

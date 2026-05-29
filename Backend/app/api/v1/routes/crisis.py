@@ -5,7 +5,7 @@ from uuid import UUID
 from fastapi import APIRouter
 from pydantic import BaseModel
 
-from app.api.deps import CurrentUser, CurrentPatient, DBConn
+from app.api.deps import CurrentPatient, CurrentUser, DBConn
 from app.schemas.common import SuccessResponse
 from app.schemas.crisis import CrisisAccessLog, CrisisPacketResponse
 from app.services.crisis_service import CrisisService

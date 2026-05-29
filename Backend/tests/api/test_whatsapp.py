@@ -1,6 +1,7 @@
 """API tests for /api/v1/webhooks/whatsapp — no auth required."""
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 
 @pytest.fixture(autouse=True)

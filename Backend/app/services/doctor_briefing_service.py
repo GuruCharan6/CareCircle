@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import UUID
 
 import asyncpg
@@ -132,7 +132,7 @@ class DoctorBriefingService:
             "behavioral_notes": behavioral_notes,
             "adherence": adherence,
             "questions_to_raise": questions,
-            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "generated_at": datetime.now(UTC).isoformat(),
         }
 
     async def generate_medication_list_pdf_url(self, patient_id: UUID) -> str:
@@ -174,7 +174,7 @@ class DoctorBriefingService:
             interactions=flagged,
         )
 
-        now_ts = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
+        now_ts = datetime.now(UTC).strftime("%Y%m%d%H%M%S")
         path = f"{patient_id}/medlist_{now_ts}.pdf"
         bucket = settings.supabase_storage_bucket_med_pdfs
 
@@ -198,7 +198,7 @@ class DoctorBriefingService:
             adherence=briefing["adherence"],
         )
 
-        now_ts = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
+        now_ts = datetime.now(UTC).strftime("%Y%m%d%H%M%S")
         path = f"{patient_id}/briefing_{event_id}_{now_ts}.pdf"
         bucket = settings.supabase_storage_bucket_med_pdfs
 

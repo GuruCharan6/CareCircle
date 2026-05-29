@@ -2,7 +2,6 @@ from datetime import timedelta
 
 from app.models.observation import Observation
 from app.pipeline.layer2_normalize.types import (
-    BIAS_MINIMIZATION,
     DIM_BEHAVIORAL_OBSERVABLE,
     DIM_SUBJECTIVE_EXPERIENCE,
     NormalizedItem,

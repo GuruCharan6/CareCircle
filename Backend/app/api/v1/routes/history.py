@@ -6,7 +6,6 @@ from uuid import UUID
 from fastapi import APIRouter
 
 from app.api.deps import CurrentPatient, DBConn
-from app.schemas.common import SuccessResponse
 from app.services.history_service import HistoryService
 
 router = APIRouter(prefix="/patients/{patient_id}/history", tags=["history"])

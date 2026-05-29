@@ -1,6 +1,5 @@
 from app.pipeline.layer2_normalize.types import (
     BIAS_ANXIETY_FILTERED,
-    BIAS_MINIMIZATION,
     BIAS_NONE,
     BIAS_OVER_REPORT,
     DIM_BEHAVIORAL_OBSERVABLE,
@@ -8,7 +7,6 @@ from app.pipeline.layer2_normalize.types import (
     DIM_CLINICAL_INSTRUCTION,
     DIM_SUBJECTIVE_EXPERIENCE,
     RELIABILITY_HIGH,
-    RELIABILITY_LOW,
     RELIABILITY_MODERATE,
     RELIABILITY_VERY_HIGH,
     SourceProfile,

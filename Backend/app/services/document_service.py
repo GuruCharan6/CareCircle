@@ -1,6 +1,4 @@
-import json
-from datetime import datetime, timezone
-from typing import Any
+from datetime import UTC, date, datetime
 from uuid import UUID, uuid4
 
 import asyncpg
@@ -11,14 +9,17 @@ from app.core.logging import logger
 from app.lib.signed_url import create_signed_upload_url, create_signed_view_url, delete_file
 from app.models.source_document import SourceDocument
 from app.repositories.document_repository import DocumentRepository
-from app.schemas.document import DocumentApproveRequest, SignedUploadURLRequest, SignedUploadURLResponse
-from app.schemas.medication import MedicationCreate
+from app.schemas.document import (
+    DocumentApproveRequest,
+    SignedUploadURLRequest,
+    SignedUploadURLResponse,
+)
 from app.schemas.lab_result import LabResultCreate
-from app.services.medication_service import MedicationService
-from app.services.lab_result_service import LabResultService
-from datetime import date
-from app.services.prescriber_service import PrescriberService
+from app.schemas.medication import MedicationCreate
 from app.schemas.prescriber import PrescriberCreate
+from app.services.lab_result_service import LabResultService
+from app.services.medication_service import MedicationService
+from app.services.prescriber_service import PrescriberService
 
 
 class DocumentService:
@@ -95,7 +96,7 @@ class DocumentService:
         )
 
         from datetime import timedelta
-        expires_at = datetime.now(tz=timezone.utc) + timedelta(seconds=900)
+        expires_at = datetime.now(tz=UTC) + timedelta(seconds=900)
 
         logger.info("document.upload_url_generated", doc_id=str(doc.id), patient_id=str(patient_id))
         return SignedUploadURLResponse(
@@ -168,8 +169,9 @@ class DocumentService:
         return approved
 
     async def _create_voice_observation(self, doc: "SourceDocument") -> None:
-        from app.repositories.observation_repository import ObservationRepository
         from datetime import date as date_cls
+
+        from app.repositories.observation_repository import ObservationRepository
         try:
             obs_repo = ObservationRepository(self._repo.conn)
             ext = doc.extracted_data or {}
@@ -216,7 +218,7 @@ class DocumentService:
 
         # 1. Update document record (and transition status to approved if it was in review)
         new_status = "approved" if doc.extraction_status in ("pending", "extracting", "review_required") else doc.extraction_status
-        
+
         updated = await self._repo.update_extraction(
             doc_id,
             extraction_status=new_status,
@@ -229,7 +231,7 @@ class DocumentService:
 
         # 2. Re-persist to medications/labs
         await self._persist_extracted_data(updated)
-        
+
         return updated
 
     async def _persist_extracted_data(self, doc: SourceDocument) -> None:
@@ -238,7 +240,7 @@ class DocumentService:
             return
 
         # Common extraction helpers
-        def get_f(keys, d=doc.extracted_data): 
+        def get_f(keys, d=doc.extracted_data):
             return next((d.get(k) for k in keys if d.get(k)), None)
 
         # 1. Handle Prescribers (Doctors) if present
@@ -261,7 +263,7 @@ class DocumentService:
         # 2. Handle Medications
         if doc.document_type == "prescription" or doc.extracted_data.get("medications"):
             med_svc = MedicationService(self._repo.conn)
-            
+
             # Check if we already have medications for this document to avoid duplicates
             existing = await med_svc.list_by_document(doc.id)
             if existing:
@@ -269,16 +271,16 @@ class DocumentService:
             else:
                 meds = doc.extracted_data.get("medications") or []
                 seen_names = set()
-                
+
                 for m in meds:
                     try:
                         raw_brand = m.get("brand_name")
                         raw_generic = m.get("generic_name") or raw_brand
                         if not raw_generic: continue
-                            
+
                         clean_generic = self._clean_med_name(raw_generic)
                         clean_brand = self._clean_med_name(raw_brand) if raw_brand else None
-                        
+
                         if clean_generic.lower() in seen_names: continue
                         seen_names.add(clean_generic.lower())
 
@@ -350,28 +352,28 @@ class DocumentService:
         """Remove common medical tags like Tab, Cap, Inj to avoid duplicates."""
         if not name:
             return ""
-        
+
         # Tags to remove (case insensitive)
         tags = [
-            "tab.", "tab", "tablet", 
-            "cap.", "cap", "capsule", 
-            "syp.", "syp", "syrup", 
+            "tab.", "tab", "tablet",
+            "cap.", "cap", "capsule",
+            "syp.", "syp", "syrup",
             "inj.", "inj", "injection",
             "susp.", "susp", "suspension"
         ]
-        
+
         cleaned = name.strip()
         parts = cleaned.split()
-        
+
         filtered_parts = []
         for p in parts:
             if p.lower() not in tags:
                 filtered_parts.append(p)
-        
+
         result = " ".join(filtered_parts).strip()
         # Remove any leading/trailing special chars like hyphens often left after tag removal
         result = result.strip("- ").strip()
-        
+
         return result or name # Fallback to original if we somehow wiped it
 
     async def reject(self, doc_id: UUID, user_id: UUID, reason: str) -> SourceDocument:

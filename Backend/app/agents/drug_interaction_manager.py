@@ -91,7 +91,7 @@ class DrugInteractionManager:
             gn = m.generic_name.lower().strip()
             if gn not in meds_by_generic:
                 meds_by_generic[gn] = m
-        
+
         unique_meds = list(meds_by_generic.values())
         if len(unique_meds) < 2:
             return []
@@ -145,7 +145,7 @@ class DrugInteractionManager:
         # FILTER: Remove None (from worker) and LOW severity results
         # ═══════════════════════════════════════════════════════════
         results = [
-            r for r in raw_results 
+            r for r in raw_results
             if r is not None and r.severity != "low"
         ]
 

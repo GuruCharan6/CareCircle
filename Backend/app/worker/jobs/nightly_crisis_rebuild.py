@@ -11,9 +11,7 @@ Crisis packet is a read-optimized snapshot for emergency situations.
 Doctor/paramedic can access it without navigating full medical record.
 """
 import asyncio
-from datetime import datetime, timezone
 
-from app.cache.crisis_packet_cache import set_crisis_packet
 from app.core.celery import celery_app
 from app.core.logging import get_logger
 from app.services.crisis_service import CrisisService
@@ -30,7 +28,7 @@ async def _async_run() -> None:
     async with worker_conn(max_size=5, command_timeout=120) as conn:
         patient_ids = await get_all_patient_ids(conn)
         logger.info("nightly_crisis_rebuild.start", patient_count=len(patient_ids))
-        
+
         svc = CrisisService(conn)
 
         for patient_id in patient_ids:

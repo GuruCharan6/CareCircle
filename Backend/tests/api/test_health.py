@@ -1,7 +1,5 @@
 """API tests for health and readiness endpoints."""
-import pytest
 
-from tests.conftest import make_jwt
 
 
 class TestHealthEndpoint:

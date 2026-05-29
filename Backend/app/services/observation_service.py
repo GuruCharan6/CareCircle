@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List
+import builtins
 from uuid import UUID
 
 import asyncpg
@@ -42,7 +42,7 @@ class ObservationService:
         patient_id: UUID,
         source_type: str | None = None,
         limit: int = 50,
-    ) -> List[Observation]:
+    ) -> builtins.list[Observation]:
         return await self._repo.get_by_patient_id(
             patient_id, source_type=source_type, limit=limit
         )

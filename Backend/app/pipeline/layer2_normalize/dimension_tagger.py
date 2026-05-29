@@ -23,7 +23,6 @@ def refine_dimension(item: IngestedItem, profile: SourceProfile) -> str:
     For single-dimension source types (lab_report, prescription), dimension is fixed.
     """
     source_type = item.source_type
-    data = item.extracted_data
 
     # Lab reports and prescriptions have exactly one dimension — no refinement needed.
     if source_type == "lab_report":

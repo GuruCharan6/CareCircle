@@ -1,4 +1,4 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from uuid import UUID
 
 from app.pipeline.layer3_enrich.types import Hypothesis

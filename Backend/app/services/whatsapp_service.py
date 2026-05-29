@@ -8,7 +8,6 @@ from app.core.logging import get_logger
 from app.providers.whatsapp.factory import get_whatsapp_provider
 from app.repositories.caregiver_repository import CaregiverRepository
 from app.repositories.whatsapp_message_repository import WhatsAppMessageRepository
-from app.config import settings
 
 logger = get_logger(__name__)
 
@@ -80,9 +79,9 @@ class WhatsAppService:
             prefs["whatsapp_connected"] = True
             prefs["whatsapp_number"] = msg.sender_phone
             # Automatically enable digest if they are joining now
-            prefs["whatsapp_digest"] = True 
+            prefs["whatsapp_digest"] = True
             await user_repo.update_preferences(user.id, prefs)
-            
+
             welcome = (
                 f"Welcome to CareCircle WhatsApp, {user.name}! 🌟\n\n"
                 "I've connected your account. You will now receive your daily health digests here."
@@ -92,7 +91,7 @@ class WhatsAppService:
             # If already connected, maybe they are asking the chatbot?
             # For now, just acknowledge.
             await self._provider.send_text(
-                msg.sender_phone, 
+                msg.sender_phone,
                 "I've received your message! If you have questions about your patient's health, please use the CareCircle app."
             )
 
@@ -107,8 +106,9 @@ class WhatsAppService:
         if msg.message_type == "audio":
             db_msg = await self._msg_repo.get_by_twilio_sid(msg.provider_message_id)
             if db_msg:
-                from app.worker.tasks.process_whatsapp_media import _async_run as _process_media
                 import asyncio
+
+                from app.worker.tasks.process_whatsapp_media import _async_run as _process_media
                 asyncio.ensure_future(_process_media(str(db_msg.id)))
                 logger.info("whatsapp_service.media_task_triggered", message_id=str(db_msg.id))
 

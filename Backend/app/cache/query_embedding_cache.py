@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-from typing import List
 
 from app.cache.keys import QUERY_EMBEDDING_TTL, query_embedding_key
 from app.core.logging import get_logger
@@ -10,7 +9,7 @@ from app.core.redis import make_redis
 logger = get_logger(__name__)
 
 
-async def get_query_embedding(query: str) -> List[float] | None:
+async def get_query_embedding(query: str) -> list[float] | None:
     try:
         async with make_redis() as redis:
             raw = await redis.get(query_embedding_key(query))
@@ -22,7 +21,7 @@ async def get_query_embedding(query: str) -> List[float] | None:
     return None
 
 
-async def set_query_embedding(query: str, embedding: List[float]) -> None:
+async def set_query_embedding(query: str, embedding: list[float]) -> None:
     try:
         async with make_redis() as redis:
             await redis.setex(

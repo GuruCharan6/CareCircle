@@ -17,13 +17,13 @@ def verify_token(token: str) -> dict[str, Any]:
     try:
         header = pyjwt.get_unverified_header(token)
         alg = header.get("alg", "HS256")
-        
+
         if alg == "HS256":
             key = settings.supabase_jwt_secret
         else:
             signing_key = jwks_client.get_signing_key_from_jwt(token)
             key = signing_key.key
-            
+
         payload = pyjwt.decode(
             token,
             key,

@@ -1,9 +1,7 @@
 """Unit tests for Layer 3 enrichment rules (Rules 1 & 3)."""
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 from decimal import Decimal
 from uuid import UUID
-
-import pytest
 
 from app.pipeline.layer1_ingest.types import IngestedItem
 from app.pipeline.layer2_normalize.types import (
@@ -58,7 +56,7 @@ def _make_observation_item(extracted_data: dict, source_type: str = "voice_note_
         source_document_id=_DOC_ID,
         patient_id=_PID,
         event_time=date.today(),
-        ingestion_time=datetime.now(timezone.utc),
+        ingestion_time=datetime.now(UTC),
         extracted_data=extracted_data,
     )
     profile = SourceProfile(
@@ -76,7 +74,7 @@ def _make_lab_item(extracted_data: dict) -> NormalizedItem:
         source_document_id=_DOC_ID,
         patient_id=_PID,
         event_time=date.today(),
-        ingestion_time=datetime.now(timezone.utc),
+        ingestion_time=datetime.now(UTC),
         extracted_data=extracted_data,
     )
     profile = SourceProfile(

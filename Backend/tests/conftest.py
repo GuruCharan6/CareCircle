@@ -21,8 +21,8 @@ os.environ.update({
 })
 
 # Mock heavy provider SDKs before any app import — prevents OOM + network calls
-from unittest.mock import MagicMock
 import sys
+from unittest.mock import MagicMock
 
 _mock = MagicMock()
 for _mod in [
@@ -79,7 +79,7 @@ def event_loop_policy():
 
 from datetime import date, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
-from uuid import UUID, uuid4
+from uuid import UUID
 
 import pytest
 from httpx import ASGITransport, AsyncClient

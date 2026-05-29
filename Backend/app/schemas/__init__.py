@@ -69,8 +69,8 @@ from app.schemas.notification import (
 )
 from app.schemas.observation import ObservationCreate, ObservationResponse
 from app.schemas.patient import PatientCreate, PatientResponse, PatientUpdate
-from app.schemas.prescriber import PrescriberCreate, PrescriberResponse, PrescriberUpdate
 from app.schemas.patient_state import PatientStateResponse, StalenessIndicator
+from app.schemas.prescriber import PrescriberCreate, PrescriberResponse, PrescriberUpdate
 from app.schemas.refill import (
     RefillConfirmRequest,
     RefillCreate,

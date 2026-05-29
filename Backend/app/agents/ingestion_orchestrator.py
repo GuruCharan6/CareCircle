@@ -96,8 +96,9 @@ class IngestionOrchestrator:
         # For lab reports: auto-complete matching pending lab_test calendar events
         if document and document.document_type == "lab_report":
             extracted = document.extracted_data or {}
-            from app.lib.dates import parse_date_robust
             from datetime import datetime
+
+            from app.lib.dates import parse_date_robust
             raw_test_date = extracted.get("test_date")
             test_date = parse_date_robust(raw_test_date) or datetime.utcnow().date()
             completed = await self._calendar_agent.auto_complete_from_lab_report(
@@ -118,12 +119,13 @@ class IngestionOrchestrator:
                 for key in ("follow_up_date", "follow_up_weeks", "follow_up_days")
             )
             has_tests = len(extracted.get("ordered_tests") or []) > 0
-            
+
             if has_follow_up or has_tests:
                 # Build an IngestedItem-like view from the document for CalendarWriterAgent.
                 # CalendarWriterAgent only needs extracted_data, source_type, is_prescription.
-                from app.pipeline.layer1_ingest.types import IngestedItem
                 from datetime import datetime
+
+                from app.pipeline.layer1_ingest.types import IngestedItem
 
                 synthetic_item = IngestedItem(
                     source_type="prescription" if document.document_type == "prescription" else "doctor_note",

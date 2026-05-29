@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 from jose import jwt
@@ -23,7 +23,7 @@ def create_upload_jwt(user_id: UUID, patient_id: UUID) -> str:
       purpose: 'whatsapp_upload' — restricts token to upload flow only
       exp: 15 minutes from now
     """
-    now = datetime.now(tz=timezone.utc)
+    now = datetime.now(tz=UTC)
     payload = {
         "sub": str(user_id),
         "patient_id": str(patient_id),
@@ -40,6 +40,7 @@ def verify_upload_jwt(token: str) -> dict:
     Raises ValueError if purpose claim missing (wrong token type).
     """
     from jose import JWTError
+
     from app.core.exceptions import UnauthorizedError
 
     try:

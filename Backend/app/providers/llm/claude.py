@@ -1,6 +1,7 @@
 from __future__ import annotations
+
 import json
-from typing import Any, List, Dict, Union
+from typing import Any
 
 import anthropic
 
@@ -46,12 +47,12 @@ class ClaudeProvider(LLMProvider):
             kwargs["system"] = system_prompt
 
         response = await self._client.messages.create(stream=False, **kwargs)
-        
+
         # If for some reason it's still a stream, we can't easily get the content without iterating.
         # But explicitly setting stream=False should return a Message object.
         if hasattr(response, "content"):
             return getattr(response.content[0], "text", "")
-        
+
         # Fallback for unexpected types
         return str(response)
 

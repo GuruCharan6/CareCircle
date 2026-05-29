@@ -1,6 +1,7 @@
 from __future__ import annotations
-from app.providers.llm.base import LLMProvider
+
 from app.models.document_chunk import DocumentChunk
+from app.providers.llm.base import LLMProvider
 
 
 async def rerank_chunks(

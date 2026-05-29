@@ -1,4 +1,4 @@
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 from typing import Any
 
 from app.core.logging import get_logger
@@ -106,7 +106,7 @@ class VoiceNoteExtractor(BaseExtractor):
             source_document_id=document.id,
             patient_id=document.patient_id,
             event_time=document.event_date or date.today(),
-            ingestion_time=datetime.now(timezone.utc),
+            ingestion_time=datetime.now(UTC),
             extracted_data={
                 "symptoms_reported": nlp_data.get("symptoms_reported") or [],
                 "symptoms_denied": nlp_data.get("symptoms_denied") or [],

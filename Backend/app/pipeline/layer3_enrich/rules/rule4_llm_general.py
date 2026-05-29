@@ -106,7 +106,7 @@ def _build_prompt(item: NormalizedItem, context: PatientContext) -> str:
         f"Patient: {patient.name or 'Unknown'}",
         f"Known conditions: {conditions}",
         f"Active medications: {meds}",
-        f"",
+        "",
         f"New document type: {item.source_type}",
         f"Document dimension: {item.profile.dimension}",
     ]
@@ -115,15 +115,15 @@ def _build_prompt(item: NormalizedItem, context: PatientContext) -> str:
         lines.append(f"Extracted data from document: {json.dumps(extracted, default=str)[:1000]}")
 
     if obs_lines:
-        lines.append(f"\nRecent observations (newest first):")
+        lines.append("\nRecent observations (newest first):")
         lines.extend(obs_lines)
 
     if labs_lines:
-        lines.append(f"\nAbnormal lab results (last 90 days):")
+        lines.append("\nAbnormal lab results (last 90 days):")
         lines.extend(labs_lines)
 
     if interactions_lines:
-        lines.append(f"\nKnown drug interactions:")
+        lines.append("\nKnown drug interactions:")
         lines.extend(interactions_lines)
 
     return "\n".join(lines)

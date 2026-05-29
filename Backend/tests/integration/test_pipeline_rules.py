@@ -9,8 +9,6 @@ from datetime import UTC, date, datetime
 from decimal import Decimal
 from uuid import UUID
 
-import pytest
-
 from app.pipeline.layer1_ingest.types import IngestedItem
 from app.pipeline.layer2_normalize.types import (
     BIAS_NONE,
@@ -25,7 +23,6 @@ from app.pipeline.layer2_normalize.types import (
 from app.pipeline.layer3_enrich.engine import run_enrichment
 from app.pipeline.layer3_enrich.types import (
     URGENCY_ALERT,
-    URGENCY_WATCH,
     PatientContext,
 )
 

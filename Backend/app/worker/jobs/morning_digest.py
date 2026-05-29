@@ -12,13 +12,13 @@ from app.repositories.clinical_hypothesis_repository import ClinicalHypothesisRe
 from app.repositories.medication_repository import MedicationRepository
 from app.repositories.notification_repository import NotificationRepository
 from app.repositories.patient_repository import PatientRepository
+from app.repositories.patient_state_repository import PatientStateRepository
 from app.worker._db import worker_conn
 from app.worker.jobs._helpers import (
     get_user_id_for_patient,
     try_push,
     try_whatsapp_digest_cta,
 )
-from app.repositories.patient_state_repository import PatientStateRepository
 
 logger = get_logger(__name__)
 

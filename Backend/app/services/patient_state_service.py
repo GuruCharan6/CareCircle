@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 from uuid import UUID
 
 import asyncpg
@@ -47,7 +47,7 @@ class PatientStateService:
 
         today = date.today()
         indicators = _build_staleness_indicators(state, today)
-        
+
         # Calculate freshness score (0-100), normalized across however many indicators exist
         _weights = {"fresh": 100, "aging": 60, "stale": 20, "critical": 0}
         if indicators:
@@ -59,7 +59,7 @@ class PatientStateService:
         # Fetch appointments scheduled for the soonest upcoming date (up to 30 days)
         cal_repo = CalendarEventRepository(self._conn)
         upcoming = await cal_repo.get_upcoming(patient_id, within_days=30)
-        
+
         next_appts = []
         if upcoming:
             first_date = upcoming[0].event_date
@@ -71,12 +71,12 @@ class PatientStateService:
         # Fetch confirmed/possible drug interactions
         interaction_repo = DrugInteractionRepository(self._conn)
         interactions = await interaction_repo.get_by_patient_id(patient_id)
-        
+
         # Fetch refill alerts (30-day window)
         refill_repo = MedicationRefillRepository(self._conn)
         med_repo = MedicationRepository(self._conn)
         refills_due = await refill_repo.get_due_soon(patient_id, within_days=30)
-        
+
         refill_alerts = []
         for refill in refills_due:
             med = await med_repo.get_by_id(refill.medication_id)
@@ -104,10 +104,10 @@ class PatientStateService:
         # Fetch Emergency Follow-ups (unread watch_event_card notifications)
         from app.repositories.notification_repository import NotificationRepository
         notif_repo = NotificationRepository(self._conn)
-        
+
         # We look for unread notifications for this patient
         notifs = await notif_repo.get_by_patient_id(patient_id, limit=20)
-        
+
         emergency_follow_ups = [
             {
                 "id": str(n.id),
@@ -139,7 +139,7 @@ class PatientStateService:
         # 1. Alerts (Red)
         high_interactions = [i for i in deduped_interactions if (i.severity or i.final_urgency or "low").lower() in ("critical", "high", "major", "alert", "contraindicated")]
         new_alerts_count = len(high_interactions) + len(emergency_follow_ups)
-        
+
         # 2. Watch (Amber)
         mod_interactions = [i for i in deduped_interactions if (i.severity or i.final_urgency or "low").lower() in ("moderate", "watch")]
         new_watch_count = len(mod_interactions) + len(refill_alerts) + len(suggested_appts) + len(gap_actions)
@@ -165,7 +165,7 @@ class PatientStateService:
         data["emergency_follow_ups"] = emergency_follow_ups
         data["suggested_appointments"] = suggested_appts
         data["freshness_score"] = freshness_score
-        data["computed_at"] = datetime.now(timezone.utc)
+        data["computed_at"] = datetime.now(UTC)
         return PatientStateResponse(**data)
 
 

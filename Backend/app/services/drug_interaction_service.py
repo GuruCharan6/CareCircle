@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List
+import builtins
 from uuid import UUID
 
 import asyncpg
@@ -15,10 +15,10 @@ class DrugInteractionService:
         self._conn = conn
         self._repo = DrugInteractionRepository(conn)
 
-    async def list(self, patient_id: UUID) -> List[DrugInteractionResult]:
+    async def list(self, patient_id: UUID) -> builtins.list[DrugInteractionResult]:
         return await self._repo.get_by_patient_id(patient_id)
 
-    async def trigger_check(self, patient_id: UUID) -> List[DrugInteractionResult]:
+    async def trigger_check(self, patient_id: UUID) -> builtins.list[DrugInteractionResult]:
         """Run drug pair check synchronously; return latest results."""
         await self._repo.delete_discontinued_for_patient(patient_id)
         from app.agents.drug_interaction_manager import DrugInteractionManager

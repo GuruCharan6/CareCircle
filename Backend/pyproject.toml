@@ -4,7 +4,16 @@ line-length = 100
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "W", "UP"]
-ignore = ["E501"]
+ignore = [
+    "E501",   # line too long
+    "N818",   # AppException naming — changing breaks entire codebase
+    "N806",   # uppercase var in function (ESCALATIONS, _DIR_ARROW etc) — intentional constants
+    "E722",   # bare except — intentional in json parse fallbacks
+    "E701",   # multiple statements on one line — intentional in some places
+    "E402",   # module-level import not at top — conftest must set env vars before imports
+    "E741",   # ambiguous variable name `l` — minor
+    "W291",   # trailing whitespace in docstring — minor
+]
 
 [tool.ruff.lint.isort]
 known-first-party = ["app"]

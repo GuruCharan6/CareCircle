@@ -1,5 +1,4 @@
 import asyncio
-import ssl
 from urllib.parse import urlparse
 
 import redis.asyncio as aioredis

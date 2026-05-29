@@ -1,7 +1,7 @@
 """
 Digest dispatcher — called by cron, directly invokes per-patient digest jobs.
 """
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import UUID
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
@@ -28,7 +28,7 @@ def _should_send_now(hhmm: str, tz: ZoneInfo) -> bool:
         h, _ = map(int, hhmm.split(":"))
     except (ValueError, AttributeError):
         return False
-    now_utc = datetime.now(timezone.utc)
+    now_utc = datetime.now(UTC)
     local_now = now_utc.astimezone(tz)
     return local_now.hour == h
 

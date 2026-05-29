@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import UUID
 
 import asyncpg
 
 from app.agents.crisis_mode_agent import CrisisModeAgent
+from app.cache.crisis_packet_cache import get_crisis_packet, set_crisis_packet
 from app.config import settings
 from app.lib.pdf_generator import generate_crisis_pdf
 from app.lib.signed_url import create_signed_view_url, storage_upload
@@ -17,16 +18,16 @@ from app.repositories.lab_result_repository import LabResultRepository
 from app.repositories.medication_repository import MedicationRepository
 from app.repositories.patient_repository import PatientRepository
 from app.repositories.prescriber_repository import PrescriberRepository
-from app.cache.crisis_packet_cache import get_crisis_packet, set_crisis_packet
 from app.schemas.crisis import (
     CrisisEmergencyContact,
     CrisisLabResultItem,
     CrisisLastCardiacEvent,
     CrisisMedicationItem,
     CrisisNearestEmergency,
-    CrisisPrescriberItem,
     CrisisPacketResponse,
+    CrisisPrescriberItem,
 )
+
 
 class CrisisService:
     def __init__(self, conn: asyncpg.Connection) -> None:
@@ -44,7 +45,7 @@ class CrisisService:
             )
         except Exception: # If packet is missing or other error, try to rebuild once
             packet = await self.rebuild_packet(patient_id, trigger="manual")
-            
+
         return _to_response(packet)
 
     async def rebuild_packet(self, patient_id: UUID, trigger: str = "scheduled_nightly") -> CrisisPacket:
@@ -126,7 +127,7 @@ class CrisisService:
 
         packet = await CrisisPacketRepository(self._conn).upsert(
             patient_id=patient_id,
-            generated_at=datetime.now(timezone.utc),
+            generated_at=datetime.now(UTC),
             rebuild_triggered_by=trigger,
             medications=medications_snapshot,
             emergency_contacts=emergency_contacts,
@@ -177,7 +178,7 @@ class CrisisService:
             generated_at=response.generated_at,
         )
 
-        now_ts = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
+        now_ts = datetime.now(UTC).strftime("%Y%m%d%H%M%S")
         path = f"{patient_id}/crisis_{now_ts}.pdf"
         bucket = settings.supabase_storage_bucket_crisis_pdfs
         storage_upload(bucket, path, pdf_bytes)
@@ -198,10 +199,10 @@ class CrisisService:
 
 
 def _to_response(packet: CrisisPacket) -> CrisisPacketResponse:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     generated = packet.generated_at
     if generated.tzinfo is None:
-        generated = generated.replace(tzinfo=timezone.utc)
+        generated = generated.replace(tzinfo=UTC)
     age_hours = round((now - generated).total_seconds() / 3600, 1)
     freshness_note = f"Last updated {age_hours} hours ago"
 

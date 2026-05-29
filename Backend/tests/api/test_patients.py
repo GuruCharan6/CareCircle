@@ -1,10 +1,8 @@
 """API tests for /api/v1/patients — CRUD."""
-import pytest
 
 from tests.conftest import (
     TEST_PATIENT_ID,
     TEST_USER_ID,
-    make_jwt,
     make_patient_record,
 )
 

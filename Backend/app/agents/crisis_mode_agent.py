@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import UUID
 
 import asyncpg
@@ -88,7 +88,7 @@ class CrisisModeAgent:
     @staticmethod
     def is_unusual_hour(hour: int | None = None) -> bool:
         """Returns True if the given hour falls in the 11 PM – 5 AM window."""
-        h = hour if hour is not None else datetime.now(timezone.utc).hour
+        h = hour if hour is not None else datetime.now(UTC).hour
         return h >= _CRISIS_HOUR_START or h < _CRISIS_HOUR_END
 
     async def enter_crisis(
@@ -180,9 +180,9 @@ class CrisisModeAgent:
     @staticmethod
     def _packet_age_hours(packet: CrisisPacket) -> float:
         """How many hours old is the crisis packet."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         generated = packet.generated_at
         if generated.tzinfo is None:
-            generated = generated.replace(tzinfo=timezone.utc)
+            generated = generated.replace(tzinfo=UTC)
         delta = now - generated
         return round(delta.total_seconds() / 3600, 1)

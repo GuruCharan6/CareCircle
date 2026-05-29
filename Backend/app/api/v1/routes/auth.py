@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Cookie, Depends, HTTPException, Response
-from uuid import UUID
 from typing import Any
+
+from fastapi import APIRouter, Cookie, Depends, HTTPException, Response
 
 from app.api.deps import DBConn, get_current_user
 from app.core.logging import get_logger
 from app.models.user import User
+from app.providers.whatsapp.factory import get_whatsapp_provider
 from app.repositories.user_repository import UserRepository
 from app.schemas.auth import (
     AuthResponse,
@@ -20,7 +21,6 @@ from app.schemas.auth import (
     UserResponse,
 )
 from app.services.auth_service import AuthService
-from app.providers.whatsapp.factory import get_whatsapp_provider
 
 logger = get_logger(__name__)
 

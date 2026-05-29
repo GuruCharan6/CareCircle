@@ -71,8 +71,8 @@ class ObservationRepository(BaseRepository):
         obs = Observation.from_record(row)
         if row.get("source_document_url"):
             try:
-                from app.lib.signed_url import create_signed_view_url
                 from app.config import settings
+                from app.lib.signed_url import create_signed_view_url
                 bucket = settings.supabase_storage_bucket_documents
                 obs.source_document_url = create_signed_view_url(bucket, row["source_document_url"])
             except Exception as e:

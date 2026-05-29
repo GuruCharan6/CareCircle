@@ -1,7 +1,7 @@
 from __future__ import annotations
-from datetime import date, timedelta
-from typing import List
 
+import builtins
+from datetime import date, timedelta
 from uuid import UUID
 
 import asyncpg
@@ -10,8 +10,8 @@ from app.core.exceptions import ForbiddenError, NotFoundError
 from app.core.logging import get_logger
 from app.models.caregiver import Caregiver
 from app.providers.whatsapp.factory import get_whatsapp_provider
-from app.repositories.caregiver_repository import CaregiverRepository
 from app.repositories.calendar_event_repository import CalendarEventRepository
+from app.repositories.caregiver_repository import CaregiverRepository
 from app.schemas.caregiver import CaregiverCreate
 
 logger = get_logger(__name__)
@@ -65,7 +65,7 @@ class CaregiverService:
                 error=str(exc),
             )
 
-    async def list(self, patient_id: UUID, active_only: bool = True) -> List[Caregiver]:
+    async def list(self, patient_id: UUID, active_only: bool = True) -> builtins.list[Caregiver]:
         return await self._repo.get_by_patient_id(patient_id, active_only=active_only)
 
     async def get(self, patient_id: UUID, caregiver_id: UUID) -> Caregiver:

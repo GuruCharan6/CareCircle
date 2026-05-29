@@ -1,16 +1,16 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+import json
+from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
-import json
 import asyncpg
 
+from app.config import settings
 from app.core.logging import get_logger
 from app.lib.pdf_generator import generate_patient_history_pdf
-from app.lib.signed_url import create_signed_view_url, delete_file, storage_upload
-from app.config import settings
+from app.lib.signed_url import create_signed_view_url, storage_upload
 
 logger = get_logger(__name__)
 
@@ -191,7 +191,7 @@ class HistoryService:
                     o["source_label"] = "Emergency Voice Note"
                 else:
                     o["source_label"] = "Caregiver Update" if o.get("caregiver_id") else "User Update"
-                
+
                 # Sign audio URL if present
                 raw_path = o.get("source_document_url")
                 if raw_path:
@@ -210,7 +210,7 @@ class HistoryService:
                         concerns = json.loads(concerns)
                     except:
                         concerns = [concerns]
-                
+
                 o["summary"] = concerns[0] if (isinstance(concerns, list) and concerns) else "Daily health update"
                 o["observed_at"] = o["observation_date"] # Map for PDF generator
                 processed_obs.append(o)
@@ -245,7 +245,7 @@ class HistoryService:
 
         # Aggregate Full Timeline (descending)
         timeline = []
-        
+
         # 1. Deduplicate observations (handle UNION ALL from repo)
         unique_obs_map = {}
         for o in processed_obs:
@@ -302,7 +302,7 @@ class HistoryService:
                 title = "Emergency Follow Up(Text)"
                 if any(t.get("summary") == c.get("body") for t in timeline):
                     continue
-            
+
             timeline.append({
                 "type": "crisis",
                 "date": c.get("created_at"),
@@ -316,7 +316,7 @@ class HistoryService:
         return {
             "patient_id": str(patient_id),
             "patient_name": patient_name,
-            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "generated_at": datetime.now(UTC).isoformat(),
             "documents": processed_docs,
             "observations": processed_obs,
             "timeline": timeline,
@@ -349,10 +349,10 @@ class HistoryService:
         pdf_bytes = generate_patient_history_pdf(
             patient_name=history["patient_name"],
             timeline=history["timeline"],
-            generated_at=datetime.now(timezone.utc),
+            generated_at=datetime.now(UTC),
         )
 
-        path = f"{patient_id}/history_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.pdf"
+        path = f"{patient_id}/history_{datetime.now(UTC).strftime('%Y%m%d_%H%M%S')}.pdf"
         bucket = settings.supabase_storage_bucket_documents
         storage_upload(bucket, path, pdf_bytes)
 

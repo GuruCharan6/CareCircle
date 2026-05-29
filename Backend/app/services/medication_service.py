@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, List
+import builtins
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 import asyncpg
@@ -46,12 +47,12 @@ class MedicationService:
         on_medication_added(str(patient_id))
         return med
 
-    async def list(self, patient_id: UUID, active_only: bool = False) -> List[Medication]:
+    async def list(self, patient_id: UUID, active_only: bool = False) -> builtins.list[Medication]:
         if active_only:
             return await self.list_active(patient_id)
         return await self._repo.get_by_patient_id(patient_id)
 
-    async def list_active(self, patient_id: UUID) -> List[Medication]:
+    async def list_active(self, patient_id: UUID) -> builtins.list[Medication]:
         """Cache-aside: Redis (10-min TTL) → miss → asyncpg → set cache."""
         cached = await get_active_medications(patient_id)
         if cached is not None:
@@ -85,7 +86,7 @@ class MedicationService:
         await invalidate_active_medications(patient_id)
         return updated
 
-    async def get(self, patient_id: UUID, medication_id: UUID) -> Medication: 
+    async def get(self, patient_id: UUID, medication_id: UUID) -> Medication:
         med = await self._repo.get_by_id(medication_id)
         if not med:
             raise NotFoundError("Medication", str(medication_id))
@@ -100,5 +101,5 @@ class MedicationService:
         await ix_repo.delete_by_medication_id(med.id)
         await invalidate_active_medications(patient_id)  # stale after discontinue
 
-    async def list_by_document(self, document_id: UUID) -> List[Medication]:
+    async def list_by_document(self, document_id: UUID) -> builtins.list[Medication]:
         return await self._repo.get_by_document(document_id)

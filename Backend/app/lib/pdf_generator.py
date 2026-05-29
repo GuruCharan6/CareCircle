@@ -6,9 +6,16 @@ from typing import Any
 
 from reportlab.lib import colors  # type: ignore
 from reportlab.lib.pagesizes import A4  # type: ignore
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle  # type: ignore
+from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet  # type: ignore
 from reportlab.lib.units import cm  # type: ignore
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable  # type: ignore
+from reportlab.platypus import (  # type: ignore
+    HRFlowable,
+    Paragraph,
+    SimpleDocTemplate,
+    Spacer,
+    Table,
+    TableStyle,
+)
 
 _STYLES = getSampleStyleSheet()
 
@@ -337,10 +344,10 @@ def generate_patient_history_pdf(
                     date_str = date_raw
             else:
                 date_str = _date_str(date_raw)
-                
+
             title = item.get("title", "Event")
             summary_text = item.get("summary") or ""
-            
+
             # Use bold for date and title
             p_text = f"<b>{date_str}</b> | <b>{title}</b>"
             story.append(Paragraph(p_text, _BODY_STYLE))

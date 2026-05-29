@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 from uuid import UUID
 
 import asyncpg
 
 from app.core.exceptions import NotFoundError
 from app.lib.upload_jwt import create_upload_jwt
+from app.models.observation import Observation
 from app.repositories.calendar_event_repository import CalendarEventRepository
 from app.repositories.clinical_hypothesis_repository import ClinicalHypothesisRepository
 from app.repositories.drug_interaction_repository import DrugInteractionRepository
@@ -16,9 +17,14 @@ from app.repositories.observation_repository import ObservationRepository
 from app.repositories.patient_repository import PatientRepository
 from app.repositories.patient_state_repository import PatientStateRepository
 from app.repositories.user_repository import UserRepository
-from app.models.observation import Observation
 from app.schemas.calendar import CalendarEventListItem
-from app.schemas.digest import DigestDrugInteraction, DigestPreferencesUpdate, DigestRecentObservation, DigestRefillAlert, DigestResponse
+from app.schemas.digest import (
+    DigestDrugInteraction,
+    DigestPreferencesUpdate,
+    DigestRecentObservation,
+    DigestRefillAlert,
+    DigestResponse,
+)
 
 
 def _build_observation_summary(obs: Observation) -> str:
@@ -200,7 +206,7 @@ class DigestService:
 
         return DigestResponse(
             period=period,
-            generated_at=datetime.now(timezone.utc),
+            generated_at=datetime.now(UTC),
             overall_status=overall_status,
             today_summary=today_summary,
             known_facts=known_facts,

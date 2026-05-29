@@ -1,6 +1,6 @@
 from __future__ import annotations
+
 from typing import Any
-from datetime import datetime
 from uuid import UUID
 
 import asyncpg
@@ -54,7 +54,7 @@ class SearchService:
     ) -> list[SearchResult]:
         """Global system search across documents, observations, meds, and events."""
         results: list[SearchResult] = []
-        
+
         # 1. Search Documents (SQL + Semantic)
         doc_results = await self._search_documents(query, patient_id, filter_type, limit)
         results.extend(doc_results)
@@ -76,7 +76,7 @@ class SearchService:
 
         # Sort by date (descending)
         results.sort(key=lambda x: x.event_date or x.created_at, reverse=True)
-        
+
         return results[:limit]
 
     async def _get_query_embedding(self, query: str) -> list[float]:
@@ -145,7 +145,7 @@ class SearchService:
         for r in rows:
             text = r["extracted_text"] or ""
             excerpt = _excerpt(text, query)
-            
+
             # Build a nice title
             title = r["document_type"].replace("_", " ").capitalize()
             data = r["extracted_data"] or {}

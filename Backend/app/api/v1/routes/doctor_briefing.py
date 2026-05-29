@@ -4,7 +4,6 @@ from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter
-from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from app.api.deps import CurrentPatient, CurrentUser, DBConn

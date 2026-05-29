@@ -1,5 +1,5 @@
 """Unit tests for Layer 4 conflict detection — Type A (temporal)."""
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 from uuid import UUID
 
 from app.pipeline.layer1_ingest.types import IngestedItem
@@ -23,7 +23,7 @@ def _make_lab_item(results: list) -> NormalizedItem:
         source_document_id=_DOC_ID,
         patient_id=_PID,
         event_time=date.today(),
-        ingestion_time=datetime.now(timezone.utc),
+        ingestion_time=datetime.now(UTC),
         extracted_data={"results": results},
     )
     profile = SourceProfile(
@@ -61,7 +61,7 @@ class TestDetectTemporalConflicts:
             source_document_id=_DOC_ID,
             patient_id=_PID,
             event_time=date.today(),
-            ingestion_time=datetime.now(timezone.utc),
+            ingestion_time=datetime.now(UTC),
             extracted_data={},
         )
         profile = SourceProfile(

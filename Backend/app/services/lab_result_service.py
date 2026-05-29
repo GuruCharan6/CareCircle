@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List
+import builtins
 from uuid import UUID
 
 import asyncpg
@@ -47,7 +47,7 @@ class LabResultService:
             prev_reading_date=prev_date,
         )
 
-    async def list(self, patient_id: UUID, limit: int = 100) -> List[LabResult]:
+    async def list(self, patient_id: UUID, limit: int = 100) -> builtins.list[LabResult]:
         return await self._repo.get_by_patient_id(patient_id, limit=limit)
 
     async def get(self, patient_id: UUID, result_id: UUID) -> LabResult:
@@ -58,8 +58,8 @@ class LabResultService:
             raise ForbiddenError("Access denied to this lab result")
         return result
 
-    async def trend(self, patient_id: UUID, test_name: str, limit: int = 5) -> List[LabResult]:
+    async def trend(self, patient_id: UUID, test_name: str, limit: int = 5) -> builtins.list[LabResult]:
         return await self._repo.get_trend(patient_id, test_name, limit=limit)
 
-    async def list_by_document(self, document_id: UUID) -> List[LabResult]:
+    async def list_by_document(self, document_id: UUID) -> builtins.list[LabResult]:
         return await self._repo.get_by_document(document_id)

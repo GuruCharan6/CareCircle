@@ -1,8 +1,6 @@
 from typing import Any
 from uuid import UUID
 
-import asyncpg
-
 from app.models.user import User
 from app.repositories.base import BaseRepository
 

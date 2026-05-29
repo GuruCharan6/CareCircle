@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 
 from app.api.deps import CurrentUser, DBConn
 from app.schemas.common import SuccessResponse

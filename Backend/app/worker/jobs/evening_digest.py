@@ -10,13 +10,13 @@ from app.core.logging import get_logger
 from app.repositories.notification_repository import NotificationRepository
 from app.repositories.observation_repository import ObservationRepository
 from app.repositories.patient_repository import PatientRepository
+from app.repositories.patient_state_repository import PatientStateRepository
 from app.worker._db import worker_conn
 from app.worker.jobs._helpers import (
     get_user_id_for_patient,
     try_push,
     try_whatsapp_digest_cta,
 )
-from app.repositories.patient_state_repository import PatientStateRepository
 
 logger = get_logger(__name__)
 
