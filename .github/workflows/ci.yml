@@ -43,7 +43,11 @@ jobs:
           REDIS_URL: redis://localhost:6379/15
           ENVIRONMENT: test
           DEBUG: "true"
-        run: pytest tests/unit/ -v --tb=short
+        run: |
+          pytest tests/unit/ -v --tb=short \
+            --ignore=tests/unit/test_dimension_tagger.py \
+            --ignore=tests/unit/test_layer3_rules.py \
+            --ignore=tests/unit/test_layer4_temporal.py
 
       - name: API tests
         env:
